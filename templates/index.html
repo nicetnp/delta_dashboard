@@ -96,6 +96,7 @@ tr:hover {
                 <th>Hipot1</th>
                 <th>ATS1</th>
                 <th>Heatup</th>
+                <th>Vibration</th>
                 <th>Burn-in</th>
                 <th>Hipot2</th>
                 <th>ATS2</th>
@@ -191,10 +192,10 @@ function startWebSocket(lineId, endpointPath) {
 }
 
 function updateChart(row) {
-    const labels = ["VFlash1", "Hipot1", "ATS1", "Heatup", "Burn-in", "Hipot2", "ATS2", "VFlash2", "ATS3"];
+    const labels = ["VFlash1", "Hipot1", "ATS1", "Heatup","Vibration", "Burn-in", "Hipot2", "ATS2", "VFlash2", "ATS3"];
     const values = [
         row.vflash1, row.hipot1, row.ats1,
-        row.heatup, row.burnin, row.hipot2,
+        row.heatup,row.vibration, row.burnin, row.hipot2,
         row.ats2, row.vflash2, row.ats3
     ];
 
@@ -280,6 +281,7 @@ function updateTable(row) {
         <td>${row.hipot1}</td>
         <td>${row.ats1}</td>
         <td>${row.heatup}</td>
+        <td>${row.vibration}</td>
         <td>${row.burnin}</td>
         <td>${row.hipot2}</td>
         <td>${row.ats2}</td>

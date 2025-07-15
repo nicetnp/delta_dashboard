@@ -10,6 +10,7 @@ def fetch_failures_today(data: FailureSelectStation, db: Session):
                COUNT(DISTINCT CASE WHEN Station LIKE '%HIPOT_1' THEN TrackingNumber END) AS hipot1,
                COUNT(DISTINCT CASE WHEN Station LIKE '%TS1' THEN TrackingNumber END)     AS ats1,
                COUNT(DISTINCT CASE WHEN Station LIKE '%HEATUP' THEN TrackingNumber END)  AS heatup,
+            COUNT(DISTINCT CASE WHEN Station LIKE '%BRATION' THEN TrackingNumber END)  AS vibration,
                COUNT(DISTINCT CASE WHEN Station LIKE '%BURN_IN' THEN TrackingNumber END) AS burnin,
                COUNT(DISTINCT CASE WHEN Station LIKE '%HIPOT_2' THEN TrackingNumber END) AS hipot2,
                COUNT(DISTINCT CASE WHEN Station LIKE '%TS2' THEN TrackingNumber END)     AS ats2,

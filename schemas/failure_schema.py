@@ -15,6 +15,7 @@ class FailureByDay(BaseModel):
     hipot1: int
     ats1: int
     heatup: int
+    vibration: int
     burnin: int
     hipot2: int
     ats2: int

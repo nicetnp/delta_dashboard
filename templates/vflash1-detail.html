@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ATS2 Failures Dashboard by Tester</title>
+<title>VFlash1 Failures Dashboard by Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body {
@@ -29,7 +29,7 @@ label {
     margin-right: 10px;
     color: #555;
 }
-select {
+select { /* Note: select element is removed from HTML but style remains */
     padding: 8px 12px;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -95,7 +95,7 @@ tr:hover {
 <body>
 
 <div class="container">
-    <h2 id="pageTitle">ATS2 Failure Count by Tester (Today)</h2>
+    <h2 id="pageTitle">VFlash1 Failure Count by Tester (Today)</h2>
     <div class="line-info">Line ID: <span id="displayLineId"></span></div>
 
     <div id="chartContainer">
@@ -125,8 +125,9 @@ const displayLineIdSpan = document.getElementById('displayLineId');
 
 let ws = null;
 let chart = null;
-let currentLineId = '';
+let currentLineId = ''; // จะถูกกำหนดจาก URL
 
+// Function to get query parameters from the URL
 function getQueryParams() {
     const params = {};
     window.location.search.substring(1).split('&').forEach(param => {
@@ -145,7 +146,8 @@ function startWebSocket(lineId) {
     }
 
     currentLineId = lineId;
-    ws = new WebSocket(`ws://localhost:8000/failures/ws/atstwo?lineId=${lineId}`);
+    // เชื่อมต่อไปยัง WebSocket Endpoint สำหรับ VFlash1 details
+    ws = new WebSocket(`ws://localhost:8000/failures/ws/vflashone?lineId=${lineId}`);
 
     ws.onopen = () => {
         console.log(`✅ WebSocket opened for lineId=${lineId}`);
@@ -154,11 +156,11 @@ function startWebSocket(lineId) {
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("Received ATS2 detail data:", data);
+        console.log("Received VFlash1 detail data:", data);
 
         if (!data || data.length === 0) {
-            console.warn("⚠️ No data received or data is empty for ATS2 failures today.");
-            tbody.innerHTML = '<tr><td colspan="3">No ATS2 failure data available for this line today.</td></tr>';
+            console.warn("⚠️ No data received or data is empty for VFlash1 failures today.");
+            tbody.innerHTML = '<tr><td colspan="3">No VFlash1 failure data available for this line today.</td></tr>';
             if (chart) chart.destroy();
             chart = null;
             return;
@@ -177,6 +179,7 @@ function startWebSocket(lineId) {
     };
 }
 
+// อัปเดตกราฟเพื่อแสดงจำนวน Failures ตาม TesterID
 function updateChart(data) {
     const testerIdCounts = {};
     data.forEach(item => {
@@ -257,10 +260,13 @@ function updateTable(data) {
     });
 }
 
+// Function to go back to the summary page
 function goBackToSummary() {
+    // กลับไปยังหน้า index.html และส่ง lineId กลับไปด้วย
     window.location.href = `index.html?lineId=${currentLineId}`;
 }
 
+// Initial load when ats-detail.html is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const params = getQueryParams();
     const lineIdFromUrl = params.lineId;
@@ -270,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         displayLineIdSpan.textContent = currentLineId;
         startWebSocket(currentLineId);
     } else {
-        console.error("❗ Line ID not found in URL. Cannot fetch ATS2 details.");
+        console.error("❗ Line ID not found in URL. Cannot fetch VFlash1 details.");
         document.getElementById('pageTitle').textContent = "Error: Line ID Missing";
         displayLineIdSpan.textContent = 'N/A';
         tbody.innerHTML = '<tr><td colspan="3">Error: Line ID not provided. Please go back to the summary page.</td></tr>';

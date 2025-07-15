@@ -5,14 +5,14 @@ from schemas.failure_schema import FailureSelectStation
 def fetch_failure_atsone(data:FailureSelectStation,db: Session):
     query = text("""
         SELECT TesterID AS testerId,
-            CASE WHEN CHARINDEX(')', FailItem) > 0 AND CHARINDEX('}', FailItem) > 0 
-                 THEN SUBSTRING(FailItem,CHARINDEX(')', FailItem) + 1,
-            CHARINDEX('}', FailItem) - CHARINDEX(')', FailItem) - 1) ELSE NULL END AS failItem,
-            CONVERT(VARCHAR, DateTime, 120) AS workDate
+               FixtureID AS fixtureId,
+               CASE WHEN CHARINDEX(')', FailItem) > 0 AND CHARINDEX('}', FailItem) > 0
+                    THEN SUBSTRING(FailItem,CHARINDEX(')', FailItem) + 1,
+                    CHARINDEX('}', FailItem) - CHARINDEX(')', FailItem) - 1) ELSE NULL END AS failItem,
+                    CONVERT(VARCHAR, DateTime, 120) AS workDate
         FROM APBM_FailuresPareto
-        WHERE LineID = :lineId
-            AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) = CAST(GETDATE() AS DATE)
-        GROUP BY TesterID, FailItem, DateTime
+        WHERE LineID = :lineId AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) = CAST(GETDATE() AS DATE)
+        GROUP BY TesterID,FixtureID, FailItem, DateTime
         HAVING COUNT(DISTINCT CASE WHEN Station LIKE '%TS1' THEN TrackingNumber END) > 0
         ORDER BY workDate ASC;
         """)

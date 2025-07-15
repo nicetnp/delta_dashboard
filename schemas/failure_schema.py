@@ -25,5 +25,6 @@ class FailureByDay(BaseModel):
 
 class FailureByStation(BaseModel):
     testerId: str
+    fixtureId: str
     failItem: str
     workDate: datetime

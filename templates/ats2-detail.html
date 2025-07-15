@@ -106,7 +106,8 @@ tr:hover {
     <table>
         <thead>
             <tr>
-                <th>Tester ID</th>
+                <th>Tester</th>
+                <th>Fixture</th>
                 <th>Fail Item</th>
                 <th>Date/Time</th>
             </tr>
@@ -250,6 +251,7 @@ function updateTable(data) {
         tbody.innerHTML += `
         <tr>
             <td>${row.testerId}</td>
+            <td>${row.fixtureId}</td>
             <td>${row.failItem}</td>
             <td>${formattedDate}</td>
         </tr>

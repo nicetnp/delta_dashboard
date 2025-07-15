@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from services.failure_atsthree_service import fetch_failure_atsthree
+from services.failure_burnin_service import fetch_failure_burnin
 from schemas.failure_schema import FailureSelectStation, FailureByStation
 from fastapi.encoders import jsonable_encoder
 from db.session import SessionLocal
@@ -14,8 +14,8 @@ UPDATE_INTERVAL_SEC = 5
 CACHE_TTL_SEC = 30
 
 
-@router.websocket("/ws/atsthree")
-async def failure_atsone_ws(websocket: WebSocket):
+@router.websocket("/ws/burnin")
+async def failure_burnin_ws(websocket: WebSocket):
     await websocket.accept()
     print("✅ WebSocket connected")
 
@@ -30,7 +30,7 @@ async def failure_atsone_ws(websocket: WebSocket):
                 namespace="failures",
                 scope="today",
                 line_id=line_id,
-                datatype="atsthree"
+                datatype="burnin"
             )
 
             cached_data = redis_client.get(cache_key)
@@ -41,7 +41,7 @@ async def failure_atsone_ws(websocket: WebSocket):
             else:
                 print(f"🗃️ ดึงจาก DB lineId={line_id} (ATS1)")
                 with SessionLocal() as db:
-                    raw_data = fetch_failure_atsthree(failure_query_data, db)
+                    raw_data = fetch_failure_burnin(failure_query_data, db)
                     serialized_data = [
                         FailureByStation.model_validate(row).model_dump()
                         for row in raw_data

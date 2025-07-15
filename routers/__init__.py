@@ -6,6 +6,12 @@ from .failure_atsone_router import router as failure_atsone_router
 from .failure_atstwo_router import router as failure_atstwo_router
 from .failure_atsthree_router import router as failure_atsthree_router
 from .failure_vflashone_router import router as failure_vflashone_router
+from .failure_vflashtwo_router import router as failure_vflashtwo_router
+from .failure_burnin_router  import router as failure_burnin_router
+from .failure_vibration_router import router as failure_vibration_router
+from .failure_hipotone_router import router as failure_hipotone_router
+from .failure_hipottwo_router  import router as failure_hipottwo_router
+
 
 all_routers = [
     failure_router,
@@ -16,4 +22,9 @@ all_routers = [
     failure_atstwo_router,
     failure_atsthree_router,
     failure_vflashone_router,
+    failure_vflashtwo_router,
+    failure_vibration_router,
+    failure_hipotone_router,
+    failure_hipottwo_router,
+    failure_hipottwo_router
 ]

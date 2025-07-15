@@ -258,23 +258,16 @@ function updateChart(row) {
                     const firstElement = elements[0];
                     const stationClicked = chart.data.labels[firstElement.index];
 
-                    // Determine which detail page to navigate to based on stationClicked
-                    let detailPage = '';
-                    if (stationClicked === 'ATS1') {
-                        detailPage = 'ats1_details';
-                    } else if (stationClicked === 'Hipot1') {
-                        detailPage = 'hipot1-detail'; // Example for another detail page
-                    }
-                    // Add more conditions for other stations as needed
-
-                    if (detailPage) {
+                    if (stationClicked) {
+                        const detailPage = `${stationClicked.toLowerCase()}-detail`;
                         console.log(`Clicked on ${stationClicked} for LineID: ${currentLineId}. Redirecting to ${detailPage}.html`);
                         navigateToPage(detailPage, currentLineId, stationClicked);
                     } else {
-                        console.log(`No specific detail page configured for ${stationClicked}.`);
+                        console.log(`No station name detected.`);
                     }
                 }
             }
+
         }
     });
 }

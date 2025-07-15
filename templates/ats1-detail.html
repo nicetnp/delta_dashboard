@@ -266,14 +266,17 @@ function updateTable(data) {
         return;
     }
     data.forEach(row => {
+        const formattedDate = row.workDate.replace('T', ' ');
         tbody.innerHTML += `
         <tr>
             <td>${row.testerId}</td>
             <td>${row.failItem}</td>
-            <td>${row.workDate}</td>
+            <td>${formattedDate}</td>
         </tr>
         `;
     });
+}
+
 }
 
 // Function to go back to the summary page

@@ -2,7 +2,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from schemas.failure_schema import FailureSelectStation
 
-def fetch_failure_atsone(data:FailureSelectStation,db: Session):
+def fetch_failure_atsthree(data:FailureSelectStation,db: Session):
     query = text("""
         SELECT TesterID AS testerId,
             CASE WHEN CHARINDEX(')', FailItem) > 0 AND CHARINDEX('}', FailItem) > 0 
@@ -13,7 +13,7 @@ def fetch_failure_atsone(data:FailureSelectStation,db: Session):
         WHERE LineID = :lineId
             AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) = CAST(GETDATE() AS DATE)
         GROUP BY TesterID, FailItem, DateTime
-        HAVING COUNT(DISTINCT CASE WHEN Station LIKE '%TS1' THEN TrackingNumber END) > 0
+        HAVING COUNT(DISTINCT CASE WHEN Station LIKE '%TS3' THEN TrackingNumber END) > 0
         ORDER BY workDate ASC;
         """)
 

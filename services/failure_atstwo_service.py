@@ -5,7 +5,9 @@ from schemas.failure_schema import FailureSelectStation
 def fetch_failure_atstwo(data: FailureSelectStation, db: Session):
     query = text("""
         SELECT TesterID AS testerId,
-            SUBSTRING(FailItem, CHARINDEX(')', FailItem) + 1, CHARINDEX('}', FailItem) - CHARINDEX(')', FailItem) - 1) AS failItem,
+            CASE WHEN CHARINDEX(')', FailItem) > 0 AND CHARINDEX('}', FailItem) > 0 
+                 THEN SUBSTRING(FailItem,CHARINDEX(')', FailItem) + 1,
+            CHARINDEX('}', FailItem) - CHARINDEX(')', FailItem) - 1) ELSE NULL END AS failItem,
             CONVERT(VARCHAR, DateTime, 120) AS workDate
         FROM APBM_FailuresPareto
         WHERE LineID = :lineId

@@ -1,4 +1,4 @@
-# delta_dashboard
+# Dashboard
 Backend
 - MSSQL
 - FastAPI

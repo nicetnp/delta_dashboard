@@ -147,7 +147,7 @@ function startWebSocket(lineId) {
 
     currentLineId = lineId;
     // เชื่อมต่อไปยัง WebSocket Endpoint สำหรับ ATS3 details
-    ws = new WebSocket(`ws://localhost:8000/failures/ws/atsone?lineId=${lineId}`);
+    ws = new WebSocket(`ws:////10.216.129.106/failures/ws/atsone?lineId=${lineId}`);
 
     ws.onopen = () => {
         console.log(`✅ WebSocket opened for lineId=${lineId}`);

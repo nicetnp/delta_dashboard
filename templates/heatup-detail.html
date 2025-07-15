@@ -179,7 +179,10 @@ function updateChart(data) {
     });
 
     const sortedTesterIds = Object.entries(testerIdCounts).sort((a, b) => {
-        return b[1] - a[1] || a[0].localeCompare(b[0]);
+        // ดึงเลขจาก testerId เช่น HUP-2 → 2
+        const numA = parseInt(a[0].match(/\d+/)?.[0] || '0', 10);
+        const numB = parseInt(b[0].match(/\d+/)?.[0] || '0', 10);
+        return numA - numB;
     });
 
     const labels = sortedTesterIds.map(([testerId, count]) => testerId);
@@ -192,7 +195,7 @@ function updateChart(data) {
         data: {
             labels: labels,
             datasets: [{
-                label: `Total Failures by TesterID sfor Line ${currentLineId} (Heatup Today)`,
+                label: `Total Failures by TesterID for Line ${currentLineId} (Heatup Today)`,
                 data: values,
                 backgroundColor: 'rgba(0,0,0,0.6)',
                 borderColor: 'rgb(0,0,0)',
@@ -236,6 +239,7 @@ function updateTable(data) {
         tbody.innerHTML = '<tr><td colspan="3">No detailed failure records for this line today.</td></tr>';
         return;
     }
+    data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
     data.forEach(row => {
         const formattedDate = row.workDate.replace('T', ' ');
         tbody.innerHTML += `

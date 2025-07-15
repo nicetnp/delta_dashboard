@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import (failure_router,failure_today_router,failure_today_ws_router,
-                     failure_heatup_router,failure_atsone_router,failure_atstwo_router,failure_atsthree_router)
-
+from routers import all_routers
 from db.config import API_TITLE, API_DESCRIPTION, API_VERSION, ALLOWED_ORIGINS
 
 app = FastAPI(
@@ -19,14 +17,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Register routers
-app.include_router(failure_router.router)
-app.include_router(failure_today_router.router)
-app.include_router(failure_today_ws_router.router)
-app.include_router(failure_heatup_router.router)
-app.include_router(failure_atsone_router.router)
-app.include_router(failure_atstwo_router.router)
-app.include_router(failure_atsthree_router.router)
+for router in all_routers:
+    app.include_router(router)
 
 # ✅Check start api
 @app.get("/", tags=["Health"])

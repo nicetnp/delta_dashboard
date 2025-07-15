@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Factory Failures Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 20px;
+    background-color: #f4f7f6;
+    color: #333;
+}
+h2 {
+    color: #2c3e50;
+    margin-bottom: 25px;
+}
+.container {
+    max-width: 90%;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+label {
+    font-weight: bold;
+    margin-right: 10px;
+    color: #555;
+}
+select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+#chartContainer {
+    width: 80%;
+    margin: 20px auto;
+    position: relative;
+    height: 400px;
+}
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+table {
+    margin: 30px auto;
+    border-collapse: collapse;
+    width: 90%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+th, td {
+    border: 1px solid #e0e0e0;
+    padding: 12px 15px;
+    text-align: center;
+    font-size: 15px;
+}
+th {
+    background-color: #e9ecef;
+    font-weight: bold;
+    color: #333;
+}
+tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+tr:hover {
+    background-color: #e2f4e8;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Factory Failures Summary (Today)</h2>
+
+    <label for="lineIdSelect">Select Line ID:</label>
+    <select id="lineIdSelect">
+        <option value="B3">B3</option>
+        <option value="BMA01">BMA01</option>
+    </select>
+
+    <div id="chartContainer">
+        <canvas id="failuresChart"></canvas>
+    </div>
+
+    <h3>Summary Details</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Work Date</th>
+                <th>VFlash1</th>
+                <th>Hipot1</th>
+                <th>ATS1</th>
+                <th>Heatup</th>
+                <th>Burn-in</th>
+                <th>Hipot2</th>
+                <th>ATS2</th>
+                <th>VFlash2</th>
+                <th>ATS3</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody id="resultTableBody">
+            <tr><td colspan="11">Loading data...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+const lineIdSelect = document.getElementById('lineIdSelect');
+const ctx = document.getElementById('failuresChart').getContext('2d');
+const tbody = document.getElementById('resultTableBody');
+
+let ws = null;
+let chart = null;
+let currentLineId = lineIdSelect.value;
+
+// Centralized function to get query parameters from the URL
+function getQueryParams() {
+    const params = {};
+    window.location.search.substring(1).split('&').forEach(param => {
+        const parts = param.split('=');
+        if (parts.length === 2) {
+            params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
+        }
+    });
+    return params;
+}
+
+// Centralized function for navigating between pages
+function navigateToPage(pageName, lineId, stationName = null) {
+    // Generate a unique timestamp for cache busting
+    const timestamp = new Date().getTime();
+    let url = `${pageName}.html?lineId=${lineId}&_ts=${timestamp}`;
+
+    // Add stationName if provided, for potential future use in detail pages
+    if (stationName) {
+        url += `&station=${stationName}`;
+    }
+
+    window.location.href = url;
+}
+
+// Flexible function to start WebSocket connection
+function startWebSocket(lineId, endpointPath) {
+    if (ws) {
+        ws.close();
+        console.log(`ℹ️ Previous WebSocket (${ws.url}) closed.`);
+    }
+
+    currentLineId = lineId;
+    const timestamp = new Date().getTime(); // Generate new timestamp for each new connection
+
+    // Construct WebSocket URL with cache busting timestamp
+    const wsUrl = `ws://localhost:8000/failures/ws/${endpointPath}?lineId=${lineId}&_ts=${timestamp}`;
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        console.log(`✅ WebSocket opened to ${wsUrl}`);
+        tbody.innerHTML = '<tr><td colspan="11">Waiting for data...</td></tr>';
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log(`Received data from ${wsUrl}:`, data);
+
+        if (!data || data.length === 0) {
+            console.warn(`⚠️ No data received or data is empty for ${endpointPath}.`);
+            tbody.innerHTML = '<tr><td colspan="11">No data available.</td></tr>';
+            if (chart) chart.destroy();
+            chart = null;
+            return;
+        }
+
+        // This page always expects summary data (an array with one object for today)
+        updateChart(data[0]);
+        updateTable(data[0]);
+    };
+
+    ws.onclose = () => {
+        console.log(`❌ WebSocket closed from ${ws.url}`);
+    };
+
+    ws.onerror = (err) => {
+        console.error(`❗ WebSocket error from ${ws.url}:`, err);
+    };
+}
+
+function updateChart(row) {
+    const labels = ["VFlash1", "Hipot1", "ATS1", "Heatup", "Burn-in", "Hipot2", "ATS2", "VFlash2", "ATS3"];
+    const values = [
+        row.vflash1, row.hipot1, row.ats1,
+        row.heatup, row.burnin, row.hipot2,
+        row.ats2, row.vflash2, row.ats3
+    ];
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: `Failures on ${row.workDate}`,
+                data: values,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Failures'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Station'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y;
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            onClick: (event, elements) => {
+                if (elements.length > 0) {
+                    const firstElement = elements[0];
+                    const stationClicked = chart.data.labels[firstElement.index];
+
+                    // Determine which detail page to navigate to based on stationClicked
+                    let detailPage = '';
+                    if (stationClicked === 'ATS1') {
+                        detailPage = 'ats1_details';
+                    } else if (stationClicked === 'Hipot1') {
+                        detailPage = 'hipot1-detail'; // Example for another detail page
+                    }
+                    // Add more conditions for other stations as needed
+
+                    if (detailPage) {
+                        console.log(`Clicked on ${stationClicked} for LineID: ${currentLineId}. Redirecting to ${detailPage}.html`);
+                        navigateToPage(detailPage, currentLineId, stationClicked);
+                    } else {
+                        console.log(`No specific detail page configured for ${stationClicked}.`);
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateTable(row) {
+    tbody.innerHTML = `
+    <tr>
+        <td>${row.workDate}</td>
+        <td>${row.vflash1}</td>
+        <td>${row.hipot1}</td>
+        <td>${row.ats1}</td>
+        <td>${row.heatup}</td>
+        <td>${row.burnin}</td>
+        <td>${row.hipot2}</td>
+        <td>${row.ats2}</td>
+        <td>${row.vflash2}</td>
+        <td>${row.ats3}</td>
+        <td>${row.total}</td>
+    </tr>
+    `;
+}
+
+// Event Listeners
+lineIdSelect.addEventListener('change', () => {
+    startWebSocket(lineIdSelect.value, 'today'); // Always start with 'today' endpoint for summary
+});
+
+// Initial load based on URL parameters or default
+document.addEventListener('DOMContentLoaded', () => {
+    const params = getQueryParams();
+    const initialLineId = params.lineId || lineIdSelect.value;
+
+    lineIdSelect.value = initialLineId; // Set dropdown to match URL parameter
+    startWebSocket(initialLineId, 'today'); // Connect to 'today' endpoint for summary data
+});
+</script>
+
+</body>
+</html>

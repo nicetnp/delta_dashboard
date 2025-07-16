@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Heatup Failures Dashboard by Tester</title>
+<title>Fixture Failures Dashboard by Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-/* คงเดิมเหมือนเดิม */
 body {
     font-family: Arial, sans-serif;
     text-align: center;
@@ -29,6 +28,14 @@ label {
     font-weight: bold;
     margin-right: 10px;
     color: #555;
+}
+select { /* Note: select element is removed from HTML but style remains */
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
 }
 #chartContainer {
     width: 80%;
@@ -88,7 +95,7 @@ tr:hover {
 <body>
 
 <div class="container">
-    <h2 id="pageTitle">Heatup Failure Count by Tester (Today)</h2>
+    <h2 id="pageTitle">Fixture Failure Count by Tester (Today)</h2>
     <div class="line-info">Line ID: <span id="displayLineId"></span></div>
 
     <div id="chartContainer">
@@ -119,8 +126,9 @@ const displayLineIdSpan = document.getElementById('displayLineId');
 
 let ws = null;
 let chart = null;
-let currentLineId = ''; // กำหนดจาก URL
+let currentLineId = ''; // จะถูกกำหนดจาก URL
 
+// Function to get query parameters from the URL
 function getQueryParams() {
     const params = {};
     window.location.search.substring(1).split('&').forEach(param => {
@@ -139,9 +147,8 @@ function startWebSocket(lineId) {
     }
 
     currentLineId = lineId;
-
-    // 🌟 เปลี่ยนเป็น heatup endpoint
-    ws = new WebSocket(`ws://localhost:8000/failures/ws/heatup?lineId=${lineId}`);
+    // เชื่อมต่อไปยัง WebSocket Endpoint สำหรับ Fixture details
+    ws = new WebSocket(`ws://localhost:8000/failures/ws/fixture?lineId=${lineId}`);
 
     ws.onopen = () => {
         console.log(`✅ WebSocket opened for lineId=${lineId}`);
@@ -150,11 +157,11 @@ function startWebSocket(lineId) {
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("Received Heatup detail data:", data);
+        console.log("Received Fixture detail data:", data);
 
         if (!data || data.length === 0) {
-            console.warn("⚠️ No data received or data is empty for Heatup failures today.");
-            tbody.innerHTML = '<tr><td colspan="3">No Heatup failure data available for this line today.</td></tr>';
+            console.warn("⚠️ No data received or data is empty for Fixture failures today.");
+            tbody.innerHTML = '<tr><td colspan="3">No Fixture failure data available for this line today.</td></tr>';
             if (chart) chart.destroy();
             chart = null;
             return;
@@ -173,21 +180,22 @@ function startWebSocket(lineId) {
     };
 }
 
+// อัปเดตกราฟเพื่อแสดงจำนวน Failures ตาม TesterID
 function updateChart(data) {
-    const testerIdCounts = {};
+    const fixtureIdCounts = {};
     data.forEach(item => {
-        testerIdCounts[item.testerId] = (testerIdCounts[item.testerId] || 0) + 1;
+        fixtureIdCounts[item.fixtureId] = (fixtureIdCounts[item.fixtureId] || 0) + 1;
     });
 
-    const sortedTesterIds = Object.entries(testerIdCounts).sort((a, b) => {
+    const sortedFixtureIds = Object.entries(fixtureIdCounts).sort((a, b) => {
         // ดึงเลขจาก testerId เช่น HUP-2 → 2
         const numA = parseInt(a[0].match(/\d+/)?.[0] || '0', 10);
         const numB = parseInt(b[0].match(/\d+/)?.[0] || '0', 10);
         return numA - numB;
     });
 
-    const labels = sortedTesterIds.map(([testerId, count]) => testerId);
-    const values = sortedTesterIds.map(([testerId, count]) => count);
+    const labels = sortedFixtureIds.map(([fixtureId, count]) => fixtureId);
+    const values = sortedFixtureIds.map(([fixtureId, count]) => count);
 
     if (chart) chart.destroy();
 
@@ -254,11 +262,13 @@ function updateTable(data) {
     });
 }
 
-
+// Function to go back to the summary page
 function goBackToSummary() {
+    // กลับไปยังหน้า index.html และส่ง lineId กลับไปด้วย
     window.location.href = `index.html?lineId=${currentLineId}`;
 }
 
+// Initial load when ats-detail.html is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const params = getQueryParams();
     const lineIdFromUrl = params.lineId;
@@ -268,10 +278,10 @@ document.addEventListener('DOMContentLoaded', () => {
         displayLineIdSpan.textContent = currentLineId;
         startWebSocket(currentLineId);
     } else {
-        console.error("❗ Line ID not found in URL.");
+        console.error("❗ Line ID not found in URL. Cannot fetch Fixture details.");
         document.getElementById('pageTitle').textContent = "Error: Line ID Missing";
         displayLineIdSpan.textContent = 'N/A';
-        tbody.innerHTML = '<tr><td colspan="3">Error: Line ID not provided.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3">Error: Line ID not provided. Please go back to the summary page.</td></tr>';
     }
 });
 </script>

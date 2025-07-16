@@ -11,7 +11,7 @@ import json
 router = APIRouter(prefix="/failures", tags=["Failures"])
 
 UPDATE_INTERVAL_SEC = 5
-CACHE_TTL_SEC = 30
+CACHE_TTL_SEC = 45
 
 
 @router.websocket("/ws/atsone")

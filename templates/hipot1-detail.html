@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Vibration Failures Dashboard by Tester</title>
+<title>Hipot1 Failures Dashboard by Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 /* คงเดิมเหมือนเดิม */
@@ -88,7 +88,7 @@ tr:hover {
 <body>
 
 <div class="container">
-    <h2 id="pageTitle">Vibration Failure Count by Tester (Today)</h2>
+    <h2 id="pageTitle">Hipot1 Failure Count by Tester (Today)</h2>
     <div class="line-info">Line ID: <span id="displayLineId"></span></div>
 
     <div id="chartContainer">
@@ -140,8 +140,8 @@ function startWebSocket(lineId) {
 
     currentLineId = lineId;
 
-    // 🌟 เปลี่ยนเป็น Vibration endpoint
-    ws = new WebSocket(`ws://localhost:8000/failures/ws/Vibration?lineId=${lineId}`);
+    // 🌟 เปลี่ยนเป็น Hipot1 endpoint
+    ws = new WebSocket(`ws://localhost:8000/failures/ws/Hipot1?lineId=${lineId}`);
 
     ws.onopen = () => {
         console.log(`✅ WebSocket opened for lineId=${lineId}`);
@@ -150,11 +150,11 @@ function startWebSocket(lineId) {
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("Received Vibration detail data:", data);
+        console.log("Received Hipot1 detail data:", data);
 
         if (!data || data.length === 0) {
-            console.warn("⚠️ No data received or data is empty for Vibration failures today.");
-            tbody.innerHTML = '<tr><td colspan="3">No Vibration failure data available for this line today.</td></tr>';
+            console.warn("⚠️ No data received or data is empty for Hipot1 failures today.");
+            tbody.innerHTML = '<tr><td colspan="3">No Hipot1 failure data available for this line today.</td></tr>';
             if (chart) chart.destroy();
             chart = null;
             return;
@@ -196,7 +196,7 @@ function updateChart(data) {
         data: {
             labels: labels,
             datasets: [{
-                label: `Total Failures by TesterID for Line ${currentLineId} (Vibration Today)`,
+                label: `Total Failures by Tester`,
                 data: values,
                 backgroundColor: 'rgba(0,0,0,0.6)',
                 borderColor: 'rgb(0,0,0)',

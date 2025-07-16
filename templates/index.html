@@ -70,6 +70,22 @@ tr:nth-child(even) {
 tr:hover {
     background-color: #e2f4e8;
 }
+/* New style for the detail button */
+.detail-button {
+    background-color: #28a745; /* Green color */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+    margin-left: 10px; /* Add some space if next to other elements */
+    transition: background-color 0.3s ease;
+}
+.detail-button:hover {
+    background-color: #218838; /* Darker green on hover */
+}
 </style>
 </head>
 <body>
@@ -82,6 +98,8 @@ tr:hover {
         <option value="B3">B3</option>
         <option value="BMA01">BMA01</option>
     </select>
+
+    <button class="detail-button" onclick="navigateToPage('fixture-detail', currentLineId, 'Fixture')">View Fixture Details</button>
 
     <div id="chartContainer">
         <canvas id="failuresChart"></canvas>
@@ -106,7 +124,7 @@ tr:hover {
             </tr>
         </thead>
         <tbody id="resultTableBody">
-            <tr><td colspan="11">Loading data...</td></tr>
+            <tr><td colspan="12">Loading data...</td></tr>
         </tbody>
     </table>
 </div>
@@ -162,7 +180,8 @@ function startWebSocket(lineId, endpointPath) {
 
     ws.onopen = () => {
         console.log(`✅ WebSocket opened to ${wsUrl}`);
-        tbody.innerHTML = '<tr><td colspan="11">Waiting for data...</td></tr>';
+        // Adjusted colspan for the loading message to match the new table header
+        tbody.innerHTML = '<tr><td colspan="12">Waiting for data...</td></tr>';
     };
 
     ws.onmessage = (event) => {
@@ -171,7 +190,7 @@ function startWebSocket(lineId, endpointPath) {
 
         if (!data || data.length === 0) {
             console.warn(`⚠️ No data received or data is empty for ${endpointPath}.`);
-            tbody.innerHTML = '<tr><td colspan="11">No data available.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="12">No data available.</td></tr>'; // Adjusted colspan
             if (chart) chart.destroy();
             chart = null;
             return;
@@ -192,26 +211,42 @@ function startWebSocket(lineId, endpointPath) {
 }
 
 function updateChart(row) {
-    const labels = ["VFlash1", "Hipot1", "ATS1", "Heatup","Vibration", "Burn-in", "Hipot2", "ATS2", "VFlash2", "ATS3"];
+    const labels = ["VFlash1", "Hipot1", "ATS1", "Heatup", "Vibration", "Burn-in", "Hipot2", "ATS2", "VFlash2", "ATS3"];
     const values = [
         row.vflash1, row.hipot1, row.ats1,
-        row.heatup,row.vibration, row.burnin, row.hipot2,
+        row.heatup, row.vibration, row.burnin, row.hipot2,
         row.ats2, row.vflash2, row.ats3
     ];
 
     if (chart) chart.destroy();
 
     chart = new Chart(ctx, {
-        type: 'bar',
         data: {
             labels: labels,
-            datasets: [{
-                label: `Failures on ${row.workDate}`,
-                data: values,
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
+            datasets: [
+                {
+                    type: 'bar',
+                    label: `Failures on ${row.workDate}`,
+                    data: values,
+                    backgroundColor: 'rgb(242,237,215,0.7)',
+                    borderColor: 'rgb(242,237,215)',
+                    borderWidth: 1,
+                    yAxisID: 'y',
+                },
+                {
+                    type: 'line',
+                    label: `Total`,
+                    data: values,
+                    borderColor: 'rgb(117,81,57)',
+                    backgroundColor: 'rgb(117,81,57)',
+                    fill: false,
+                    tension: 0.1,
+                    pointBackgroundColor: 'rgb(117,81,57)',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    yAxisID: 'y',
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -240,38 +275,14 @@ function updateChart(row) {
                     position: 'top',
                 },
                 tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed.y !== null) {
-                                label += context.parsed.y;
-                            }
-                            return label;
-                        }
-                    }
-                }
-            },
-            onClick: (event, elements) => {
-                if (elements.length > 0) {
-                    const firstElement = elements[0];
-                    const stationClicked = chart.data.labels[firstElement.index];
-
-                    if (stationClicked) {
-                        const detailPage = `${stationClicked.toLowerCase()}-detail`;
-                        console.log(`Clicked on ${stationClicked} for LineID: ${currentLineId}. Redirecting to ${detailPage}.html`);
-                        navigateToPage(detailPage, currentLineId, stationClicked);
-                    } else {
-                        console.log(`No station name detected.`);
-                    }
+                    mode: 'index',
+                    intersect: false,
                 }
             }
-
         }
     });
 }
+
 
 function updateTable(row) {
     tbody.innerHTML = `

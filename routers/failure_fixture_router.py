@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from services.failure_atstwo_service import fetch_failure_atstwo
+from services.failure_fixture_service import fetch_failure_fixture
 from schemas.failure_schema import FailureSelectStation, FailureByStation
 from fastapi.encoders import jsonable_encoder
 from db.session import SessionLocal
@@ -14,8 +14,8 @@ UPDATE_INTERVAL_SEC = 5
 CACHE_TTL_SEC = 45
 
 
-@router.websocket("/ws/atstwo")
-async def failure_atstwo_ws(websocket: WebSocket):
+@router.websocket("/ws/fixture")
+async def failure_fixture_ws(websocket: WebSocket):
     await websocket.accept()
     print("✅ WebSocket connected")
 
@@ -30,7 +30,7 @@ async def failure_atstwo_ws(websocket: WebSocket):
                 namespace="failures",
                 scope="today",
                 line_id=line_id,
-                datatype="atstwo"
+                datatype="fixture"
             )
 
             cached_data = redis_client.get(cache_key)
@@ -39,9 +39,9 @@ async def failure_atstwo_ws(websocket: WebSocket):
                 print(f"📦 ใช้ cache: {cache_key}")
                 serialized_data = json.loads(cached_data)
             else:
-                print(f"🗃️ ดึงจาก DB lineId={line_id} (ATS2)")
+                print(f"🗃️ ดึงจาก DB lineId={line_id} (Fixture)")
                 with SessionLocal() as db:
-                    raw_data = fetch_failure_atstwo(failure_query_data, db)
+                    raw_data = fetch_failure_fixture(failure_query_data, db)
                     serialized_data = [
                         FailureByStation.model_validate(row).model_dump()
                         for row in raw_data

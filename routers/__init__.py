@@ -11,7 +11,7 @@ from .failure_burnin_router  import router as failure_burnin_router
 from .failure_vibration_router import router as failure_vibration_router
 from .failure_hipotone_router import router as failure_hipotone_router
 from .failure_hipottwo_router  import router as failure_hipottwo_router
-
+from .failure_fixture_router import  router as failure_fixture_router
 
 all_routers = [
     failure_router,
@@ -26,5 +26,6 @@ all_routers = [
     failure_vibration_router,
     failure_hipotone_router,
     failure_hipottwo_router,
-    failure_hipottwo_router
+    failure_hipottwo_router,
+    failure_fixture_router
 ]

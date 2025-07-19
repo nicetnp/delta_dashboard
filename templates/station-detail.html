@@ -5,7 +5,84 @@
 <title id="pageTitle">Failures Dashboard by Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-/* … (คง style เดิมไว้ทั้งหมด) … */
+/* สไตล์เดิม */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 20px;
+    background-color: #f4f7f6;
+    color: #333;
+}
+h2 {
+    color: #2c3e50;
+    margin-bottom: 25px;
+}
+.container {
+    max-width: 90%;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+label {
+    font-weight: bold;
+    margin-right: 10px;
+    color: #555;
+}
+#chartContainer {
+    width: 80%;
+    margin: 20px auto;
+    position: relative;
+    height: 400px;
+}
+canvas {
+    max-width: 100%;
+    height: auto;
+}
+table {
+    margin: 30px auto;
+    border-collapse: collapse;
+    width: 90%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+th, td {
+    border: 1px solid #e0e0e0;
+    padding: 12px 15px;
+    text-align: center;
+    font-size: 15px;
+}
+th {
+    background-color: #e9ecef;
+    font-weight: bold;
+    color: #333;
+}
+tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+tr:hover {
+    background-color: #e2f4e8;
+}
+.line-info {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #444;
+}
+.back-button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+}
+.back-button:hover {
+    background-color: #0056b3;
+}
 </style>
 </head>
 <body>
@@ -60,7 +137,23 @@ function getQueryParams() {
     return params;
 }
 
-function startWebSocket(lineId, station) {
+function mapStationName(station) {
+    const mapping = {
+        '%LASH': 'VFLASH1',
+        '%IPOT_1': 'HIPOT1',
+        '%TS1': 'ATS1',
+        '%RATION':'VIBRATION',
+        '%TUP': 'HEATUP',
+        '%RN_IN': 'BURNIN',
+        '%IPOT_2': 'HIPOT2',
+        '%TS2': 'ATS2',
+        '%LASH2': 'VFLASH2',
+        '%TS3': 'ATS3'
+    };
+    return mapping[station] || station;
+}
+
+function startWebSocket(lineId, station, displayStationName) {
     if (ws) ws.close();
 
     ws = new WebSocket(`ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}`);
@@ -73,13 +166,13 @@ function startWebSocket(lineId, station) {
         const data = JSON.parse(event.data);
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4">No failure data for ${station} today.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4">No failure data for ${displayStationName} today.</td></tr>`;
             if (chart) chart.destroy();
             chart = null;
             return;
         }
 
-        updateChart(data, station);
+        updateChart(data, displayStationName);
         updateTable(data);
     };
 
@@ -87,7 +180,7 @@ function startWebSocket(lineId, station) {
     ws.onerror = err => console.error("WebSocket error:", err);
 }
 
-function updateChart(data, station) {
+function updateChart(data, displayStationName) {
     const testerIdCounts = {};
     data.forEach(item => {
         testerIdCounts[item.testerId] = (testerIdCounts[item.testerId] || 0) + 1;
@@ -109,7 +202,7 @@ function updateChart(data, station) {
         data: {
             labels,
             datasets: [{
-                label: `Total Failures (${station}) by Tester`,
+                label: `Total Failures (${displayStationName}) by Tester`,
                 data: values,
                 backgroundColor: 'rgba(0,0,0,0.6)',
                 borderColor: 'rgb(0,0,0)',
@@ -161,12 +254,14 @@ document.addEventListener('DOMContentLoaded', () => {
         currentLineId = lineIdFromUrl;
         currentStation = stationFromUrl;
 
-        displayLineIdSpan.textContent = currentLineId;
-        displayStationSpan.textContent = currentStation;
-        pageTitleHeader.textContent = `${currentStation} Failure Count by Tester (Today)`;
-        document.title = `${currentStation} Failures Dashboard`;
+        const displayStationName = mapStationName(currentStation);
 
-        startWebSocket(currentLineId, currentStation);
+        displayLineIdSpan.textContent = currentLineId;
+        displayStationSpan.textContent = displayStationName;
+        pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
+        document.title = `${displayStationName} Failures Dashboard`;
+
+        startWebSocket(currentLineId, currentStation, displayStationName);
     } else {
         pageTitleHeader.textContent = "Error: Missing Line ID or Station";
         tbody.innerHTML = '<tr><td colspan="4">Error: Missing parameters. Please go back to the summary page.</td></tr>';

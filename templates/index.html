@@ -151,18 +151,12 @@ function getQueryParams() {
 }
 
 // Centralized function for navigating between pages
-function navigateToPage(pageName, lineId, stationName = null) {
-    // Generate a unique timestamp for cache busting
+function navigateToPage(pageName, lineId, stationName) {
     const timestamp = new Date().getTime();
-    let url = `${pageName}.html?lineId=${lineId}&_ts=${timestamp}`;
-
-    // Add stationName if provided, for potential future use in detail pages
-    if (stationName) {
-        url += `&station=${stationName}`;
-    }
-
+    const url = `${pageName}.html?lineId=${lineId}&station=${encodeURIComponent(stationName)}&_ts=${timestamp}`;
     window.location.href = url;
 }
+
 
 // Flexible function to start WebSocket connection
 function startWebSocket(lineId, endpointPath) {
@@ -279,17 +273,32 @@ function updateChart(row) {
                     const firstElement = elements[0];
                     const stationClicked = chart.data.labels[firstElement.index];
 
-                    // Determine which detail page to navigate to based on stationClicked
-                    // This logic uses the station name directly to form the page name
                     if (stationClicked) {
-                        const detailPage = `${stationClicked.toLowerCase()}-detail`; // e.g., "ats1-detail"
-                        console.log(`Clicked on ${stationClicked} for LineID: ${currentLineId}. Redirecting to ${detailPage}.html`);
-                        navigateToPage(detailPage, currentLineId, stationClicked);
-                    } else {
-                        console.log(`No station name detected.`);
+                        // map station label → station name สำหรับ query
+                        const stationMap = {
+                            "VFlash1": "%LASH",
+                            "Hipot1": "%IPOT_1",
+                            "ATS1": "%TS1",
+                            "Heatup": "%TUP",
+                            "Vibration": "%RATION",
+                            "Burn-in": "%RN_IN",
+                            "Hipot2": "%IPOT_2",
+                            "ATS2": "%TS2",
+                            "VFlash2": "%LASH2",
+                            "ATS3": "%TS3"
+                        };
+
+                        const stationQueryName = stationMap[stationClicked];
+                        if (stationQueryName) {
+                            console.log(`Clicked on ${stationClicked} (${stationQueryName}) for LineID: ${currentLineId}`);
+                            navigateToPage('station-detail', currentLineId, stationQueryName);
+                        } else {
+                            console.warn(`Station ${stationClicked} not mapped!`);
+                        }
                     }
                 }
             }
+
 
         }
     });

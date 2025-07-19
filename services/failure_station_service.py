@@ -2,7 +2,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from schemas.failure_schema import FailureSelectStation
 
-def fetch_failure_atsthree(data:FailureSelectStation,db: Session):
+def fetch_failure_station(data:FailureSelectStation,db: Session):
     query = text("""
         SELECT TesterID AS testerId,
                FixtureID AS fixtureId,
@@ -13,12 +13,13 @@ def fetch_failure_atsthree(data:FailureSelectStation,db: Session):
         FROM APBM_FailuresPareto
         WHERE LineID = :lineId AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) = CAST(GETDATE() AS DATE)
         GROUP BY TesterID,FixtureID, FailItem, DateTime
-        HAVING COUNT(DISTINCT CASE WHEN Station LIKE '%TS3' THEN TrackingNumber END) > 0
+        HAVING COUNT(DISTINCT CASE WHEN Station LIKE :station THEN TrackingNumber END) > 0
         ORDER BY workDate ASC;
         """)
 
     result = db.execute(query, {
-        "lineId": data.lineId})
+        "lineId": data.lineId,
+        "station": data.station})
 
     rows = [dict(row._mapping) for row in result]
     return [{**row, }for row in rows]

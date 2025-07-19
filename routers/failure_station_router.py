@@ -1,6 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from services.failure_atstwo_service import fetch_failure_atstwo
-from schemas.failure_schema import FailureSelectStation, FailureByStation
+from services.failure_station_service import fetch_failure_station
+from schemas.failure_schema import FailureStation, FailureByStation
 from fastapi.encoders import jsonable_encoder
 from db.session import SessionLocal
 from db.redis_client import r as redis_client
@@ -14,15 +14,16 @@ UPDATE_INTERVAL_SEC = 5
 CACHE_TTL_SEC = 45
 
 
-@router.websocket("/ws/atstwo")
-async def failure_atstwo_ws(websocket: WebSocket):
+@router.websocket("/ws/station")
+async def failure_station_ws(websocket: WebSocket):
     await websocket.accept()
     print("✅ WebSocket connected")
 
     line_id = websocket.query_params.get("lineId", "B3")
-    print(f"ℹ️ lineId: {line_id}")
+    station_name = websocket.query_params.get("station", "HEATUP").upper()
+    print(f"ℹ️ lineId: {line_id}, station: {station_name}")
 
-    failure_query_data = FailureSelectStation(lineId=line_id)
+    failure_query_data = FailureStation(lineId=line_id,station=station_name)
 
     try:
         while True:
@@ -30,7 +31,7 @@ async def failure_atstwo_ws(websocket: WebSocket):
                 namespace="failures",
                 scope="today",
                 line_id=line_id,
-                datatype="atstwo"
+                datatype=station_name.lower()
             )
 
             cached_data = redis_client.get(cache_key)
@@ -39,9 +40,9 @@ async def failure_atstwo_ws(websocket: WebSocket):
                 print(f"📦 ใช้ cache: {cache_key}")
                 serialized_data = json.loads(cached_data)
             else:
-                print(f"🗃️ ดึงจาก DB lineId={line_id} (ATS2)")
+                print(f"🗃️ ดึงจาก DB lineId={line_id} (ATS1)")
                 with SessionLocal() as db:
-                    raw_data = fetch_failure_atstwo(failure_query_data, db)
+                    raw_data = fetch_failure_station(failure_query_data, db)
                     serialized_data = [
                         FailureByStation.model_validate(row).model_dump()
                         for row in raw_data

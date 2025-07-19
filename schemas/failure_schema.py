@@ -28,3 +28,7 @@ class FailureByStation(BaseModel):
     fixtureId: str
     failItem: str
     workDate: datetime
+
+class FailureStation(BaseModel):
+    lineId: str
+    station: str

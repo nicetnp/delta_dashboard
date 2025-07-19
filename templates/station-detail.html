@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Heatup Failures Dashboard by Tester</title>
+<title id="pageTitle">Failures Dashboard by Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-/* คงเดิมเหมือนเดิม */
+/* สไตล์เดิม */
 body {
     font-family: Arial, sans-serif;
     text-align: center;
@@ -88,8 +88,10 @@ tr:hover {
 <body>
 
 <div class="container">
-    <h2 id="pageTitle">Heatup Failure Count by Tester (Today)</h2>
-    <div class="line-info">Line ID: <span id="displayLineId"></span></div>
+    <h2 id="pageTitleHeader">Failure Count by Tester (Today)</h2>
+    <div class="line-info">
+        Line ID: <span id="displayLineId"></span> | Station: <span id="displayStation"></span>
+    </div>
 
     <div id="chartContainer">
         <canvas id="failuresChart"></canvas>
@@ -106,7 +108,7 @@ tr:hover {
             </tr>
         </thead>
         <tbody id="resultTableBody">
-            <tr><td colspan="3">Loading data...</td></tr>
+            <tr><td colspan="4">Loading data...</td></tr>
         </tbody>
     </table>
     <button class="back-button" onclick="goBackToSummary()">Back to Summary</button>
@@ -116,10 +118,13 @@ tr:hover {
 const ctx = document.getElementById('failuresChart').getContext('2d');
 const tbody = document.getElementById('resultTableBody');
 const displayLineIdSpan = document.getElementById('displayLineId');
+const displayStationSpan = document.getElementById('displayStation');
+const pageTitleHeader = document.getElementById('pageTitleHeader');
 
 let ws = null;
 let chart = null;
-let currentLineId = ''; // กำหนดจาก URL
+let currentLineId = '';
+let currentStation = '';
 
 function getQueryParams() {
     const params = {};
@@ -132,71 +137,72 @@ function getQueryParams() {
     return params;
 }
 
-function startWebSocket(lineId) {
-    if (ws) {
-        ws.close();
-        console.log("ℹ️ Previous WebSocket closed.");
-    }
+function mapStationName(station) {
+    const mapping = {
+        '%LASH': 'VFLASH1',
+        '%IPOT_1': 'HIPOT1',
+        '%TS1': 'ATS1',
+        '%RATION':'VIBRATION',
+        '%TUP': 'HEATUP',
+        '%RN_IN': 'BURNIN',
+        '%IPOT_2': 'HIPOT2',
+        '%TS2': 'ATS2',
+        '%LASH2': 'VFLASH2',
+        '%TS3': 'ATS3'
+    };
+    return mapping[station] || station;
+}
 
-    currentLineId = lineId;
+function startWebSocket(lineId, station, displayStationName) {
+    if (ws) ws.close();
 
-    // 🌟 เปลี่ยนเป็น heatup endpoint
-    ws = new WebSocket(`ws://localhost:8000/failures/ws/heatup?lineId=${lineId}`);
+    ws = new WebSocket(`ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}`);
 
     ws.onopen = () => {
-        console.log(`✅ WebSocket opened for lineId=${lineId}`);
-        tbody.innerHTML = '<tr><td colspan="3">Waiting for data...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4">Waiting for data...</td></tr>';
     };
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("Received Heatup detail data:", data);
 
         if (!data || data.length === 0) {
-            console.warn("⚠️ No data received or data is empty for Heatup failures today.");
-            tbody.innerHTML = '<tr><td colspan="3">No Heatup failure data available for this line today.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="4">No failure data for ${displayStationName} today.</td></tr>`;
             if (chart) chart.destroy();
             chart = null;
             return;
         }
 
-        updateChart(data);
+        updateChart(data, displayStationName);
         updateTable(data);
     };
 
-    ws.onclose = () => {
-        console.log("❌ WebSocket closed");
-    };
-
-    ws.onerror = (err) => {
-        console.error("❗ WebSocket error:", err);
-    };
+    ws.onclose = () => console.log("WebSocket closed");
+    ws.onerror = err => console.error("WebSocket error:", err);
 }
 
-function updateChart(data) {
+function updateChart(data, displayStationName) {
     const testerIdCounts = {};
     data.forEach(item => {
         testerIdCounts[item.testerId] = (testerIdCounts[item.testerId] || 0) + 1;
     });
 
     const sortedTesterIds = Object.entries(testerIdCounts).sort((a, b) => {
-        // ดึงเลขจาก testerId เช่น HUP-2 → 2
         const numA = parseInt(a[0].match(/\d+/)?.[0] || '0', 10);
         const numB = parseInt(b[0].match(/\d+/)?.[0] || '0', 10);
         return numA - numB;
     });
 
-    const labels = sortedTesterIds.map(([testerId, count]) => testerId);
-    const values = sortedTesterIds.map(([testerId, count]) => count);
+    const labels = sortedTesterIds.map(([testerId]) => testerId);
+    const values = sortedTesterIds.map(([, count]) => count);
 
     if (chart) chart.destroy();
 
     chart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels,
             datasets: [{
-                label: `Total Failures by Tester`,
+                label: `Total Failures (${displayStationName}) by Tester`,
                 data: values,
                 backgroundColor: 'rgba(0,0,0,0.6)',
                 borderColor: 'rgb(0,0,0)',
@@ -209,25 +215,11 @@ function updateChart(data) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Number of Failures'
-                    },
-                    ticks: {
-                        stepSize: 1
-                    }
+                    title: { display: true, text: 'Number of Failures' },
+                    ticks: { stepSize: 1 }
                 },
                 x: {
-                    title: {
-                        display: true,
-                        text: 'Tester ID'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
+                    title: { display: true, text: 'Tester ID' }
                 }
             }
         }
@@ -236,10 +228,6 @@ function updateChart(data) {
 
 function updateTable(data) {
     tbody.innerHTML = '';
-    if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3">No detailed failure records for this line today.</td></tr>';
-        return;
-    }
     data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
     data.forEach(row => {
         const formattedDate = row.workDate.replace('T', ' ');
@@ -249,11 +237,9 @@ function updateTable(data) {
             <td>${row.fixtureId}</td>
             <td>${row.failItem}</td>
             <td>${formattedDate}</td>
-        </tr>
-        `;
+        </tr>`;
     });
 }
-
 
 function goBackToSummary() {
     window.location.href = `index.html?lineId=${currentLineId}`;
@@ -262,16 +248,23 @@ function goBackToSummary() {
 document.addEventListener('DOMContentLoaded', () => {
     const params = getQueryParams();
     const lineIdFromUrl = params.lineId;
+    const stationFromUrl = params.station;
 
-    if (lineIdFromUrl) {
+    if (lineIdFromUrl && stationFromUrl) {
         currentLineId = lineIdFromUrl;
+        currentStation = stationFromUrl;
+
+        const displayStationName = mapStationName(currentStation);
+
         displayLineIdSpan.textContent = currentLineId;
-        startWebSocket(currentLineId);
+        displayStationSpan.textContent = displayStationName;
+        pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
+        document.title = `${displayStationName} Failures Dashboard`;
+
+        startWebSocket(currentLineId, currentStation, displayStationName);
     } else {
-        console.error("❗ Line ID not found in URL.");
-        document.getElementById('pageTitle').textContent = "Error: Line ID Missing";
-        displayLineIdSpan.textContent = 'N/A';
-        tbody.innerHTML = '<tr><td colspan="3">Error: Line ID not provided.</td></tr>';
+        pageTitleHeader.textContent = "Error: Missing Line ID or Station";
+        tbody.innerHTML = '<tr><td colspan="4">Error: Missing parameters. Please go back to the summary page.</td></tr>';
     }
 });
 </script>

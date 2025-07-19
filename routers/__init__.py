@@ -13,7 +13,7 @@ from .failure_hipotone_router import router as failure_hipotone_router
 from .failure_hipottwo_router  import router as failure_hipottwo_router
 from .failure_fixture_router import  router as failure_fixture_router
 from .failure_filter_router import  router as failure_filter_router
-
+from .failure_station_router import router as failure_station_router
 all_routers = [
     failure_router,
     # failure_today_router,
@@ -29,5 +29,6 @@ all_routers = [
     failure_hipottwo_router,
     failure_hipottwo_router,
     failure_fixture_router,
-    failure_filter_router
+    failure_filter_router,
+    failure_station_router,
 ]

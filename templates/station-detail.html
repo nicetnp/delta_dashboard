@@ -71,6 +71,7 @@ function startWebSocket(lineId, station) {
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
+
         if (!data || data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4">No failure data for ${station} today.</td></tr>`;
             if (chart) chart.destroy();
@@ -143,8 +144,7 @@ function updateTable(data) {
             <td>${row.fixtureId}</td>
             <td>${row.failItem}</td>
             <td>${formattedDate}</td>
-        </tr>
-        `;
+        </tr>`;
     });
 }
 

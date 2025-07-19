@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BMW Failures Filter Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f7f6;
+    text-align: center;
+    padding: 20px;
+}
+.container {
+    max-width: 90%;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+}
+label {
+    margin-right: 5px;
+}
+select, input[type="date"] {
+    margin-right: 15px;
+    padding: 5px 10px;
+}
+#chartContainer {
+    width: 80%;
+    margin: 20px auto;
+    height: 400px;
+}
+table {
+    margin: 20px auto;
+    width: 90%;
+    border-collapse: collapse;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+th {
+    background: #eee;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>BMW Failures Summary (Filter)</h2>
+
+    <label>Line ID:</label>
+    <select id="lineIdSelect">
+        <option value="BMA01">BMA01</option>
+        <option value="B3">B3</option>
+    </select>
+
+    <label>Start Date:</label>
+    <input type="date" id="startDate">
+
+    <label>End Date:</label>
+    <input type="date" id="endDate">
+
+    <button onclick="reloadData()">Load Data</button>
+
+    <div id="chartContainer">
+        <canvas id="failuresChart"></canvas>
+    </div>
+
+    <h3>Summary Table</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Work Date</th>
+                <th>VFlash1</th>
+                <th>Hipot1</th>
+                <th>ATS1</th>
+                <th>Heatup</th>
+                <th>Vibration</th>
+                <th>Burn-in</th>
+                <th>Hipot2</th>
+                <th>ATS2</th>
+                <th>VFlash2</th>
+                <th>ATS3</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <tr><td colspan="12">No data loaded</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+const ctx = document.getElementById('failuresChart').getContext('2d');
+const tableBody = document.getElementById('tableBody');
+const lineIdSelect = document.getElementById('lineIdSelect');
+const startDateInput = document.getElementById('startDate');
+const endDateInput = document.getElementById('endDate');
+
+let ws = null;
+let chart = null;
+
+function reloadData() {
+    if (ws) ws.close();
+
+    const lineId = lineIdSelect.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+
+    const ts = Date.now();
+    let wsUrl = `ws://localhost:8000/failures/ws/filter?lineId=${lineId}&_ts=${ts}`;
+    if (startDate) wsUrl += `&startDate=${startDate}`;
+    if (endDate) wsUrl += `&endDate=${endDate}`;
+
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        tableBody.innerHTML = `<tr><td colspan="12">Loading...</td></tr>`;
+    };
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (!data || data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="12">No data available</td></tr>`;
+            if (chart) chart.destroy();
+            return;
+        }
+        renderChart(data);
+        renderTable(data);
+    };
+
+    ws.onclose = () => console.log("WebSocket closed.");
+    ws.onerror = err => console.error("WebSocket error", err);
+}
+
+function renderChart(data) {
+    const dates = data.map(row => row.workDate);
+
+    const stations = [
+        "vflash1", "hipot1", "ats1", "heatup", "vibration",
+        "burnin", "hipot2", "ats2", "vflash2", "ats3"
+    ];
+
+    const stationLabels = [
+        "VFlash1", "Hipot1", "ATS1", "Heatup", "Vibration",
+        "Burn-in", "Hipot2", "ATS2", "VFlash2", "ATS3"
+    ];
+
+    const datasets = stations.map((stationKey, idx) => ({
+        label: stationLabels[idx],
+        data: data.map(row => row[stationKey]),
+        backgroundColor: `hsla(${idx * 36}, 70%, 60%, 0.6)`,
+        borderColor: `hsl(${idx * 36}, 70%, 40%)`,
+        borderWidth: 1
+    }));
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { stacked: true },
+                y: { beginAtZero: true, stacked: true }
+            }
+        }
+    });
+}
+
+function renderTable(data) {
+    tableBody.innerHTML = "";
+    data.forEach(row => {
+        tableBody.innerHTML += `
+        <tr>
+            <td>${row.workDate}</td>
+            <td>${row.vflash1}</td>
+            <td>${row.hipot1}</td>
+            <td>${row.ats1}</td>
+            <td>${row.heatup}</td>
+            <td>${row.vibration}</td>
+            <td>${row.burnin}</td>
+            <td>${row.hipot2}</td>
+            <td>${row.ats2}</td>
+            <td>${row.vflash2}</td>
+            <td>${row.ats3}</td>
+            <td>${row.total}</td>
+        </tr>
+        `;
+    });
+}
+
+
+// default load today
+document.addEventListener("DOMContentLoaded", () => {
+    const today = new Date().toISOString().split('T')[0];
+    startDateInput.value = today;
+    endDateInput.value = today;
+    reloadData();
+
+    lineIdSelect.addEventListener('change', reloadData);
+    startDateInput.addEventListener('change', reloadData);
+    endDateInput.addEventListener('change', reloadData);
+});
+</script>
+
+</body>
+</html>

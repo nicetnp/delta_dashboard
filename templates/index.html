@@ -95,8 +95,8 @@ tr:hover {
 
     <label for="lineIdSelect">Select Line ID:</label>
     <select id="lineIdSelect">
-        <option value="B3">B3</option>
         <option value="BMA01">BMA01</option>
+        <option value="B3">B3</option>
     </select>
 
     <button class="detail-button" onclick="navigateToPage('fixture-detail', currentLineId, 'Fixture')">View Fixture Details</button>
@@ -211,42 +211,27 @@ function startWebSocket(lineId, endpointPath) {
 }
 
 function updateChart(row) {
+    // Labels for the summary chart, including "Vibration"
     const labels = ["VFlash1", "Hipot1", "ATS1", "Heatup", "Vibration", "Burn-in", "Hipot2", "ATS2", "VFlash2", "ATS3"];
     const values = [
         row.vflash1, row.hipot1, row.ats1,
-        row.heatup, row.vibration, row.burnin, row.hipot2,
+        row.heatup, row.vibration, row.burnin, row.hipot2, // Ensure row.vibration exists in your backend data
         row.ats2, row.vflash2, row.ats3
     ];
 
     if (chart) chart.destroy();
 
     chart = new Chart(ctx, {
+        type: 'bar',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    type: 'bar',
-                    label: `Failures on ${row.workDate}`,
-                    data: values,
-                    backgroundColor: 'rgb(242,237,215,0.7)',
-                    borderColor: 'rgb(242,237,215)',
-                    borderWidth: 1,
-                    yAxisID: 'y',
-                },
-                {
-                    type: 'line',
-                    label: `Total`,
-                    data: values,
-                    borderColor: 'rgb(117,81,57)',
-                    backgroundColor: 'rgb(117,81,57)',
-                    fill: false,
-                    tension: 0.1,
-                    pointBackgroundColor: 'rgb(117,81,57)',
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    yAxisID: 'y',
-                }
-            ]
+            datasets: [{
+                label: `Failures on ${row.workDate}`,
+                data: values,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
         },
         options: {
             responsive: true,
@@ -275,14 +260,40 @@ function updateChart(row) {
                     position: 'top',
                 },
                 tooltip: {
-                    mode: 'index',
-                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y;
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            onClick: (event, elements) => {
+                if (elements.length > 0) {
+                    const firstElement = elements[0];
+                    const stationClicked = chart.data.labels[firstElement.index];
+
+                    // Determine which detail page to navigate to based on stationClicked
+                    // This logic uses the station name directly to form the page name
+                    if (stationClicked) {
+                        const detailPage = `${stationClicked.toLowerCase()}-detail`; // e.g., "ats1-detail"
+                        console.log(`Clicked on ${stationClicked} for LineID: ${currentLineId}. Redirecting to ${detailPage}.html`);
+                        navigateToPage(detailPage, currentLineId, stationClicked);
+                    } else {
+                        console.log(`No station name detected.`);
+                    }
                 }
             }
+
         }
     });
 }
-
 
 function updateTable(row) {
     tbody.innerHTML = `

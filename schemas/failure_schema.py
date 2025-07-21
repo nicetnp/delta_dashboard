@@ -9,7 +9,8 @@ class FailureStationQuery(BaseModel):
 
 class FailureSelectStation(BaseModel):
     lineId: str
-    workDate: Optional[str] = None
+    startDate: Optional[date] = None
+    endDate: Optional[date] = None
 
 class FailureByDay(BaseModel):
     workDate: date
@@ -35,3 +36,14 @@ class FailureStation(BaseModel):
     lineId: str
     station: str
     workDate: Optional[str] = None
+
+class FailureFixture(BaseModel):
+    lineId: str
+    startDate: date
+    endDate: date
+
+class FailureByFixture(BaseModel):
+    testerId: str
+    fixtureId: str
+    failItem: Optional[str] = None
+    workDate: datetime

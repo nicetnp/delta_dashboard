@@ -1,9 +1,10 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from utils.failure_helpers import calculate_total
-from schemas.failure_schema import FailureSelectStation
+from schemas.failure_schema import FailureStationQuery
 
-def fetch_failures_filter(data: FailureSelectStation, db: Session):
+
+def fetch_failures_filter(data: FailureStationQuery, db: Session):
     query = text("""
             SELECT
                     CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) AS workDate,

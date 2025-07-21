@@ -1,8 +1,9 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from schemas.failure_schema import FailureSelectStation
+from schemas.failure_schema import FailureFixture
 
-def fetch_failure_fixture(data:FailureSelectStation,db: Session):
+
+def fetch_failure_fixture(data:FailureFixture,db: Session):
     query = text("""
         SELECT TesterID AS testerId,
                FixtureID AS fixtureId,

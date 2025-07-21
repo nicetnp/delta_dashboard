@@ -262,21 +262,31 @@ function renderTable(data) {
         tableBody.innerHTML += `
             <tr>
                 <td>${workDate}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['VFlash1']}', '${workDate}')">${row.vflash1}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Hipot1']}', '${workDate}')">${row.hipot1}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['ATS1']}', '${workDate}')">${row.ats1}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Heatup']}', '${workDate}')">${row.heatup}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Vibration']}', '${workDate}')">${row.vibration}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Burn-in']}', '${workDate}')">${row.burnin}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Hipot2']}', '${workDate}')">${row.hipot2}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['ATS2']}', '${workDate}')">${row.ats2}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['VFlash2']}', '${workDate}')">${row.vflash2}</td>
-                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['ATS3']}', '${workDate}')">${row.ats3}</td>
+                ${renderCell(row.vflash1, 'VFlash1', workDate)}
+                ${renderCell(row.hipot1, 'Hipot1', workDate)}
+                ${renderCell(row.ats1, 'ATS1', workDate)}
+                ${renderCell(row.heatup, 'Heatup', workDate)}
+                ${renderCell(row.vibration, 'Vibration', workDate)}
+                ${renderCell(row.burnin, 'Burn-in', workDate)}
+                ${renderCell(row.hipot2, 'Hipot2', workDate)}
+                ${renderCell(row.ats2, 'ATS2', workDate)}
+                ${renderCell(row.vflash2, 'VFlash2', workDate)}
+                ${renderCell(row.ats3, 'ATS3', workDate)}
                 <td>${row.total}</td>
             </tr>
         `;
     });
 }
+
+// helper function
+function renderCell(value, stationKey, workDate) {
+    if (value > 0) {
+        return `<td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap[stationKey]}', '${workDate}')">${value}</td>`;
+    } else {
+        return `<td>${value}</td>`;
+    }
+}
+
 
 document.addEventListener("DOMContentLoaded", () => {
     restoreState();

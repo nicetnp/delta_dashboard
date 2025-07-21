@@ -29,14 +29,6 @@ label {
     margin-right: 10px;
     color: #555;
 }
-select { /* Note: select element is removed from HTML but style remains */
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
-    margin-bottom: 20px;
-    cursor: pointer;
-}
 #chartContainer {
     width: 80%;
     margin: 20px auto;
@@ -70,12 +62,6 @@ tr:nth-child(even) {
 tr:hover {
     background-color: #e2f4e8;
 }
-.line-info {
-    font-size: 1.2em;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #444;
-}
 .back-button {
     background-color: #007bff;
     color: white;
@@ -95,7 +81,7 @@ tr:hover {
 <body>
 
 <div class="container">
-    <h2 id="pageTitle">Fixture Failure Count by Tester (Today)</h2>
+    <h2 id="pageTitle">Fixture Failure Count by Tester</h2>
     <div class="line-info">Line ID: <span id="displayLineId"></span></div>
 
     <div id="chartContainer">
@@ -113,7 +99,7 @@ tr:hover {
             </tr>
         </thead>
         <tbody id="resultTableBody">
-            <tr><td colspan="3">Loading data...</td></tr>
+            <tr><td colspan="4">Loading data...</td></tr>
         </tbody>
     </table>
     <button class="back-button" onclick="goBackToSummary()">Back to Summary</button>
@@ -126,9 +112,9 @@ const displayLineIdSpan = document.getElementById('displayLineId');
 
 let ws = null;
 let chart = null;
-let currentLineId = ''; // จะถูกกำหนดจาก URL
+let currentLineId = '';
 
-// Function to get query parameters from the URL
+// อ่าน query params จาก URL
 function getQueryParams() {
     const params = {};
     window.location.search.substring(1).split('&').forEach(param => {
@@ -140,28 +126,26 @@ function getQueryParams() {
     return params;
 }
 
-function startWebSocket(lineId) {
-    if (ws) {
-        ws.close();
-        console.log("ℹ️ Previous WebSocket closed.");
-    }
+function startWebSocket(lineId, startDate, endDate) {
+    if (ws) ws.close();
 
     currentLineId = lineId;
-    // เชื่อมต่อไปยัง WebSocket Endpoint สำหรับ Fixture details
-    ws = new WebSocket(`ws://localhost:8000/failures/ws/fixture?lineId=${lineId}`);
+
+    let wsUrl = `ws://localhost:8000/failures/ws/fixture?lineId=${lineId}`;
+    if (startDate) wsUrl += `&startDate=${startDate}`;
+    if (endDate) wsUrl += `&endDate=${endDate}`;
+
+    ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
         console.log(`✅ WebSocket opened for lineId=${lineId}`);
-        tbody.innerHTML = '<tr><td colspan="3">Waiting for data...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4">Waiting for data...</td></tr>';
     };
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("Received Fixture detail data:", data);
-
         if (!data || data.length === 0) {
-            console.warn("⚠️ No data received or data is empty for Fixture failures today.");
-            tbody.innerHTML = '<tr><td colspan="3">No Fixture failure data available for this line today.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4">No Fixture failure data available for this line in selected range.</td></tr>';
             if (chart) chart.destroy();
             chart = null;
             return;
@@ -180,34 +164,38 @@ function startWebSocket(lineId) {
     };
 }
 
-// อัปเดตกราฟเพื่อแสดงจำนวน Failures ตาม TesterID
 function updateChart(data) {
     const fixtureIdCounts = {};
     data.forEach(item => {
+        // ข้าม onstation ไม่เอาไปนับในกราฟ
+        if (item.fixtureId.toLowerCase() === 'onstation') {
+            return;
+        }
         fixtureIdCounts[item.fixtureId] = (fixtureIdCounts[item.fixtureId] || 0) + 1;
     });
 
-    const sortedFixtureIds = Object.entries(fixtureIdCounts).sort((a, b) => {
-        // ดึงเลขจาก testerId เช่น HUP-2 → 2
-        const numA = parseInt(a[0].match(/\d+/)?.[0] || '0', 10);
-        const numB = parseInt(b[0].match(/\d+/)?.[0] || '0', 10);
-        return numA - numB;
-    });
+    const sortedFixtureIds = Object.entries(fixtureIdCounts).sort((a, b) => a[0].localeCompare(b[0]));
 
-    const labels = sortedFixtureIds.map(([fixtureId, count]) => fixtureId);
-    const values = sortedFixtureIds.map(([fixtureId, count]) => count);
+    const labels = sortedFixtureIds.map(([fixtureId]) => fixtureId);
+    const values = sortedFixtureIds.map(([_, count]) => count);
 
     if (chart) chart.destroy();
+
+    if (labels.length === 0) {
+        console.warn("⚠️ No data for chart (all onstation?)");
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        return;
+    }
 
     chart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: `Total Failures by Tester`,
+                label: `Total Failures by Fixture`,
                 data: values,
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                borderColor: 'rgb(0,0,0)',
+                backgroundColor: 'rgb(178,174,174)',
+                borderColor: 'rgb(178,174,174)',
                 borderWidth: 1
             }]
         },
@@ -228,7 +216,7 @@ function updateChart(data) {
                 x: {
                     title: {
                         display: true,
-                        text: 'Tester ID'
+                        text: 'Fixture ID'
                     }
                 }
             },
@@ -242,12 +230,9 @@ function updateChart(data) {
     });
 }
 
+
 function updateTable(data) {
     tbody.innerHTML = '';
-    if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3">No detailed failure records for this line today.</td></tr>';
-        return;
-    }
     data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
     data.forEach(row => {
         const formattedDate = row.workDate.replace('T', ' ');
@@ -255,33 +240,31 @@ function updateTable(data) {
         <tr>
             <td>${row.testerId}</td>
             <td>${row.fixtureId}</td>
-            <td>${row.failItem}</td>
+            <td>${row.failItem || '-'}</td>
             <td>${formattedDate}</td>
-        </tr>
-        `;
+        </tr>`;
     });
 }
 
-// Function to go back to the summary page
 function goBackToSummary() {
-    // กลับไปยังหน้า index.html และส่ง lineId กลับไปด้วย
     window.location.href = `index.html?lineId=${currentLineId}`;
 }
 
-// Initial load when ats-detail.html is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const params = getQueryParams();
     const lineIdFromUrl = params.lineId;
 
+    const savedStartDate = sessionStorage.getItem("startDate");
+    const savedEndDate = sessionStorage.getItem("endDate");
+
     if (lineIdFromUrl) {
         currentLineId = lineIdFromUrl;
         displayLineIdSpan.textContent = currentLineId;
-        startWebSocket(currentLineId);
+
+        startWebSocket(currentLineId, savedStartDate, savedEndDate);
     } else {
-        console.error("❗ Line ID not found in URL. Cannot fetch Fixture details.");
         document.getElementById('pageTitle').textContent = "Error: Line ID Missing";
-        displayLineIdSpan.textContent = 'N/A';
-        tbody.innerHTML = '<tr><td colspan="3">Error: Line ID not provided. Please go back to the summary page.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4">Error: Line ID not provided. Please go back.</td></tr>';
     }
 });
 </script>

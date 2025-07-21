@@ -1,6 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from services.failure_fixture_service import fetch_failure_fixture
-from schemas.failure_schema import FailureStationQuery, FailureByStation
+from schemas.failure_schema import FailureFixture, FailureByFixture
 from fastapi.encoders import jsonable_encoder
 from db.session import SessionLocal
 from db.redis_client import r as redis_client
@@ -27,7 +27,7 @@ async def failure_fixture_ws(websocket: WebSocket):
     end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else datetime.today().date()
     print(f"ℹ️ lineId: {line_id}, startDate: {start_date}, endDate: {end_date}")
 
-    failure_query_data = FailureStationQuery(
+    failure_query_data = FailureFixture(
         lineId=line_id,
         startDate=start_date,
         endDate=end_date
@@ -52,7 +52,7 @@ async def failure_fixture_ws(websocket: WebSocket):
                 with SessionLocal() as db:
                     raw_data = fetch_failure_fixture(failure_query_data, db)
                     serialized_data = [
-                        FailureByStation.model_validate(row).model_dump()
+                        FailureByFixture.model_validate(row).model_dump()
                         for row in raw_data
                     ]
                 redis_safe_data = jsonable_encoder(serialized_data)

@@ -11,14 +11,16 @@ def fetch_failure_fixture(data:FailureSelectStation,db: Session):
                     CHARINDEX('}', FailItem) - CHARINDEX(')', FailItem) - 1) ELSE NULL END AS failItem,
                     CONVERT(VARCHAR, DateTime, 120) AS workDate
         FROM APBM_FailuresPareto
-        WHERE LineID = :lineId AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) = CAST(GETDATE() AS DATE)
+        WHERE LineID = :lineId AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) BETWEEN :startDate AND :endDate
         GROUP BY TesterID,FixtureID, FailItem, DateTime
         HAVING COUNT(DISTINCT TrackingNumber) > 0
         ORDER BY workDate ASC;
         """)
 
     result = db.execute(query, {
-        "lineId": data.lineId})
+        "lineId": data.lineId,
+        "startDate": data.startDate,
+        "endDate": data.endDate})
 
     rows = [dict(row._mapping) for row in result]
     return [{**row, }for row in rows]

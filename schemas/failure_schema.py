@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import date,datetime
+from typing import Optional
 
 class FailureStationQuery(BaseModel):
     lineId: str
@@ -8,6 +9,7 @@ class FailureStationQuery(BaseModel):
 
 class FailureSelectStation(BaseModel):
     lineId: str
+    workDate: Optional[str] = None
 
 class FailureByDay(BaseModel):
     workDate: date
@@ -26,9 +28,10 @@ class FailureByDay(BaseModel):
 class FailureByStation(BaseModel):
     testerId: str
     fixtureId: str
-    failItem: str
+    failItem: Optional[str] = None
     workDate: datetime
 
 class FailureStation(BaseModel):
     lineId: str
     station: str
+    workDate: Optional[str] = None

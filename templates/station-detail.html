@@ -5,7 +5,7 @@
 <title id="pageTitle">Failures Dashboard by Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-/* สไตล์เดิม */
+/* เหมือนเดิม… (ไม่แก้ style) */
 body {
     font-family: Arial, sans-serif;
     text-align: center;
@@ -88,9 +88,11 @@ tr:hover {
 <body>
 
 <div class="container">
-    <h2 id="pageTitleHeader">Failure Count by Tester (Today)</h2>
+    <h2 id="pageTitleHeader">Failure Count by Tester</h2>
     <div class="line-info">
-        Line ID: <span id="displayLineId"></span> | Station: <span id="displayStation"></span>
+        Line ID: <span id="displayLineId"></span> |
+        Station: <span id="displayStation"></span> |
+        Date: <span id="displayWorkDate"></span>
     </div>
 
     <div id="chartContainer">
@@ -115,16 +117,31 @@ tr:hover {
 </div>
 
 <script>
+const stationColors = {
+    'VFLASH1': '#e74c3c',    // แดง
+    'HIPOT1': '#d4a15e',     // น้ำตาล
+    'ATS1': '#c8d96f',       // เขียวอ่อน
+    'HEATUP': '#27ae60',     // เขียว
+    'VIBRATION': '#2ecc71',  // เขียวเข้ม
+    'BURNIN': '#1abc9c',     // ฟ้า
+    'HIPOT2': '#3498db',     // น้ำเงิน
+    'ATS2': '#9b59b6',       // ม่วง
+    'VFLASH2': '#bb8fce',    // ม่วงอ่อน
+    'ATS3': '#e67ea1'        // ชมพู
+};
+
 const ctx = document.getElementById('failuresChart').getContext('2d');
 const tbody = document.getElementById('resultTableBody');
 const displayLineIdSpan = document.getElementById('displayLineId');
 const displayStationSpan = document.getElementById('displayStation');
+const displayWorkDateSpan = document.getElementById('displayWorkDate');
 const pageTitleHeader = document.getElementById('pageTitleHeader');
 
 let ws = null;
 let chart = null;
 let currentLineId = '';
 let currentStation = '';
+let currentWorkDate = '';
 
 function getQueryParams() {
     const params = {};
@@ -153,10 +170,13 @@ function mapStationName(station) {
     return mapping[station] || station;
 }
 
-function startWebSocket(lineId, station, displayStationName) {
+function startWebSocket(lineId, station, workDate, displayStationName) {
     if (ws) ws.close();
 
-    ws = new WebSocket(`ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}`);
+    let wsUrl = `ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}`;
+    if (workDate) wsUrl += `&workDate=${workDate}`;
+
+    ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
         tbody.innerHTML = '<tr><td colspan="4">Waiting for data...</td></tr>';
@@ -166,7 +186,7 @@ function startWebSocket(lineId, station, displayStationName) {
         const data = JSON.parse(event.data);
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4">No failure data for ${displayStationName} today.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4">No failure data for ${displayStationName} on ${workDate}.</td></tr>`;
             if (chart) chart.destroy();
             chart = null;
             return;
@@ -197,15 +217,17 @@ function updateChart(data, displayStationName) {
 
     if (chart) chart.destroy();
 
+    const stationColor = stationColors[displayStationName.toUpperCase()] || 'rgba(0,0,0,0.6)';
+
     chart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
             datasets: [{
-                label: `Total Failures (${displayStationName}) by Tester`,
+                label: `Failures (${displayStationName})`,
                 data: values,
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                borderColor: 'rgb(0,0,0)',
+                backgroundColor: stationColor,
+                borderColor: stationColor,
                 borderWidth: 1
             }]
         },
@@ -228,6 +250,7 @@ function updateChart(data, displayStationName) {
 
 function updateTable(data) {
     tbody.innerHTML = '';
+
     data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
     data.forEach(row => {
         const formattedDate = row.workDate.replace('T', ' ');
@@ -241,27 +264,32 @@ function updateTable(data) {
     });
 }
 
+
+
 function goBackToSummary() {
-    window.location.href = `index.html?lineId=${currentLineId}`;
+    window.location.href = `index.html?lineId=${currentLineId}&startDate=${currentWorkDate}&endDate=${currentWorkDate}`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const params = getQueryParams();
     const lineIdFromUrl = params.lineId;
     const stationFromUrl = params.station;
+    const workDateFromUrl = params.workDate;
 
     if (lineIdFromUrl && stationFromUrl) {
         currentLineId = lineIdFromUrl;
         currentStation = stationFromUrl;
+        currentWorkDate = workDateFromUrl;
 
         const displayStationName = mapStationName(currentStation);
 
         displayLineIdSpan.textContent = currentLineId;
         displayStationSpan.textContent = displayStationName;
+        displayWorkDateSpan.textContent = currentWorkDate;
         pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
         document.title = `${displayStationName} Failures Dashboard`;
 
-        startWebSocket(currentLineId, currentStation, displayStationName);
+        startWebSocket(currentLineId, currentStation, currentWorkDate, displayStationName);
     } else {
         pageTitleHeader.textContent = "Error: Missing Line ID or Station";
         tbody.innerHTML = '<tr><td colspan="4">Error: Missing parameters. Please go back to the summary page.</td></tr>';

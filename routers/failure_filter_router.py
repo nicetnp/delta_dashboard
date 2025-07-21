@@ -20,9 +20,9 @@ async def failure_filter_ws(websocket: WebSocket):
     await websocket.accept()
     print("✅ WebSocket connected")
 
-    line_id = websocket.query_params.get("lineId", "B3")
-    start_date_str = websocket.query_params.get("startDate","startDay")
-    end_date_str = websocket.query_params.get("endDate","endDay")
+    line_id = websocket.query_params.get("lineId", "BMA01")
+    start_date_str = websocket.query_params.get("startDate")
+    end_date_str = websocket.query_params.get("endDate")
 
     start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else datetime.today().date()
     end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else datetime.today().date()
@@ -34,10 +34,8 @@ async def failure_filter_ws(websocket: WebSocket):
         endDate=end_date
     )
 
-    alive = True
-
     try:
-            while alive:
+            while True:
                 cache_key = build_cache_key(
                     namespace="failures",
                     scope=f"{start_date}_{end_date}",
@@ -72,11 +70,9 @@ async def failure_filter_ws(websocket: WebSocket):
 
     except WebSocketDisconnect:
         print("❌ Client disconnected")
-        alive = False
 
     except Exception as e:
         print(f"❗ Unexpected error: {e}")
-        alive = False
 
     finally:
         print("🔒 Connection closed")

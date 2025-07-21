@@ -1,13 +1,13 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from services.failure_fixture_service import fetch_failure_fixture
-from schemas.failure_schema import FailureSelectStation, FailureByStation
+from schemas.failure_schema import FailureStationQuery, FailureByStation
 from fastapi.encoders import jsonable_encoder
 from db.session import SessionLocal
 from db.redis_client import r as redis_client
 from utils.redis_helper import build_cache_key
 import asyncio
 import json
-
+from datetime import datetime
 router = APIRouter(prefix="/failures", tags=["Failures"])
 
 UPDATE_INTERVAL_SEC = 5
@@ -19,16 +19,25 @@ async def failure_fixture_ws(websocket: WebSocket):
     await websocket.accept()
     print("✅ WebSocket connected")
 
-    line_id = websocket.query_params.get("lineId", "B3")
-    print(f"ℹ️ lineId: {line_id}")
+    line_id = websocket.query_params.get("lineId", "BMA01")
+    start_date_str = websocket.query_params.get("startDate")
+    end_date_str = websocket.query_params.get("endDate")
 
-    failure_query_data = FailureSelectStation(lineId=line_id)
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else datetime.today().date()
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else datetime.today().date()
+    print(f"ℹ️ lineId: {line_id}, startDate: {start_date}, endDate: {end_date}")
+
+    failure_query_data = FailureStationQuery(
+        lineId=line_id,
+        startDate=start_date,
+        endDate=end_date
+    )
 
     try:
         while True:
             cache_key = build_cache_key(
                 namespace="failures",
-                scope="today",
+                scope=f"{start_date}_{end_date}",
                 line_id=line_id,
                 datatype="fixture"
             )
@@ -39,7 +48,7 @@ async def failure_fixture_ws(websocket: WebSocket):
                 print(f"📦 ใช้ cache: {cache_key}")
                 serialized_data = json.loads(cached_data)
             else:
-                print(f"🗃️ ดึงจาก DB lineId={line_id} (Fixture)")
+                print(f"🗃️ ดึงจาก DB lineId={line_id}, startDate= {start_date}, endDate= {end_date}")
                 with SessionLocal() as db:
                     raw_data = fetch_failure_fixture(failure_query_data, db)
                     serialized_data = [

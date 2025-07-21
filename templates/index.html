@@ -1,41 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>BMW Failures Dashboard</title>
+<meta charset="UTF-8" />
+<title>BMW Failures Summary</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body {
     font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 20px;
     background-color: #f4f7f6;
-    color: #333;
-}
-h2 {
-    color: #2c3e50;
-    margin-bottom: 25px;
+    text-align: center;
+    padding: 20px;
 }
 .container {
     max-width: 90%;
-    margin: 0 auto;
-    background-color: #fff;
+    margin: auto;
+    background: #fff;
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 label {
-    font-weight: bold;
-    margin-right: 10px;
-    color: #555;
+    margin-right: 5px;
 }
-select {
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
-    margin-bottom: 20px;
-    cursor: pointer;
+select, input[type="date"] {
+    margin-right: 15px;
+    padding: 5px 10px;
 }
 #chartContainer {
     width: 80%;
@@ -47,65 +35,51 @@ canvas {
     max-width: 100%;
     height: auto;
 }
+
 table {
-    margin: 30px auto;
-    border-collapse: collapse;
+    margin: 20px auto;
     width: 90%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-collapse: collapse;
 }
 th, td {
-    border: 1px solid #e0e0e0;
-    padding: 12px 15px;
-    text-align: center;
-    font-size: 15px;
+    border: 1px solid #ccc;
+    padding: 8px;
 }
 th {
-    background-color: #e9ecef;
-    font-weight: bold;
-    color: #333;
+    background: #eee;
 }
-tr:nth-child(even) {
-    background-color: #f8f9fa;
-}
-tr:hover {
-    background-color: #e2f4e8;
-}
-/* New style for the detail button */
-.detail-button {
-    background-color: #28a745; /* Green color */
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
+td.station-clickable {
     cursor: pointer;
-    font-size: 16px;
-    margin-top: 20px;
-    margin-left: 10px; /* Add some space if next to other elements */
-    transition: background-color 0.3s ease;
 }
-.detail-button:hover {
-    background-color: #218838; /* Darker green on hover */
+td.station-clickable:hover {
+    background-color: #eef;
 }
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>BMW Failures Summary (Today)</h2>
+    <h2>BMW Failures Summary</h2>
 
-    <label for="lineIdSelect">Select Line ID:</label>
+    <label>Line ID:</label>
     <select id="lineIdSelect">
         <option value="BMA01">BMA01</option>
         <option value="B3">B3</option>
     </select>
 
-    <button class="detail-button" onclick="navigateToPage('fixture-detail', currentLineId, 'Fixture')">View Fixture Details</button>
+    <label>Start Date:</label>
+    <input type="date" id="startDate" />
+
+    <label>End Date:</label>
+    <input type="date" id="endDate" />
+
+    <button id="fixtureButton">Fixture</button>
 
     <div id="chartContainer">
         <canvas id="failuresChart"></canvas>
     </div>
 
-    <h3>Summary Details</h3>
+    <h3>Summary Table</h3>
     <table>
         <thead>
             <tr>
@@ -123,95 +97,129 @@ tr:hover {
                 <th>Total</th>
             </tr>
         </thead>
-        <tbody id="resultTableBody">
-            <tr><td colspan="12">Loading data...</td></tr>
+        <tbody id="tableBody">
+            <tr><td colspan="12">Loading...</td></tr>
         </tbody>
     </table>
 </div>
 
 <script>
+const stationColors = {
+    'VFlash1': '#e74c3c',
+    'Hipot1': '#d4a15e',
+    'ATS1': '#c8d96f',
+    'Heatup': '#27ae60',
+    'Vibration': '#2ecc71',
+    'Burn-in': '#1abc9c',
+    'Hipot2': '#3498db',
+    'ATS2': '#9b59b6',
+    'VFlash2': '#bb8fce',
+    'ATS3': '#e67ea1'
+};
+
+const stationMap = {
+    "VFlash1": "%LASH",
+    "Hipot1": "%IPOT_1",
+    "ATS1": "%TS1",
+    "Heatup": "%TUP",
+    "Vibration": "%RATION",
+    "Burn-in": "%RN_IN",
+    "Hipot2": "%IPOT_2",
+    "ATS2": "%TS2",
+    "VFlash2": "%LASH2",
+    "ATS3": "%TS3"
+};
+
 const lineIdSelect = document.getElementById('lineIdSelect');
+const startDateInput = document.getElementById('startDate');
+const endDateInput = document.getElementById('endDate');
+const tableBody = document.getElementById('tableBody');
 const ctx = document.getElementById('failuresChart').getContext('2d');
-const tbody = document.getElementById('resultTableBody');
 
 let ws = null;
 let chart = null;
 let currentLineId = lineIdSelect.value;
 
-// Centralized function to get query parameters from the URL
-function getQueryParams() {
-    const params = {};
-    window.location.search.substring(1).split('&').forEach(param => {
-        const parts = param.split('=');
-        if (parts.length === 2) {
-            params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
-        }
-    });
-    return params;
+document.getElementById('fixtureButton').addEventListener('click', () => {
+    const lineId = lineIdSelect.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+
+    const url = `fixture-detail.html?lineId=${lineId}&startDate=${startDate}&endDate=${endDate}`;
+    window.location.href = url;
+});
+
+function saveState() {
+    sessionStorage.setItem("lineId", lineIdSelect.value);
+    sessionStorage.setItem("startDate", startDateInput.value);
+    sessionStorage.setItem("endDate", endDateInput.value);
 }
 
-// Centralized function for navigating between pages
-function navigateToPage(pageName, lineId, stationName) {
-    const timestamp = new Date().getTime();
-    const url = `${pageName}.html?lineId=${lineId}&station=${encodeURIComponent(stationName)}&_ts=${timestamp}`;
+function restoreState() {
+    const savedLineId = sessionStorage.getItem("lineId");
+    const savedStartDate = sessionStorage.getItem("startDate");
+    const savedEndDate = sessionStorage.getItem("endDate");
+    const today = new Date().toISOString().split('T')[0];
+
+    lineIdSelect.value = savedLineId || "BMA01";
+    startDateInput.value = savedStartDate || today;
+    endDateInput.value = savedEndDate || today;
+}
+
+function navigateToPage(pageName, lineId, stationName, workDate) {
+    saveState(); // เก็บสถานะก่อนเปลี่ยนหน้า
+    const timestamp = Date.now();
+    const url = `${pageName}.html?lineId=${lineId}&station=${encodeURIComponent(stationName)}&workDate=${workDate}&_ts=${timestamp}`;
     window.location.href = url;
 }
 
+function reloadData() {
+    if (ws) ws.close();
 
-// Flexible function to start WebSocket connection
-function startWebSocket(lineId, endpointPath) {
-    if (ws) {
-        ws.close();
-        console.log(`ℹ️ Previous WebSocket (${ws.url}) closed.`);
-    }
+    currentLineId = lineIdSelect.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+    const ts = Date.now();
 
-    currentLineId = lineId;
-    const timestamp = new Date().getTime(); // Generate new timestamp for each new connection
+    let wsUrl = `ws://localhost:8000/failures/ws/filter?lineId=${currentLineId}&_ts=${ts}`;
+    if (startDate) wsUrl += `&startDate=${startDate}`;
+    if (endDate) wsUrl += `&endDate=${endDate}`;
 
-    // Construct WebSocket URL with cache busting timestamp
-    const wsUrl = `ws://localhost:8000/failures/ws/${endpointPath}?lineId=${lineId}&_ts=${timestamp}`;
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-        console.log(`✅ WebSocket opened to ${wsUrl}`);
-        // Adjusted colspan for the loading message to match the new table header
-        tbody.innerHTML = '<tr><td colspan="12">Waiting for data...</td></tr>';
+        tableBody.innerHTML = `<tr><td colspan="12">Loading...</td></tr>`;
     };
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log(`Received data from ${wsUrl}:`, data);
-
         if (!data || data.length === 0) {
-            console.warn(`⚠️ No data received or data is empty for ${endpointPath}.`);
-            tbody.innerHTML = '<tr><td colspan="12">No data available.</td></tr>'; // Adjusted colspan
-            if (chart) chart.destroy();
-            chart = null;
+            tableBody.innerHTML = `<tr><td colspan="12">No data available</td></tr>`;
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
             return;
         }
-
-        // This page always expects summary data (an array with one object for today)
-        updateChart(data[0]);
-        updateTable(data[0]);
+        renderChart(data);
+        renderTable(data);
     };
 
-    ws.onclose = () => {
-        console.log(`❌ WebSocket closed from ${ws.url}`);
-    };
-
-    ws.onerror = (err) => {
-        console.error(`❗ WebSocket error from ${ws.url}:`, err);
-    };
+    ws.onclose = () => console.log("WebSocket closed.");
+    ws.onerror = err => console.error("WebSocket error", err);
 }
 
-function updateChart(row) {
-    // Labels for the summary chart, including "Vibration"
-    const labels = ["VFlash1", "Hipot1", "ATS1", "Heatup", "Vibration", "Burn-in", "Hipot2", "ATS2", "VFlash2", "ATS3"];
-    const values = [
-        row.vflash1, row.hipot1, row.ats1,
-        row.heatup, row.vibration, row.burnin, row.hipot2, // Ensure row.vibration exists in your backend data
-        row.ats2, row.vflash2, row.ats3
-    ];
+function renderChart(data) {
+    const labels = data.map(row => row.workDate);
+    const stationKeys = Object.keys(stationMap);
+
+    const datasets = stationKeys.map(station => ({
+        label: station,
+        data: data.map(row => row[station.toLowerCase()]),
+        backgroundColor: stationColors[station],
+        borderColor: stationColors[station],
+        borderWidth: 1
+    }));
 
     if (chart) chart.destroy();
 
@@ -219,122 +227,73 @@ function updateChart(row) {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: [{
-                label: `Failures on ${row.workDate}`,
-                data: values,
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
+            datasets: datasets
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Number of Failures'
-                    },
-                    ticks: {
-                        stepSize: 1
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Station'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.parsed.y !== null) {
-                                label += context.parsed.y;
-                            }
-                            return label;
-                        }
-                    }
-                }
-            },
             onClick: (event, elements) => {
                 if (elements.length > 0) {
-                    const firstElement = elements[0];
-                    const stationClicked = chart.data.labels[firstElement.index];
+                    const element = elements[0];
+                    const datasetIndex = element.datasetIndex;
+                    const index = element.index;
 
-                    if (stationClicked) {
-                        // map station label → station name สำหรับ query
-                        const stationMap = {
-                            "VFlash1": "%LASH",
-                            "Hipot1": "%IPOT_1",
-                            "ATS1": "%TS1",
-                            "Heatup": "%TUP",
-                            "Vibration": "%RATION",
-                            "Burn-in": "%RN_IN",
-                            "Hipot2": "%IPOT_2",
-                            "ATS2": "%TS2",
-                            "VFlash2": "%LASH2",
-                            "ATS3": "%TS3"
-                        };
+                    const station = stationKeys[datasetIndex];
+                    const mapped = stationMap[station];
+                    const workDate = data[index].workDate;
 
-                        const stationQueryName = stationMap[stationClicked];
-                        if (stationQueryName) {
-                            console.log(`Clicked on ${stationClicked} (${stationQueryName}) for LineID: ${currentLineId}`);
-                            navigateToPage('station-detail', currentLineId, stationQueryName);
-                        } else {
-                            console.warn(`Station ${stationClicked} not mapped!`);
-                        }
+                    if (mapped && workDate) {
+                        navigateToPage('station-detail', currentLineId, mapped, workDate);
                     }
                 }
+            },
+            scales: {
+                x: { stacked: true, title: { display: true, text: "Date" } },
+                y: { stacked: true, beginAtZero: true, title: { display: true, text: "Failures" } }
             }
-
-
         }
     });
 }
 
-function updateTable(row) {
-    tbody.innerHTML = `
-    <tr>
-        <td>${row.workDate}</td>
-        <td>${row.vflash1}</td>
-        <td>${row.hipot1}</td>
-        <td>${row.ats1}</td>
-        <td>${row.heatup}</td>
-        <td>${row.vibration}</td>
-        <td>${row.burnin}</td>
-        <td>${row.hipot2}</td>
-        <td>${row.ats2}</td>
-        <td>${row.vflash2}</td>
-        <td>${row.ats3}</td>
-        <td>${row.total}</td>
-    </tr>
-    `;
+function renderTable(data) {
+    tableBody.innerHTML = "";
+    data.forEach(row => {
+        const workDate = row.workDate;
+        tableBody.innerHTML += `
+            <tr>
+                <td>${workDate}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['VFlash1']}', '${workDate}')">${row.vflash1}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Hipot1']}', '${workDate}')">${row.hipot1}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['ATS1']}', '${workDate}')">${row.ats1}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Heatup']}', '${workDate}')">${row.heatup}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Vibration']}', '${workDate}')">${row.vibration}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Burn-in']}', '${workDate}')">${row.burnin}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['Hipot2']}', '${workDate}')">${row.hipot2}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['ATS2']}', '${workDate}')">${row.ats2}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['VFlash2']}', '${workDate}')">${row.vflash2}</td>
+                <td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap['ATS3']}', '${workDate}')">${row.ats3}</td>
+                <td>${row.total}</td>
+            </tr>
+        `;
+    });
 }
 
-// Event Listeners
-lineIdSelect.addEventListener('change', () => {
-    startWebSocket(lineIdSelect.value, 'today'); // Always start with 'today' endpoint for summary
-});
+document.addEventListener("DOMContentLoaded", () => {
+    restoreState();
+    reloadData();
 
-// Initial load based on URL parameters or default
-document.addEventListener('DOMContentLoaded', () => {
-    const params = getQueryParams();
-    const initialLineId = params.lineId || lineIdSelect.value;
-
-    lineIdSelect.value = initialLineId; // Set dropdown to match URL parameter
-    startWebSocket(initialLineId, 'today'); // Connect to 'today' endpoint for summary data
+    lineIdSelect.addEventListener('change', () => {
+        saveState();
+        reloadData();
+    });
+    startDateInput.addEventListener('change', () => {
+        saveState();
+        reloadData();
+    });
+    endDateInput.addEventListener('change', () => {
+        saveState();
+        reloadData();
+    });
 });
 </script>
 

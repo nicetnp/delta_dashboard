@@ -23,10 +23,9 @@ async def failure_today_ws(websocket: WebSocket):
     print(f"ℹ️ lineId: {line_id}")
 
     failure_query_data = FailureSelectStation(lineId=line_id)
-    alive = True
 
     try:
-            while alive:
+            while True:
                 cache_key = build_cache_key(
                     namespace="failures",
                     scope="today",

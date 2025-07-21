@@ -27,6 +27,7 @@ class FailureByDay(BaseModel):
     total: int
 
 class FailureByStation(BaseModel):
+    sn: str
     testerId: str
     fixtureId: str
     failItem: Optional[str] = None

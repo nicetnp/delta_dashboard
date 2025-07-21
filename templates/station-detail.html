@@ -5,7 +5,6 @@
 <title id="pageTitle">Failures Dashboard by Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-/* เหมือนเดิม… (ไม่แก้ style) */
 body {
     font-family: Arial, sans-serif;
     text-align: center;
@@ -25,11 +24,6 @@ h2 {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-label {
-    font-weight: bold;
-    margin-right: 10px;
-    color: #555;
-}
 #chartContainer {
     width: 80%;
     margin: 20px auto;
@@ -41,7 +35,7 @@ canvas {
     height: auto;
 }
 table {
-    margin: 30px auto;
+    margin: 20px auto;
     border-collapse: collapse;
     width: 90%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -99,10 +93,17 @@ tr:hover {
         <canvas id="failuresChart"></canvas>
     </div>
 
-    <h3>Detailed Failure Records</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; margin-bottom: 10px; width: 90%; margin-left: auto; margin-right: auto;">
+
+        <div>
+            <input type="text" id="searchInput" placeholder="Search..." style="padding: 6px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+    </div>
+
     <table>
         <thead>
             <tr>
+                <th>Serial Number</th>
                 <th>Tester</th>
                 <th>Fixture</th>
                 <th>Fail Item</th>
@@ -110,24 +111,18 @@ tr:hover {
             </tr>
         </thead>
         <tbody id="resultTableBody">
-            <tr><td colspan="4">Loading data...</td></tr>
+            <tr><td colspan="5">Loading data...</td></tr>
         </tbody>
     </table>
+
     <button class="back-button" onclick="goBackToSummary()">Back to Summary</button>
 </div>
 
 <script>
 const stationColors = {
-    'VFLASH1': '#e74c3c',    // แดง
-    'HIPOT1': '#d4a15e',     // น้ำตาล
-    'ATS1': '#c8d96f',       // เขียวอ่อน
-    'HEATUP': '#27ae60',     // เขียว
-    'VIBRATION': '#2ecc71',  // เขียวเข้ม
-    'BURNIN': '#1abc9c',     // ฟ้า
-    'HIPOT2': '#3498db',     // น้ำเงิน
-    'ATS2': '#9b59b6',       // ม่วง
-    'VFLASH2': '#bb8fce',    // ม่วงอ่อน
-    'ATS3': '#e67ea1'        // ชมพู
+    'VFLASH1': '#e74c3c', 'HIPOT1': '#d4a15e', 'ATS1': '#c8d96f',
+    'HEATUP': '#27ae60', 'VIBRATION': '#2ecc71', 'BURNIN': '#1abc9c',
+    'HIPOT2': '#3498db', 'ATS2': '#9b59b6', 'VFLASH2': '#bb8fce', 'ATS3': '#e67ea1'
 };
 
 const ctx = document.getElementById('failuresChart').getContext('2d');
@@ -137,35 +132,23 @@ const displayStationSpan = document.getElementById('displayStation');
 const displayWorkDateSpan = document.getElementById('displayWorkDate');
 const pageTitleHeader = document.getElementById('pageTitleHeader');
 
-let ws = null;
-let chart = null;
-let currentLineId = '';
-let currentStation = '';
-let currentWorkDate = '';
+let ws = null, chart = null;
+let currentLineId = '', currentStation = '', currentWorkDate = '';
 
 function getQueryParams() {
     const params = {};
     window.location.search.substring(1).split('&').forEach(param => {
         const parts = param.split('=');
-        if (parts.length === 2) {
-            params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
-        }
+        if (parts.length === 2) params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
     });
     return params;
 }
 
 function mapStationName(station) {
     const mapping = {
-        '%LASH': 'VFLASH1',
-        '%IPOT_1': 'HIPOT1',
-        '%TS1': 'ATS1',
-        '%RATION':'VIBRATION',
-        '%TUP': 'HEATUP',
-        '%RN_IN': 'BURNIN',
-        '%IPOT_2': 'HIPOT2',
-        '%TS2': 'ATS2',
-        '%LASH2': 'VFLASH2',
-        '%TS3': 'ATS3'
+        '%LASH': 'VFLASH1', '%IPOT_1': 'HIPOT1', '%TS1': 'ATS1',
+        '%RATION':'VIBRATION', '%TUP': 'HEATUP', '%RN_IN': 'BURNIN',
+        '%IPOT_2': 'HIPOT2', '%TS2': 'ATS2', '%LASH2': 'VFLASH2', '%TS3': 'ATS3'
     };
     return mapping[station] || station;
 }
@@ -179,14 +162,14 @@ function startWebSocket(lineId, station, workDate, displayStationName) {
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-        tbody.innerHTML = '<tr><td colspan="4">Waiting for data...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5">Waiting for data...</td></tr>';
     };
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
 
         if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4">No failure data for ${displayStationName} on ${workDate}.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5">No failure data for ${displayStationName} on ${workDate}.</td></tr>`;
             if (chart) chart.destroy();
             chart = null;
             return;
@@ -256,6 +239,7 @@ function updateTable(data) {
         const formattedDate = row.workDate.replace('T', ' ');
         tbody.innerHTML += `
         <tr>
+            <td>${row.sn || '-'}</td>
             <td>${row.testerId}</td>
             <td>${row.fixtureId}</td>
             <td>${row.failItem}</td>
@@ -264,11 +248,20 @@ function updateTable(data) {
     });
 }
 
-
-
 function goBackToSummary() {
     window.location.href = `index.html?lineId=${currentLineId}&startDate=${currentWorkDate}&endDate=${currentWorkDate}`;
 }
+
+// 📌 Search function
+document.getElementById('searchInput').addEventListener('input', function () {
+    const filter = this.value.trim().toLowerCase();
+    const rows = tbody.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     const params = getQueryParams();
@@ -292,7 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startWebSocket(currentLineId, currentStation, currentWorkDate, displayStationName);
     } else {
         pageTitleHeader.textContent = "Error: Missing Line ID or Station";
-        tbody.innerHTML = '<tr><td colspan="4">Error: Missing parameters. Please go back to the summary page.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5">Error: Missing parameters. Please go back to the summary page.</td></tr>';
     }
 });
 </script>

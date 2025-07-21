@@ -8,7 +8,8 @@ def fetch_failure_station(data:FailureStation,db: Session):
         from datetime import datetime
         work_date = datetime.now().strftime("%Y-%m-%d")
     query = text("""
-        SELECT TesterID AS testerId,
+        SELECT Trackingnumber AS sn,
+               TesterID AS testerId,
                FixtureID AS fixtureId,
                CASE WHEN CHARINDEX(')', FailItem) > 0 AND CHARINDEX('}', FailItem) > 0
                     THEN SUBSTRING(FailItem,CHARINDEX(')', FailItem) + 1,
@@ -16,7 +17,7 @@ def fetch_failure_station(data:FailureStation,db: Session):
                     CONVERT(VARCHAR, DateTime, 120) AS workDate
         FROM APBM_FailuresPareto
         WHERE LineID = :lineId AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) = :workDate
-        GROUP BY TesterID,FixtureID, FailItem, DateTime
+        GROUP BY TesterID,FixtureID, FailItem, DateTime, Trackingnumber
         HAVING COUNT(DISTINCT CASE WHEN Station LIKE :station THEN TrackingNumber END) > 0
         ORDER BY workDate ASC;
         """)

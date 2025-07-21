@@ -24,11 +24,6 @@ h2 {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-label {
-    font-weight: bold;
-    margin-right: 10px;
-    color: #555;
-}
 #chartContainer {
     width: 80%;
     margin: 20px auto;
@@ -39,8 +34,27 @@ canvas {
     max-width: 100%;
     height: auto;
 }
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px auto 10px auto;
+    width: 90%;
+}
+.table-header h3 {
+    margin: 0;
+    text-align: center;
+    flex: 1;
+}
+.table-header input {
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 200px;
+}
 table {
-    margin: 30px auto;
+    margin: 0 auto;
     border-collapse: collapse;
     width: 90%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -88,7 +102,10 @@ tr:hover {
         <canvas id="failuresChart"></canvas>
     </div>
 
-    <h3>Detailed Failure Records</h3>
+    <div class="table-header">
+        <input type="text" id="searchInput" placeholder="Search…">
+    </div>
+
     <table>
         <thead>
             <tr>
@@ -109,10 +126,12 @@ tr:hover {
 const ctx = document.getElementById('failuresChart').getContext('2d');
 const tbody = document.getElementById('resultTableBody');
 const displayLineIdSpan = document.getElementById('displayLineId');
+const searchInput = document.getElementById('searchInput');
 
 let ws = null;
 let chart = null;
 let currentLineId = '';
+let currentData = [];
 
 // อ่าน query params จาก URL
 function getQueryParams() {
@@ -143,16 +162,16 @@ function startWebSocket(lineId, startDate, endDate) {
     };
 
     ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (!data || data.length === 0) {
+        currentData = JSON.parse(event.data) || [];
+        if (currentData.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4">No Fixture failure data available for this line in selected range.</td></tr>';
             if (chart) chart.destroy();
             chart = null;
             return;
         }
 
-        updateChart(data);
-        updateTable(data);
+        updateChart(currentData);
+        renderTable(currentData);
     };
 
     ws.onclose = () => {
@@ -167,10 +186,7 @@ function startWebSocket(lineId, startDate, endDate) {
 function updateChart(data) {
     const fixtureIdCounts = {};
     data.forEach(item => {
-        // ข้าม onstation ไม่เอาไปนับในกราฟ
-        if (item.fixtureId.toLowerCase() === 'onstation') {
-            return;
-        }
+        if (item.fixtureId.toLowerCase() === 'onstation') return;
         fixtureIdCounts[item.fixtureId] = (fixtureIdCounts[item.fixtureId] || 0) + 1;
     });
 
@@ -182,7 +198,6 @@ function updateChart(data) {
     if (chart) chart.destroy();
 
     if (labels.length === 0) {
-        console.warn("⚠️ No data for chart (all onstation?)");
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         return;
     }
@@ -205,33 +220,17 @@ function updateChart(data) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Number of Failures'
-                    },
-                    ticks: {
-                        stepSize: 1
-                    }
+                    title: { display: true, text: 'Number of Failures' },
+                    ticks: { stepSize: 1 }
                 },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Fixture ID'
-                    }
-                }
+                x: { title: { display: true, text: 'Fixture ID' } }
             },
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                }
-            }
+            plugins: { legend: { display: true, position: 'top' } }
         }
     });
 }
 
-
-function updateTable(data) {
+function renderTable(data) {
     tbody.innerHTML = '';
     data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
     data.forEach(row => {
@@ -245,6 +244,14 @@ function updateTable(data) {
         </tr>`;
     });
 }
+
+searchInput.addEventListener('input', () => {
+    const filter = searchInput.value.trim().toLowerCase();
+    const filteredData = currentData.filter(row =>
+        Object.values(row).some(val => String(val).toLowerCase().includes(filter))
+    );
+    renderTable(filteredData);
+});
 
 function goBackToSummary() {
     window.location.href = `index.html?lineId=${currentLineId}`;

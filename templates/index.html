@@ -145,7 +145,6 @@ button.fixture-button:active {
 
 <script>
 (() => {
-    // สีตามสถานี
     const stationColors = {
         'VFlash1': '#C77B55',
         'Hipot1':  '#7D8B63',
@@ -159,7 +158,6 @@ button.fixture-button:active {
         'ATS3':    '#C4A69F'
     };
 
-    // แมปสถานีเป็นชื่อ parameter สำหรับส่งไปหน้า detail
     const stationMap = {
         "VFlash1": "%LASH",
         "Hipot1": "%IPOT_1",
@@ -173,7 +171,6 @@ button.fixture-button:active {
         "ATS3": "%TS3"
     };
 
-    // DOM elements
     const lineIdSelect = document.getElementById('lineIdSelect');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
@@ -182,19 +179,16 @@ button.fixture-button:active {
     const ctx = document.getElementById('failuresChart').getContext('2d');
     const fixtureButton = document.getElementById('fixtureButton');
 
-    // State variables
     let ws = null;
     let chart = null;
     let currentLineId = lineIdSelect.value;
 
-    // Save UI state to sessionStorage
     function saveState() {
         sessionStorage.setItem("lineId", lineIdSelect.value);
         sessionStorage.setItem("startDate", startDateInput.value);
         sessionStorage.setItem("endDate", endDateInput.value);
     }
 
-    // Restore UI state from sessionStorage or defaults
     function restoreState() {
         const savedLineId = sessionStorage.getItem("lineId");
         const savedStartDate = sessionStorage.getItem("startDate");
@@ -206,7 +200,6 @@ button.fixture-button:active {
         endDateInput.value = savedEndDate || today;
     }
 
-    // Navigate to another page with query params and cache timestamp to avoid cache issues
     function navigateToPage(pageName, lineId, stationName, workDate) {
         saveState();
         const timestamp = Date.now();
@@ -214,21 +207,18 @@ button.fixture-button:active {
         window.location.href = url;
     }
 
-    // Clear the table body
     function clearTable() {
         while (tableBody.firstChild) {
             tableBody.removeChild(tableBody.firstChild);
         }
     }
 
-    // Add a row with HTML content (for messages)
     function addTableRow(html) {
         const tr = document.createElement('tr');
         tr.innerHTML = html;
         tableBody.appendChild(tr);
     }
 
-    // Render the chart or update data if chart exists
     function renderChart(data) {
         const labels = data.map(row => row.workDate);
         const stationKeys = Object.keys(stationMap);
@@ -241,42 +231,39 @@ button.fixture-button:active {
             borderWidth: 1
         }));
 
-        if (!chart) {
-            chart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels, datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    onClick: (event, elements) => {
-                        if (elements.length > 0) {
-                            const element = elements[0];
-                            const station = stationKeys[element.datasetIndex];
-                            const mapped = stationMap[station];
-                            const workDate = data[element.index].workDate;
-                            if (mapped && workDate) {
-                                navigateToPage('station-detail', currentLineId, mapped, workDate);
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { stacked: true, title: { display: true, text: "Date" } },
-                        y: { stacked: true, beginAtZero: true, title: { display: true, text: "Failures" } }
-                    }
-                }
-            });
-        } else {
-            chart.data.labels = labels;
-            chart.data.datasets.forEach((ds, i) => {
-                ds.data = datasets[i].data;
-                ds.backgroundColor = stationColors[stationKeys[i]];
-                ds.borderColor = stationColors[stationKeys[i]];
-            });
-            chart.update();
+        // 🔷 destroy old chart
+        if (chart) {
+            chart.destroy();
+            chart = null;
         }
+
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const element = elements[0];
+                        const station = stationKeys[element.datasetIndex];
+                        const mapped = stationMap[station];
+                        const workDate = data[element.index].workDate;
+                        if (mapped && workDate) {
+                            navigateToPage('station-detail', currentLineId, mapped, workDate);
+                        } else {
+                            alert("No data for this point.");
+                        }
+                    }
+                },
+                scales: {
+                    x: { stacked: true, title: { display: true, text: "Date" } },
+                    y: { stacked: true, beginAtZero: true, title: { display: true, text: "Failures" } }
+                }
+            }
+        });
     }
 
-    // Render the summary table
     function renderTable(data) {
         clearTable();
 
@@ -287,11 +274,8 @@ button.fixture-button:active {
 
         data.forEach(row => {
             const tr = document.createElement('tr');
-
-            // Work Date
             tr.appendChild(createCell(row.workDate));
 
-            // Station failure counts
             ['vflash1', 'hipot1', 'ats1', 'heatup', 'vibration', 'burnin', 'hipot2', 'ats2', 'vflash2', 'ats3'].forEach((key, idx) => {
                 const val = row[key];
                 const stationKey = Object.keys(stationMap)[idx];
@@ -305,30 +289,31 @@ button.fixture-button:active {
                 tr.appendChild(td);
             });
 
-            // Total column
             tr.appendChild(createCell(row.total));
-
             tableBody.appendChild(tr);
         });
     }
 
-    // Create table cell with text
     function createCell(text) {
         const td = document.createElement('td');
         td.textContent = text;
         return td;
     }
 
-    // Fetch and update data using WebSocket
     function reloadData() {
         if (ws) ws.close();
+
+        // 🔷 destroy old chart
+        if (chart) {
+            chart.destroy();
+            chart = null;
+        }
 
         currentLineId = lineIdSelect.value;
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
         const ts = Date.now();
 
-        // Basic validation
         if (!currentLineId) {
             statusMessage.textContent = "Please select a valid line.";
             return;
@@ -367,9 +352,6 @@ button.fixture-button:active {
                     clearTable();
                     addTableRow('<td colspan="12">No data available for the selected criteria.</td>');
                     statusMessage.textContent = "No data available.";
-                    if (chart) {
-                        chart.clear();
-                    }
                     return;
                 }
 
@@ -395,7 +377,6 @@ button.fixture-button:active {
         };
     }
 
-    // Navigate to Fixture Detail page
     fixtureButton.addEventListener('click', () => {
         saveState();
         const lineId = lineIdSelect.value;
@@ -411,12 +392,10 @@ button.fixture-button:active {
         window.location.href = url;
     });
 
-    // Initialize UI on page load
     document.addEventListener("DOMContentLoaded", () => {
         restoreState();
         reloadData();
 
-        // Listen for changes to reload data automatically
         [lineIdSelect, startDateInput, endDateInput].forEach(el => {
             el.addEventListener('change', () => {
                 saveState();
@@ -426,6 +405,7 @@ button.fixture-button:active {
     });
 })();
 </script>
+
 
 </body>
 </html>

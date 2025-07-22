@@ -20,10 +20,23 @@ body {
 }
 label {
     margin-right: 5px;
+    font-weight: bold;
+    color: #333;
 }
-select, input[type="date"] {
-    margin-right: 15px;
-    padding: 5px 10px;
+select.styled-select, input[type="date"].styled-date {
+    margin: 5px;
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fdfaf6; /* sand */
+    color: #333;
+    transition: border-color 0.3s ease, box-shadow 0.2s ease;
+}
+select.styled-select:focus, input[type="date"].styled-date:focus {
+    outline: none;
+    border-color: #C77B55;
+    box-shadow: 0 0 5px rgba(199, 123, 85, 0.4);
 }
 #chartContainer {
     width: 80%;
@@ -35,7 +48,6 @@ canvas {
     max-width: 100%;
     height: auto;
 }
-
 table {
     margin: 20px auto;
     width: 90%;
@@ -54,6 +66,26 @@ td.station-clickable {
 td.station-clickable:hover {
     background-color: #eef;
 }
+button.fixture-button {
+    background-color: #C77B55;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+button.fixture-button:hover {
+    background-color: #9B5E4A;
+    transform: translateY(-1px);
+}
+button.fixture-button:active {
+    background-color: #7D4A3B;
+    transform: translateY(1px);
+}
 </style>
 </head>
 <body>
@@ -61,19 +93,19 @@ td.station-clickable:hover {
 <div class="container">
     <h2>BMW Failures Summary</h2>
 
-    <label>Line ID:</label>
-    <select id="lineIdSelect">
+    <label>Line:</label>
+    <select id="lineIdSelect" class="styled-select">
         <option value="BMA01">BMA01</option>
         <option value="B3">B3</option>
     </select>
 
     <label>Start Date:</label>
-    <input type="date" id="startDate" />
+    <input type="date" id="startDate" class="styled-date" />
 
     <label>End Date:</label>
-    <input type="date" id="endDate" />
+    <input type="date" id="endDate" class="styled-date" />
 
-    <button id="fixtureButton">Fixture</button>
+    <button id="fixtureButton" class="fixture-button">View Fixture Details</button>
 
     <div id="chartContainer">
         <canvas id="failuresChart"></canvas>
@@ -105,17 +137,19 @@ td.station-clickable:hover {
 
 <script>
 const stationColors = {
-    'VFlash1': '#e74c3c',
-    'Hipot1': '#d4a15e',
-    'ATS1': '#c8d96f',
-    'Heatup': '#27ae60',
-    'Vibration': '#2ecc71',
-    'Burn-in': '#1abc9c',
-    'Hipot2': '#3498db',
-    'ATS2': '#9b59b6',
-    'VFlash2': '#bb8fce',
-    'ATS3': '#e67ea1'
+    'VFlash1': '#C77B55',   // Muted Terracotta (warm red-orange)
+    'Hipot1':  '#7D8B63',   // Moss Green
+    'ATS1':    '#D6C6B8',   // Warm Sand
+    'Heatup':  '#A6A57A',   // Soft Olive
+    'Vibration': '#6C7A89', // Slate Blue Gray
+    'Burn-in': '#BCA875',   // Accent Gold
+    'Hipot2':  '#4B4B4B',   // Neutral Dark Gray
+    'ATS2':    '#9B5E4A',   // Accent Rust
+    'VFlash2': '#D9D9D9',   // Neutral Light Gray
+    'ATS3':    '#C4A69F'    // Moss Green (ซ้ำได้เพราะใกล้กัน)
 };
+
+
 
 const stationMap = {
     "VFlash1": "%LASH",

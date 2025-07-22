@@ -84,7 +84,7 @@ tr:hover {
 <div class="container">
     <h2 id="pageTitleHeader">Failure Count by Tester</h2>
     <div class="line-info">
-        Line ID: <span id="displayLineId"></span> |
+        Line: <span id="displayLineId"></span> |
         Station: <span id="displayStation"></span> |
         Date: <span id="displayWorkDate"></span>
     </div>
@@ -120,9 +120,9 @@ tr:hover {
 
 <script>
 const stationColors = {
-    'VFLASH1': '#e74c3c', 'HIPOT1': '#d4a15e', 'ATS1': '#c8d96f',
-    'HEATUP': '#27ae60', 'VIBRATION': '#2ecc71', 'BURNIN': '#1abc9c',
-    'HIPOT2': '#3498db', 'ATS2': '#9b59b6', 'VFLASH2': '#bb8fce', 'ATS3': '#e67ea1'
+    'VFLASH1': '#C77B55', 'HIPOT1': '#7D8B63', 'ATS1': '#D6C6B8',
+    'HEATUP': '#A6A57A', 'VIBRATION': '#6C7A89', 'BURNIN': '#BCA875',
+    'HIPOT2': '#4B4B4B', 'ATS2': '#9B5E4A', 'VFLASH2': '#C4A69F', 'ATS3': '#C4A69F'
 };
 
 const ctx = document.getElementById('failuresChart').getContext('2d');

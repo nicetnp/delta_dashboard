@@ -1,422 +1,293 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Failures Dashboard by Tester</title>
+<meta charset="UTF-8">
+<title id="pageTitle">Failures Dashboard by Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  body {
+body {
     font-family: Arial, sans-serif;
     text-align: center;
     margin: 20px;
     background-color: #f4f7f6;
     color: #333;
-  }
-  h2 {
+}
+h2 {
     color: #2c3e50;
     margin-bottom: 25px;
-  }
-  .container {
+}
+.container {
     max-width: 90%;
     margin: 0 auto;
     background-color: #fff;
-    padding: 20px 25px;
+    padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  }
-  #chartContainer {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+#chartContainer {
     width: 80%;
     margin: 20px auto;
     position: relative;
     height: 400px;
-  }
-  canvas {
+}
+canvas {
     max-width: 100%;
     height: auto;
-  }
-  table {
+}
+table {
     margin: 20px auto;
     border-collapse: collapse;
     width: 90%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  }
-  th, td {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+th, td {
     border: 1px solid #e0e0e0;
     padding: 12px 15px;
     text-align: center;
     font-size: 15px;
-  }
-  th {
+}
+th {
     background-color: #e9ecef;
     font-weight: bold;
     color: #333;
-  }
-  tr:nth-child(even) {
+}
+tr:nth-child(even) {
     background-color: #f8f9fa;
-  }
-  tr:hover {
+}
+tr:hover {
     background-color: #e2f4e8;
-  }
-  .line-info {
+}
+.line-info {
     font-size: 1.2em;
     font-weight: bold;
     margin-bottom: 20px;
     color: #444;
-  }
-  .back-button {
+}
+.back-button {
     background-color: #007bff;
     color: white;
-    padding: 10px 22px;
+    padding: 10px 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    margin-top: 25px;
+    margin-top: 20px;
     transition: background-color 0.3s ease;
-  }
-  .back-button:hover {
+}
+.back-button:hover {
     background-color: #0056b3;
-  }
-  #searchInput {
-    padding: 8px 12px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    width: 300px;
-    margin: 0 auto 15px auto;
-    display: block;
-  }
+}
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h2 id="pageTitleHeader">Failure Count by Tester</h2>
-  <div class="line-info">
-    Line: <span id="displayLineId"></span> |
-    Station: <span id="displayStation"></span> |
-    Date: <span id="displayWorkDate"></span>
-  </div>
+    <h2 id="pageTitleHeader">Failure Count by Tester</h2>
+    <div class="line-info">
+        Line: <span id="displayLineId"></span> |
+        Station: <span id="displayStation"></span> |
+        Date: <span id="displayWorkDate"></span>
+    </div>
 
-  <div id="chartContainer">
-    <canvas id="failuresChart"></canvas>
-  </div>
+    <div id="chartContainer">
+        <canvas id="failuresChart"></canvas>
+    </div>
 
-  <input type="text" id="searchInput" placeholder="Search tester, fixture, fail item...">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; margin-bottom: 10px; width: 90%; margin-left: auto; margin-right: auto;">
 
-  <table>
-    <thead>
-      <tr>
-        <th>Serial Number</th>
-        <th>Tester</th>
-        <th>Fixture</th>
-        <th>Fail Item</th>
-        <th>Date/Time</th>
-      </tr>
-    </thead>
-    <tbody id="resultTableBody">
-      <tr><td colspan="5">Loading data...</td></tr>
-    </tbody>
-  </table>
+        <div>
+            <input type="text" id="searchInput" placeholder="Search..." style="padding: 6px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+    </div>
 
-  <button class="back-button" onclick="goBackToSummary()">Back to Summary</button>
+    <table>
+        <thead>
+            <tr>
+                <th>Serial Number</th>
+                <th>Tester</th>
+                <th>Fixture</th>
+                <th>Fail Item</th>
+                <th>Date/Time</th>
+            </tr>
+        </thead>
+        <tbody id="resultTableBody">
+            <tr><td colspan="5">Loading data...</td></tr>
+        </tbody>
+    </table>
+
+    <button class="back-button" onclick="goBackToSummary()">Back to Summary</button>
 </div>
 
 <script>
-(() => {
-  // Station color mapping
-  const stationColors = {
+const stationColors = {
     'VFLASH1': '#C77B55', 'HIPOT1': '#7D8B63', 'ATS1': '#D6C6B8',
     'HEATUP': '#A6A57A', 'VIBRATION': '#6C7A89', 'BURNIN': '#BCA875',
     'HIPOT2': '#4B4B4B', 'ATS2': '#9B5E4A', 'VFLASH2': '#C4A69F', 'ATS3': '#C4A69F'
-  };
+};
 
-  // Elements cache
-  const ctx = document.getElementById('failuresChart').getContext('2d');
-  const tbody = document.getElementById('resultTableBody');
-  const displayLineIdSpan = document.getElementById('displayLineId');
-  const displayStationSpan = document.getElementById('displayStation');
-  const displayWorkDateSpan = document.getElementById('displayWorkDate');
-  const pageTitleHeader = document.getElementById('pageTitleHeader');
-  const searchInput = document.getElementById('searchInput');
+const ctx = document.getElementById('failuresChart').getContext('2d');
+const tbody = document.getElementById('resultTableBody');
+const displayLineIdSpan = document.getElementById('displayLineId');
+const displayStationSpan = document.getElementById('displayStation');
+const displayWorkDateSpan = document.getElementById('displayWorkDate');
+const pageTitleHeader = document.getElementById('pageTitleHeader');
 
-  let ws = null;
-  let chart = null;
-  let allData = [];
+let ws = null, chart = null;
+let currentLineId = '', currentStation = '', currentWorkDate = '';
 
-  let currentLineId = '', currentStation = '', currentWorkDate = '';
-
-  /**
-   * Parses query parameters from URL into an object
-   * @returns {Object} key-value pairs of query params
-   */
-  function getQueryParams() {
+function getQueryParams() {
     const params = {};
     window.location.search.substring(1).split('&').forEach(param => {
-      const [key, val] = param.split('=');
-      if (key && val) {
-        params[decodeURIComponent(key)] = decodeURIComponent(val.replace(/\+/g, ' '));
-      }
+        const parts = param.split('=');
+        if (parts.length === 2) params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
     });
     return params;
-  }
+}
 
-  /**
-   * Maps station query param pattern to display name
-   * @param {string} station
-   * @returns {string}
-   */
-  function mapStationName(station) {
+function mapStationName(station) {
     const mapping = {
-      '%LASH': 'VFLASH1', '%IPOT_1': 'HIPOT1', '%TS1': 'ATS1',
-      '%RATION': 'VIBRATION', '%TUP': 'HEATUP', '%RN_IN': 'BURNIN',
-      '%IPOT_2': 'HIPOT2', '%TS2': 'ATS2', '%LASH2': 'VFLASH2', '%TS3': 'ATS3'
+        '%LASH': 'VFLASH1', '%IPOT_1': 'HIPOT1', '%TS1': 'ATS1',
+        '%RATION':'VIBRATION', '%TUP': 'HEATUP', '%RN_IN': 'BURNIN',
+        '%IPOT_2': 'HIPOT2', '%TS2': 'ATS2', '%LASH2': 'VFLASH2', '%TS3': 'ATS3'
     };
     return mapping[station] || station;
-  }
+}
 
-  /**
-   * Safely clears the table body
-   */
-  function clearTable() {
-    tbody.innerHTML = '';
-  }
+function startWebSocket(lineId, station, workDate, displayStationName) {
+    if (ws) ws.close();
 
-  /**
-   * Initializes and starts the WebSocket connection for failure data
-   * @param {string} lineId
-   * @param {string} station
-   * @param {string} workDate
-   * @param {string} displayStationName
-   */
-  function startWebSocket(lineId, station, workDate, displayStationName) {
-    if (ws) {
-      ws.close();
-      ws = null;
-    }
+    let wsUrl = `ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}`;
+    if (workDate) wsUrl += `&workDate=${workDate}`;
 
-    const wsUrl = new URL(`ws://localhost:8000/failures/ws/station`);
-    wsUrl.searchParams.append('lineId', lineId);
-    wsUrl.searchParams.append('station', station);
-    if (workDate) wsUrl.searchParams.append('workDate', workDate);
-
-    ws = new WebSocket(wsUrl.toString());
-
-    tbody.innerHTML = '<tr><td colspan="5">Waiting for data...</td></tr>';
+    ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-      console.log(`[WS] Connected: ${wsUrl}`);
+        tbody.innerHTML = '<tr><td colspan="5">Waiting for data...</td></tr>';
     };
 
-    ws.onmessage = event => {
-      try {
+    ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        allData = Array.isArray(data) ? data : [];
 
-        if (allData.length === 0) {
-          clearTable();
-          tbody.innerHTML = `<tr><td colspan="5">No failure data for ${displayStationName} on ${workDate}.</td></tr>`;
-          destroyChart();
-          return;
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5">No failure data for ${displayStationName} on ${workDate}.</td></tr>`;
+            if (chart) chart.destroy();
+            chart = null;
+            return;
         }
 
-        updateChart(allData, displayStationName);
-        filterAndRenderTable(searchInput.value.trim().toLowerCase());
-      } catch (err) {
-        console.error("[WS] Failed to parse message:", err);
-      }
+        updateChart(data, displayStationName);
+        updateTable(data);
     };
 
-    ws.onerror = err => {
-      console.error("[WS] Error:", err);
-    };
+    ws.onclose = () => console.log("WebSocket closed");
+    ws.onerror = err => console.error("WebSocket error:", err);
+}
 
-    ws.onclose = () => {
-      console.log("[WS] Connection closed");
-    };
-  }
-
-  /**
-   * Destroys the current Chart instance if exists
-   */
-  function destroyChart() {
-    if (chart) {
-      chart.destroy();
-      chart = null;
-    }
-  }
-
-  /**
-   * Updates the chart based on data and station color
-   * @param {Array} data
-   * @param {string} displayStationName
-   */
-  function updateChart(data, displayStationName) {
-      const testerIdCounts = {};
-      data.forEach(item => {
-          testerIdCounts[item.testerId] = (testerIdCounts[item.testerId] || 0) + 1;
-      });
-
-      const sortedTesterIds = Object.entries(testerIdCounts).sort((a, b) => {
-          const numA = parseInt(a[0].match(/\d+/)?.[0] || '0', 10);
-          const numB = parseInt(b[0].match(/\d+/)?.[0] || '0', 10);
-          return numA - numB;
-      });
-
-      const labels = sortedTesterIds.map(([testerId]) => testerId);
-      const values = sortedTesterIds.map(([, count]) => count);
-
-      const stationColor = stationColors[displayStationName.toUpperCase()] || 'rgba(0,0,0,0.6)';
-
-      if (!chart) {
-          chart = new Chart(ctx, {
-              type: 'bar',
-              data: {
-                  labels,
-                  datasets: [{
-                      label: `Failures (${displayStationName})`,
-                      data: values,
-                      backgroundColor: stationColor,
-                      borderColor: stationColor,
-                      borderWidth: 1
-                  }]
-              },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                      y: {
-                          beginAtZero: true,
-                          title: {display: true, text: 'Number of Failures'},
-                          ticks: {stepSize: 1}
-                      },
-                      x: {
-                          title: {display: true, text: 'Tester ID'}
-                      }
-                  }
-              }
-          });
-      } else {
-          // อัพเดท dataset และ labels โดยไม่ต้องสร้างใหม่
-          chart.data.labels = labels;
-          chart.data.datasets[0].data = values;
-          chart.data.datasets[0].backgroundColor = stationColor;
-          chart.data.datasets[0].borderColor = stationColor;
-          chart.update();
-      }
-  }
-
-
-    /**
-   * Renders the table based on filtered data
-   * @param {Array} data
-   */
-  function updateTable(data) {
-    clearTable();
-
-    if (data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5">No matching records found.</td></tr>`;
-      return;
-    }
-
-    // Sort descending by workDate
-    data.sort((a,b) => new Date(b.workDate) - new Date(a.workDate));
-
-    data.forEach(row => {
-      const tr = document.createElement('tr');
-
-      const tdSn = document.createElement('td');
-      tdSn.textContent = row.sn || '-';
-      tr.appendChild(tdSn);
-
-      const tdTester = document.createElement('td');
-      tdTester.textContent = row.testerId || '-';
-      tr.appendChild(tdTester);
-
-      const tdFixture = document.createElement('td');
-      tdFixture.textContent = row.fixtureId || '-';
-      tr.appendChild(tdFixture);
-
-      const tdFailItem = document.createElement('td');
-      tdFailItem.textContent = row.failItem || '-';
-      tr.appendChild(tdFailItem);
-
-      const tdDate = document.createElement('td');
-      tdDate.textContent = row.workDate ? row.workDate.replace('T', ' ') : '-';
-      tr.appendChild(tdDate);
-
-      tbody.appendChild(tr);
+function updateChart(data, displayStationName) {
+    const testerIdCounts = {};
+    data.forEach(item => {
+        testerIdCounts[item.testerId] = (testerIdCounts[item.testerId] || 0) + 1;
     });
-  }
 
-  /**
-   * Filters the allData array by search term and renders the table
-   * @param {string} filter lowercased search string
-   */
-  function filterAndRenderTable(filter) {
-    if (!filter) {
-      updateTable(allData);
-      return;
-    }
+    const sortedTesterIds = Object.entries(testerIdCounts).sort((a, b) => {
+        const numA = parseInt(a[0].match(/\d+/)?.[0] || '0', 10);
+        const numB = parseInt(b[0].match(/\d+/)?.[0] || '0', 10);
+        return numA - numB;
+    });
 
-    const filtered = allData.filter(row =>
-      Object.values(row).some(val =>
-        String(val).toLowerCase().includes(filter)
-      )
-    );
+    const labels = sortedTesterIds.map(([testerId]) => testerId);
+    const values = sortedTesterIds.map(([, count]) => count);
 
-    updateTable(filtered);
-  }
+    if (chart) chart.destroy();
 
-  /**
-   * Redirects user back to summary page with parameters
-   */
-  function goBackToSummary() {
-    if (!currentLineId) {
-      window.location.href = 'index.html';
-      return;
-    }
-    window.location.href = `index.html?lineId=${encodeURIComponent(currentLineId)}&startDate=${encodeURIComponent(currentWorkDate)}&endDate=${encodeURIComponent(currentWorkDate)}`;
-  }
+    const stationColor = stationColors[displayStationName.toUpperCase()] || 'rgba(0,0,0,0.6)';
 
-  /**
-   * Initializes page based on URL params and starts WS
-   */
-  function init() {
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: `Failures (${displayStationName})`,
+                data: values,
+                backgroundColor: stationColor,
+                borderColor: stationColor,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Number of Failures' },
+                    ticks: { stepSize: 1 }
+                },
+                x: {
+                    title: { display: true, text: 'Tester ID' }
+                }
+            }
+        }
+    });
+}
+
+function updateTable(data) {
+    tbody.innerHTML = '';
+
+    data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
+    data.forEach(row => {
+        const formattedDate = row.workDate.replace('T', ' ');
+        tbody.innerHTML += `
+        <tr>
+            <td>${row.sn || '-'}</td>
+            <td>${row.testerId}</td>
+            <td>${row.fixtureId}</td>
+            <td>${row.failItem}</td>
+            <td>${formattedDate}</td>
+        </tr>`;
+    });
+}
+
+function goBackToSummary() {
+    window.location.href = `index.html?lineId=${currentLineId}&startDate=${currentWorkDate}&endDate=${currentWorkDate}`;
+}
+
+// 📌 Search function
+document.getElementById('searchInput').addEventListener('input', function () {
+    const filter = this.value.trim().toLowerCase();
+    const rows = tbody.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
     const params = getQueryParams();
-    currentLineId = params.lineId || '';
-    currentStation = params.station || '';
-    currentWorkDate = params.workDate || '';
+    const lineIdFromUrl = params.lineId;
+    const stationFromUrl = params.station;
+    const workDateFromUrl = params.workDate;
 
-    if (!currentLineId || !currentStation) {
-      pageTitleHeader.textContent = "Error: Missing Line ID or Station";
-      clearTable();
-      tbody.innerHTML = '<tr><td colspan="5">Error: Missing parameters. Please go back to the summary page.</td></tr>';
-      return;
+    if (lineIdFromUrl && stationFromUrl) {
+        currentLineId = lineIdFromUrl;
+        currentStation = stationFromUrl;
+        currentWorkDate = workDateFromUrl;
+
+        const displayStationName = mapStationName(currentStation);
+
+        displayLineIdSpan.textContent = currentLineId;
+        displayStationSpan.textContent = displayStationName;
+        displayWorkDateSpan.textContent = currentWorkDate;
+        pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
+        document.title = `${displayStationName} Failures Dashboard`;
+
+        startWebSocket(currentLineId, currentStation, currentWorkDate, displayStationName);
+    } else {
+        pageTitleHeader.textContent = "Error: Missing Line ID or Station";
+        tbody.innerHTML = '<tr><td colspan="5">Error: Missing parameters. Please go back to the summary page.</td></tr>';
     }
-
-    const displayStationName = mapStationName(currentStation);
-
-    displayLineIdSpan.textContent = currentLineId;
-    displayStationSpan.textContent = displayStationName;
-    displayWorkDateSpan.textContent = currentWorkDate;
-
-    pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
-    document.title = `${displayStationName} Failures Dashboard`;
-
-    startWebSocket(currentLineId, currentStation, currentWorkDate, displayStationName);
-  }
-
-  // Event listeners
-  searchInput.addEventListener('input', e => {
-    const filter = e.target.value.trim().toLowerCase();
-    filterAndRenderTable(filter);
-  });
-
-  window.goBackToSummary = goBackToSummary; // expose to global for button onclick
-
-  document.addEventListener('DOMContentLoaded', init);
-})();
+});
 </script>
 
 </body>

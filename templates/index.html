@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -29,7 +29,7 @@ select.styled-select, input[type="date"].styled-date {
     font-size: 14px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    background-color: #fdfaf6;
+    background-color: #fdfaf6; /* sand */
     color: #333;
     transition: border-color 0.3s ease, box-shadow 0.2s ease;
 }
@@ -62,7 +62,6 @@ th {
 }
 td.station-clickable {
     cursor: pointer;
-    transition: background-color 0.3s ease;
 }
 td.station-clickable:hover {
     background-color: #eef;
@@ -87,11 +86,6 @@ button.fixture-button:active {
     background-color: #7D4A3B;
     transform: translateY(1px);
 }
-.status-message {
-    font-style: italic;
-    color: #666;
-    margin-top: 10px;
-}
 </style>
 </head>
 <body>
@@ -99,16 +93,16 @@ button.fixture-button:active {
 <div class="container">
     <h2>BMW Failures Summary</h2>
 
-    <label for="lineIdSelect">Line:</label>
+    <label>Line:</label>
     <select id="lineIdSelect" class="styled-select">
         <option value="BMA01">BMA01</option>
         <option value="B3">B3</option>
     </select>
 
-    <label for="startDate">Start Date:</label>
+    <label>Start Date:</label>
     <input type="date" id="startDate" class="styled-date" />
 
-    <label for="endDate">End Date:</label>
+    <label>End Date:</label>
     <input type="date" id="endDate" class="styled-date" />
 
     <button id="fixtureButton" class="fixture-button">View Fixture Details</button>
@@ -116,8 +110,6 @@ button.fixture-button:active {
     <div id="chartContainer">
         <canvas id="failuresChart"></canvas>
     </div>
-
-    <div id="statusMessage" class="status-message"></div>
 
     <h3>Summary Table</h3>
     <table>
@@ -144,268 +136,210 @@ button.fixture-button:active {
 </div>
 
 <script>
-(() => {
-    const stationColors = {
-        'VFlash1': '#C77B55',
-        'Hipot1':  '#7D8B63',
-        'ATS1':    '#D6C6B8',
-        'Heatup':  '#A6A57A',
-        'Vibration': '#6C7A89',
-        'Burn-in': '#BCA875',
-        'Hipot2':  '#4B4B4B',
-        'ATS2':    '#9B5E4A',
-        'VFlash2': '#D9D9D9',
-        'ATS3':    '#C4A69F'
+const stationColors = {
+    'VFlash1': '#C77B55',   // Muted Terracotta (warm red-orange)
+    'Hipot1':  '#7D8B63',   // Moss Green
+    'ATS1':    '#D6C6B8',   // Warm Sand
+    'Heatup':  '#A6A57A',   // Soft Olive
+    'Vibration': '#6C7A89', // Slate Blue Gray
+    'Burn-in': '#BCA875',   // Accent Gold
+    'Hipot2':  '#4B4B4B',   // Neutral Dark Gray
+    'ATS2':    '#9B5E4A',   // Accent Rust
+    'VFlash2': '#D9D9D9',   // Neutral Light Gray
+    'ATS3':    '#C4A69F'    // Moss Green (ซ้ำได้เพราะใกล้กัน)
+};
+
+
+
+const stationMap = {
+    "VFlash1": "%LASH",
+    "Hipot1": "%IPOT_1",
+    "ATS1": "%TS1",
+    "Heatup": "%TUP",
+    "Vibration": "%RATION",
+    "Burn-in": "%RN_IN",
+    "Hipot2": "%IPOT_2",
+    "ATS2": "%TS2",
+    "VFlash2": "%LASH2",
+    "ATS3": "%TS3"
+};
+
+const lineIdSelect = document.getElementById('lineIdSelect');
+const startDateInput = document.getElementById('startDate');
+const endDateInput = document.getElementById('endDate');
+const tableBody = document.getElementById('tableBody');
+const ctx = document.getElementById('failuresChart').getContext('2d');
+
+let ws = null;
+let chart = null;
+let currentLineId = lineIdSelect.value;
+
+document.getElementById('fixtureButton').addEventListener('click', () => {
+    const lineId = lineIdSelect.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+
+    const url = `fixture-detail.html?lineId=${lineId}&startDate=${startDate}&endDate=${endDate}`;
+    window.location.href = url;
+});
+
+function saveState() {
+    sessionStorage.setItem("lineId", lineIdSelect.value);
+    sessionStorage.setItem("startDate", startDateInput.value);
+    sessionStorage.setItem("endDate", endDateInput.value);
+}
+
+function restoreState() {
+    const savedLineId = sessionStorage.getItem("lineId");
+    const savedStartDate = sessionStorage.getItem("startDate");
+    const savedEndDate = sessionStorage.getItem("endDate");
+    const today = new Date().toISOString().split('T')[0];
+
+    lineIdSelect.value = savedLineId || "BMA01";
+    startDateInput.value = savedStartDate || today;
+    endDateInput.value = savedEndDate || today;
+}
+
+function navigateToPage(pageName, lineId, stationName, workDate) {
+    saveState(); // เก็บสถานะก่อนเปลี่ยนหน้า
+    const timestamp = Date.now();
+    const url = `${pageName}.html?lineId=${lineId}&station=${encodeURIComponent(stationName)}&workDate=${workDate}&_ts=${timestamp}`;
+    window.location.href = url;
+}
+
+function reloadData() {
+    if (ws) ws.close();
+
+    currentLineId = lineIdSelect.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+    const ts = Date.now();
+
+    let wsUrl = `ws://10.216.128.133/failures/ws/filter?lineId=${currentLineId}&_ts=${ts}`;
+    if (startDate) wsUrl += `&startDate=${startDate}`;
+    if (endDate) wsUrl += `&endDate=${endDate}`;
+
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        tableBody.innerHTML = `<tr><td colspan="12">Loading...</td></tr>`;
     };
 
-    const stationMap = {
-        "VFlash1": "%LASH",
-        "Hipot1": "%IPOT_1",
-        "ATS1": "%TS1",
-        "Heatup": "%TUP",
-        "Vibration": "%RATION",
-        "Burn-in": "%RN_IN",
-        "Hipot2": "%IPOT_2",
-        "ATS2": "%TS2",
-        "VFlash2": "%LASH2",
-        "ATS3": "%TS3"
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (!data || data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="12">No data available</td></tr>`;
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+            return;
+        }
+        renderChart(data);
+        renderTable(data);
     };
 
-    const lineIdSelect = document.getElementById('lineIdSelect');
-    const startDateInput = document.getElementById('startDate');
-    const endDateInput = document.getElementById('endDate');
-    const tableBody = document.getElementById('tableBody');
-    const statusMessage = document.getElementById('statusMessage');
-    const ctx = document.getElementById('failuresChart').getContext('2d');
-    const fixtureButton = document.getElementById('fixtureButton');
+    ws.onclose = () => console.log("WebSocket closed.");
+    ws.onerror = err => console.error("WebSocket error", err);
+}
 
-    let ws = null;
-    let chart = null;
-    let currentLineId = lineIdSelect.value;
+function renderChart(data) {
+    const labels = data.map(row => row.workDate);
+    const stationKeys = Object.keys(stationMap);
 
-    function saveState() {
-        sessionStorage.setItem("lineId", lineIdSelect.value);
-        sessionStorage.setItem("startDate", startDateInput.value);
-        sessionStorage.setItem("endDate", endDateInput.value);
-    }
+    const datasets = stationKeys.map(station => ({
+        label: station,
+        data: data.map(row => row[station.toLowerCase()]),
+        backgroundColor: stationColors[station],
+        borderColor: stationColors[station],
+        borderWidth: 1
+    }));
 
-    function restoreState() {
-        const savedLineId = sessionStorage.getItem("lineId");
-        const savedStartDate = sessionStorage.getItem("startDate");
-        const savedEndDate = sessionStorage.getItem("endDate");
-        const today = new Date().toISOString().split('T')[0];
+    if (chart) chart.destroy();
 
-        lineIdSelect.value = savedLineId || "BMA01";
-        startDateInput.value = savedStartDate || today;
-        endDateInput.value = savedEndDate || today;
-    }
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            onClick: (event, elements) => {
+                if (elements.length > 0) {
+                    const element = elements[0];
+                    const datasetIndex = element.datasetIndex;
+                    const index = element.index;
 
-    function navigateToPage(pageName, lineId, stationName, workDate) {
-        saveState();
-        const timestamp = Date.now();
-        const url = `${pageName}.html?lineId=${lineId}&station=${encodeURIComponent(stationName)}&workDate=${workDate}&_ts=${timestamp}`;
-        window.location.href = url;
-    }
+                    const station = stationKeys[datasetIndex];
+                    const mapped = stationMap[station];
+                    const workDate = data[index].workDate;
 
-    function clearTable() {
-        while (tableBody.firstChild) {
-            tableBody.removeChild(tableBody.firstChild);
-        }
-    }
-
-    function addTableRow(html) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = html;
-        tableBody.appendChild(tr);
-    }
-
-    function renderChart(data) {
-        const labels = data.map(row => row.workDate);
-        const stationKeys = Object.keys(stationMap);
-
-        const datasets = stationKeys.map(station => ({
-            label: station,
-            data: data.map(row => row[station.toLowerCase()]),
-            backgroundColor: stationColors[station],
-            borderColor: stationColors[station],
-            borderWidth: 1
-        }));
-
-        // 🔷 destroy old chart
-        if (chart) {
-            chart.destroy();
-            chart = null;
-        }
-
-        chart = new Chart(ctx, {
-            type: 'bar',
-            data: { labels, datasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                onClick: (event, elements) => {
-                    if (elements.length > 0) {
-                        const element = elements[0];
-                        const station = stationKeys[element.datasetIndex];
-                        const mapped = stationMap[station];
-                        const workDate = data[element.index].workDate;
-                        if (mapped && workDate) {
-                            navigateToPage('station-detail', currentLineId, mapped, workDate);
-                        } else {
-                            alert("No data for this point.");
-                        }
+                    if (mapped && workDate) {
+                        navigateToPage('station-detail', currentLineId, mapped, workDate);
                     }
-                },
-                scales: {
-                    x: { stacked: true, title: { display: true, text: "Date" } },
-                    y: { stacked: true, beginAtZero: true, title: { display: true, text: "Failures" } }
                 }
+            },
+            scales: {
+                x: { stacked: true, title: { display: true, text: "Date" } },
+                y: { stacked: true, beginAtZero: true, title: { display: true, text: "Failures" } }
             }
-        });
+        }
+    });
+}
+
+function renderTable(data) {
+    tableBody.innerHTML = "";
+    data.forEach(row => {
+        const workDate = row.workDate;
+        tableBody.innerHTML += `
+            <tr>
+                <td>${workDate}</td>
+                ${renderCell(row.vflash1, 'VFlash1', workDate)}
+                ${renderCell(row.hipot1, 'Hipot1', workDate)}
+                ${renderCell(row.ats1, 'ATS1', workDate)}
+                ${renderCell(row.heatup, 'Heatup', workDate)}
+                ${renderCell(row.vibration, 'Vibration', workDate)}
+                ${renderCell(row.burnin, 'Burn-in', workDate)}
+                ${renderCell(row.hipot2, 'Hipot2', workDate)}
+                ${renderCell(row.ats2, 'ATS2', workDate)}
+                ${renderCell(row.vflash2, 'VFlash2', workDate)}
+                ${renderCell(row.ats3, 'ATS3', workDate)}
+                <td>${row.total}</td>
+            </tr>
+        `;
+    });
+}
+
+// helper function
+function renderCell(value, stationKey, workDate) {
+    if (value > 0) {
+        return `<td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap[stationKey]}', '${workDate}')">${value}</td>`;
+    } else {
+        return `<td>${value}</td>`;
     }
+}
 
-    function renderTable(data) {
-        clearTable();
 
-        if (!data.length) {
-            addTableRow('<td colspan="12">No data available</td>');
-            return;
-        }
+document.addEventListener("DOMContentLoaded", () => {
+    restoreState();
+    reloadData();
 
-        data.forEach(row => {
-            const tr = document.createElement('tr');
-            tr.appendChild(createCell(row.workDate));
-
-            ['vflash1', 'hipot1', 'ats1', 'heatup', 'vibration', 'burnin', 'hipot2', 'ats2', 'vflash2', 'ats3'].forEach((key, idx) => {
-                const val = row[key];
-                const stationKey = Object.keys(stationMap)[idx];
-                const td = createCell(val);
-                if (val > 0) {
-                    td.classList.add('station-clickable');
-                    td.addEventListener('click', () => {
-                        navigateToPage('station-detail', currentLineId, stationMap[stationKey], row.workDate);
-                    });
-                }
-                tr.appendChild(td);
-            });
-
-            tr.appendChild(createCell(row.total));
-            tableBody.appendChild(tr);
-        });
-    }
-
-    function createCell(text) {
-        const td = document.createElement('td');
-        td.textContent = text;
-        return td;
-    }
-
-    function reloadData() {
-        if (ws) ws.close();
-
-        // 🔷 destroy old chart
-        if (chart) {
-            chart.destroy();
-            chart = null;
-        }
-
-        currentLineId = lineIdSelect.value;
-        const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
-        const ts = Date.now();
-
-        if (!currentLineId) {
-            statusMessage.textContent = "Please select a valid line.";
-            return;
-        }
-        if (!startDate) {
-            statusMessage.textContent = "Please select a start date.";
-            return;
-        }
-        if (!endDate) {
-            statusMessage.textContent = "Please select an end date.";
-            return;
-        }
-        if (startDate > endDate) {
-            statusMessage.textContent = "Start date cannot be after end date.";
-            return;
-        }
-
-        statusMessage.textContent = "Connecting to data source...";
-
-        let wsUrl = `ws://localhost:8000/failures/ws/filter?lineId=${encodeURIComponent(currentLineId)}&_ts=${ts}`;
-        wsUrl += `&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
-
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            clearTable();
-            addTableRow('<td colspan="12">Loading data...</td>');
-            statusMessage.textContent = "Loading data...";
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-
-                if (!Array.isArray(data) || data.length === 0) {
-                    clearTable();
-                    addTableRow('<td colspan="12">No data available for the selected criteria.</td>');
-                    statusMessage.textContent = "No data available.";
-                    return;
-                }
-
-                renderChart(data);
-                renderTable(data);
-                statusMessage.textContent = "";
-            } catch (err) {
-                console.error("Failed to parse data:", err);
-                statusMessage.textContent = "Error: Received invalid data.";
-            }
-        };
-
-        ws.onclose = () => {
-            console.log("WebSocket connection closed.");
-            if (!statusMessage.textContent) {
-                statusMessage.textContent = "Connection closed.";
-            }
-        };
-
-        ws.onerror = (err) => {
-            console.error("WebSocket error:", err);
-            statusMessage.textContent = "Error: Could not connect to data source.";
-        };
-    }
-
-    fixtureButton.addEventListener('click', () => {
+    lineIdSelect.addEventListener('change', () => {
         saveState();
-        const lineId = lineIdSelect.value;
-        const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
-
-        if (!lineId || !startDate || !endDate) {
-            alert("Please select Line, Start Date, and End Date before viewing fixture details.");
-            return;
-        }
-
-        const url = `fixture-detail.html?lineId=${encodeURIComponent(lineId)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
-        window.location.href = url;
-    });
-
-    document.addEventListener("DOMContentLoaded", () => {
-        restoreState();
         reloadData();
-
-        [lineIdSelect, startDateInput, endDateInput].forEach(el => {
-            el.addEventListener('change', () => {
-                saveState();
-                reloadData();
-            });
-        });
     });
-})();
+    startDateInput.addEventListener('change', () => {
+        saveState();
+        reloadData();
+    });
+    endDateInput.addEventListener('change', () => {
+        saveState();
+        reloadData();
+    });
+});
 </script>
-
 
 </body>
 </html>

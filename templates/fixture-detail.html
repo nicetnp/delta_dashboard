@@ -1,73 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Fixture Failures Dashboard by Tester</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  body {
+body {
     font-family: Arial, sans-serif;
     text-align: center;
     margin: 20px;
     background-color: #f4f7f6;
     color: #333;
-  }
-  h2 {
+}
+h2 {
     color: #2c3e50;
     margin-bottom: 25px;
-  }
-  .container {
+}
+.container {
     max-width: 90%;
     margin: 0 auto;
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  #chartContainer {
+}
+#chartContainer {
     width: 80%;
     margin: 20px auto;
     position: relative;
     height: 400px;
-  }
-  canvas {
+}
+canvas {
     max-width: 100%;
     height: auto;
-  }
-  /* เอา div.table-header ออกแล้วใช้สไตล์ input ตรงๆ */
-  #searchInput {
-    padding: 8px 12px;
-    font-size: 16px;
+}
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px auto 10px auto;
+    width: 90%;
+}
+.table-header h3 {
+    margin: 0;
+    text-align: center;
+    flex: 1;
+}
+.table-header input {
+    padding: 6px 10px;
+    font-size: 14px;
     border: 1px solid #ccc;
-    border-radius: 6px;
-    width: 300px;
-    margin: 0 auto 15px auto;
-    display: block;
-  }
-  table {
+    border-radius: 4px;
+    width: 200px;
+}
+table {
     margin: 0 auto;
     border-collapse: collapse;
     width: 90%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-  th, td {
+}
+th, td {
     border: 1px solid #e0e0e0;
     padding: 12px 15px;
     text-align: center;
     font-size: 15px;
-  }
-  th {
+}
+th {
     background-color: #e9ecef;
     font-weight: bold;
     color: #333;
-  }
-  tr:nth-child(even) {
+}
+tr:nth-child(even) {
     background-color: #f8f9fa;
-  }
-  tr:hover {
+}
+tr:hover {
     background-color: #e2f4e8;
-  }
-  .back-button {
+}
+.back-button {
     background-color: #007bff;
     color: white;
     padding: 10px 20px;
@@ -77,284 +86,199 @@
     font-size: 16px;
     margin-top: 20px;
     transition: background-color 0.3s ease;
-  }
-  .back-button:hover {
+}
+.back-button:hover {
     background-color: #0056b3;
-  }
-  .line-info {
-    font-weight: bold;
-    margin-bottom: 10px;
-    font-size: 18px;
-  }
+}
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h2 id="pageTitle">Fixture Failure Count by Tester</h2>
+    <h2 id="pageTitle">Fixture Failure Count by Tester</h2>
+    <div class="line-info">Line ID: <span id="displayLineId"></span></div>
 
-  <div class="line-info">Line ID: <span id="displayLineId"></span></div>
+    <div id="chartContainer">
+        <canvas id="failuresChart"></canvas>
+    </div>
 
-  <div id="chartContainer">
-    <canvas id="failuresChart"></canvas>
-  </div>
+    <div class="table-header">
+        <input type="text" id="searchInput" placeholder="Search…">
+    </div>
 
-  <!-- เปลี่ยนจาก div.table-header มาเป็น input ตรงๆ และจัดให้อยู่กลาง -->
-  <input type="text" id="searchInput" placeholder="Search tester, fixture, fail item...">
-
-  <table>
-    <thead>
-      <tr>
-        <th>Tester</th>
-        <th>Fixture</th>
-        <th>Fail Item</th>
-        <th>Date/Time</th>
-      </tr>
-    </thead>
-    <tbody id="resultTableBody">
-      <tr><td colspan="4">Loading data...</td></tr>
-    </tbody>
-  </table>
-
-  <button class="back-button" id="backButton">Back to Summary</button>
+    <table>
+        <thead>
+            <tr>
+                <th>Tester</th>
+                <th>Fixture</th>
+                <th>Fail Item</th>
+                <th>Date/Time</th>
+            </tr>
+        </thead>
+        <tbody id="resultTableBody">
+            <tr><td colspan="4">Loading data...</td></tr>
+        </tbody>
+    </table>
+    <button class="back-button" onclick="goBackToSummary()">Back to Summary</button>
 </div>
 
 <script>
-  (() => {
-    // === Cached elements ===
-    const ctx = document.getElementById('failuresChart').getContext('2d');
-    const tbody = document.getElementById('resultTableBody');
-    const displayLineIdSpan = document.getElementById('displayLineId');
-    const searchInput = document.getElementById('searchInput');
-    const backButton = document.getElementById('backButton');
+const ctx = document.getElementById('failuresChart').getContext('2d');
+const tbody = document.getElementById('resultTableBody');
+const displayLineIdSpan = document.getElementById('displayLineId');
+const searchInput = document.getElementById('searchInput');
 
-    // === Variables ===
-    let ws = null;
-    let chart = null;
-    let currentLineId = '';
-    let allData = [];
-    let debounceTimer = null;
+let ws = null;
+let chart = null;
+let currentLineId = '';
+let currentData = [];
 
-    // === Utility: Get Query Params ===
-    function getQueryParams() {
-      const params = {};
-      window.location.search.substring(1).split('&').forEach(param => {
+// อ่าน query params จาก URL
+function getQueryParams() {
+    const params = {};
+    window.location.search.substring(1).split('&').forEach(param => {
         const parts = param.split('=');
         if (parts.length === 2) {
-          params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
+            params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
         }
-      });
-      return params;
-    }
+    });
+    return params;
+}
 
-    // === Clear Table ===
-    function clearTable() {
-      tbody.innerHTML = '';
-    }
+function startWebSocket(lineId, startDate, endDate) {
+    if (ws) ws.close();
 
-    // === Create Table Row ===
-    function createRow(rowData) {
-      const tr = document.createElement('tr');
+    currentLineId = lineId;
 
-      const tdTester = document.createElement('td');
-      tdTester.textContent = rowData.testerId || '-';
-      tr.appendChild(tdTester);
+    let wsUrl = `ws://localhost:8000/failures/ws/fixture?lineId=${lineId}`;
+    if (startDate) wsUrl += `&startDate=${startDate}`;
+    if (endDate) wsUrl += `&endDate=${endDate}`;
 
-      const tdFixture = document.createElement('td');
-      tdFixture.textContent = rowData.fixtureId || '-';
-      tr.appendChild(tdFixture);
+    ws = new WebSocket(wsUrl);
 
-      const tdFailItem = document.createElement('td');
-      tdFailItem.textContent = rowData.failItem || '-';
-      tr.appendChild(tdFailItem);
+    ws.onopen = () => {
+        console.log(`✅ WebSocket opened for lineId=${lineId}`);
+        tbody.innerHTML = '<tr><td colspan="4">Waiting for data...</td></tr>';
+    };
 
-      const tdDate = document.createElement('td');
-      tdDate.textContent = rowData.workDate ? rowData.workDate.replace('T', ' ') : '-';
-      tr.appendChild(tdDate);
-
-      return tr;
-    }
-
-    // === Render Table with Data ===
-    function renderTable(data) {
-      clearTable();
-      if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="4">No matching records found.</td></tr>';
-        return;
-      }
-      // Sort by workDate descending
-      data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
-
-      data.forEach(row => {
-        tbody.appendChild(createRow(row));
-      });
-    }
-
-    // === Update Chart ===
-    function updateChart(data) {
-      // Count failures by fixtureId (exclude 'onstation')
-      const fixtureCounts = {};
-      data.forEach(item => {
-        if (item.fixtureId && item.fixtureId.toLowerCase() === 'onstation') return;
-        fixtureCounts[item.fixtureId] = (fixtureCounts[item.fixtureId] || 0) + 1;
-      });
-
-      const sortedFixtures = Object.entries(fixtureCounts).sort((a, b) => a[0].localeCompare(b[0]));
-      const labels = sortedFixtures.map(([fixture]) => fixture);
-      const values = sortedFixtures.map(([, count]) => count);
-
-      if (!labels.length) {
-        if (chart) {
-          chart.clear();
-          chart.update();
+    ws.onmessage = (event) => {
+        currentData = JSON.parse(event.data) || [];
+        if (currentData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4">No Fixture failure data available for this line in selected range.</td></tr>';
+            if (chart) chart.destroy();
+            chart = null;
+            return;
         }
+
+        updateChart(currentData);
+        renderTable(currentData);
+    };
+
+    ws.onclose = () => {
+        console.log("❌ WebSocket closed");
+    };
+
+    ws.onerror = (err) => {
+        console.error("❗ WebSocket error:", err);
+    };
+}
+
+function updateChart(data) {
+    const fixtureIdCounts = {};
+    data.forEach(item => {
+        if (item.fixtureId.toLowerCase() === 'onstation') return;
+        fixtureIdCounts[item.fixtureId] = (fixtureIdCounts[item.fixtureId] || 0) + 1;
+    });
+
+    const sortedFixtureIds = Object.entries(fixtureIdCounts).sort((a, b) => a[0].localeCompare(b[0]));
+
+    const labels = sortedFixtureIds.map(([fixtureId]) => fixtureId);
+    const values = sortedFixtureIds.map(([_, count]) => count);
+
+    if (chart) chart.destroy();
+
+    if (labels.length === 0) {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         return;
-      }
+    }
 
-      if (!chart) {
-        chart = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels,
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
             datasets: [{
-              label: 'Total Failures by Fixture',
-              data: values,
-              backgroundColor: 'rgb(178,174,174)',
-              borderColor: 'rgb(178,174,174)',
-              borderWidth: 1,
+                label: `Total Failures by Fixture`,
+                data: values,
+                backgroundColor: 'rgb(178,174,174)',
+                borderColor: 'rgb(178,174,174)',
+                borderWidth: 1
             }]
-          },
-          options: {
+        },
+        options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-              y: {
-                beginAtZero: true,
-                title: { display: true, text: 'Number of Failures' },
-                ticks: { stepSize: 1 }
-              },
-              x: { title: { display: true, text: 'Fixture ID' } }
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Number of Failures' },
+                    ticks: { stepSize: 1 }
+                },
+                x: { title: { display: true, text: 'Fixture ID' } }
             },
             plugins: { legend: { display: true, position: 'top' } }
-          }
-        });
-      } else {
-        chart.data.labels = labels;
-        chart.data.datasets[0].data = values;
-        chart.update();
-      }
-    }
-
-    // === Start WebSocket Connection ===
-    function startWebSocket(lineId, startDate, endDate) {
-      if (ws) {
-        ws.close();
-        ws = null;
-      }
-
-      currentLineId = lineId;
-
-      let wsUrl = `ws://localhost:8000/failures/ws/fixture?lineId=${encodeURIComponent(lineId)}`;
-      if (startDate) wsUrl += `&startDate=${encodeURIComponent(startDate)}`;
-      if (endDate) wsUrl += `&endDate=${encodeURIComponent(endDate)}`;
-
-      ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        console.log(`✅ WebSocket connected for lineId=${lineId}`);
-        clearTable();
-        const loadingRow = document.createElement('tr');
-        loadingRow.innerHTML = '<td colspan="4">Waiting for data...</td>';
-        tbody.appendChild(loadingRow);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          allData = JSON.parse(event.data) || [];
-        } catch (e) {
-          console.error("Failed to parse WebSocket message", e);
-          allData = [];
         }
+    });
+}
 
-        if (!allData.length) {
-          clearTable();
-          const noDataRow = document.createElement('tr');
-          noDataRow.innerHTML = '<td colspan="4">No Fixture failure data available for this line in selected range.</td>';
-          tbody.appendChild(noDataRow);
+function renderTable(data) {
+    tbody.innerHTML = '';
+    data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
+    data.forEach(row => {
+        const formattedDate = row.workDate.replace('T', ' ');
+        tbody.innerHTML += `
+        <tr>
+            <td>${row.testerId}</td>
+            <td>${row.fixtureId}</td>
+            <td>${row.failItem || '-'}</td>
+            <td>${formattedDate}</td>
+        </tr>`;
+    });
+}
 
-          if (chart) {
-            chart.clear();
-            chart.update();
-          }
-          return;
-        }
+searchInput.addEventListener('input', () => {
+    const filter = searchInput.value.trim().toLowerCase();
+    const filteredData = currentData.filter(row =>
+        Object.values(row).some(val => String(val).toLowerCase().includes(filter))
+    );
+    renderTable(filteredData);
+});
 
-        updateChart(allData);
-        renderTable(allData);
-      };
+function goBackToSummary() {
+    const savedStartDate = sessionStorage.getItem("startDate") || '';
+    const savedEndDate = sessionStorage.getItem("endDate") || '';
 
-      ws.onerror = (err) => {
-        console.error("❗ WebSocket error:", err);
-      };
+    // ส่งกลับไปทั้ง lineId + วันที่
+    window.location.href = `index.html?lineId=${encodeURIComponent(currentLineId)}&startDate=${encodeURIComponent(savedStartDate)}&endDate=${encodeURIComponent(savedEndDate)}`;
+}
 
-      ws.onclose = () => {
-        console.log("❌ WebSocket closed");
-      };
-    }
 
-    // === Debounced Search Handler ===
-    function handleSearchInput() {
-      if (debounceTimer) clearTimeout(debounceTimer);
+document.addEventListener('DOMContentLoaded', () => {
+    const params = getQueryParams();
+    const lineIdFromUrl = params.lineId;
 
-      debounceTimer = setTimeout(() => {
-        const filter = searchInput.value.trim().toLowerCase();
-        if (!filter) {
-          renderTable(allData);
-          return;
-        }
-        const filtered = allData.filter(row =>
-          Object.values(row).some(val =>
-            String(val).toLowerCase().includes(filter)
-          )
-        );
-        renderTable(filtered);
-      }, 300); // 300ms debounce delay
-    }
+    const savedStartDate = sessionStorage.getItem("startDate");
+    const savedEndDate = sessionStorage.getItem("endDate");
 
-    // === Back to Summary ===
-    function goBackToSummary() {
-      window.location.href = `index.html?lineId=${encodeURIComponent(currentLineId)}`;
-    }
+    if (lineIdFromUrl) {
+        currentLineId = lineIdFromUrl;
+        displayLineIdSpan.textContent = currentLineId;
 
-    // === Init Page ===
-    function init() {
-      const params = getQueryParams();
-      const lineId = params.lineId || '';
-
-      if (!lineId) {
+        startWebSocket(currentLineId, savedStartDate, savedEndDate);
+    } else {
         document.getElementById('pageTitle').textContent = "Error: Line ID Missing";
-        clearTable();
-        const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="4">Error: Line ID not provided. Please go back.</td>';
-        tbody.appendChild(tr);
-        return;
-      }
-
-      displayLineIdSpan.textContent = lineId;
-
-      const startDate = sessionStorage.getItem("startDate");
-      const endDate = sessionStorage.getItem("endDate");
-
-      startWebSocket(lineId, startDate, endDate);
+        tbody.innerHTML = '<tr><td colspan="4">Error: Line ID not provided. Please go back.</td></tr>';
     }
-
-    // === Event Listeners ===
-    searchInput.addEventListener('input', handleSearchInput);
-    backButton.addEventListener('click', goBackToSummary);
-
-    document.addEventListener('DOMContentLoaded', init);
-  })();
+});
 </script>
 
 </body>

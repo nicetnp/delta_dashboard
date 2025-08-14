@@ -60,11 +60,9 @@ async def failure_today_ws(websocket: WebSocket):
 
     except WebSocketDisconnect:
         print("❌ Client disconnected")
-        alive = False
 
     except Exception as e:
         print(f"❗ Unexpected error: {e}")
-        alive = False
 
     finally:
         print("🔒 Connection closed")

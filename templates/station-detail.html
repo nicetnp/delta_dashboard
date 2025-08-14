@@ -1,83 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title id="pageTitle">Failures Dashboard by Tester</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 20px;
-    background-color: #f4f7f6;
-    color: #333;
-}
-h2 {
-    color: #2c3e50;
-    margin-bottom: 25px;
-}
-.container {
-    max-width: 90%;
-    margin: 0 auto;
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-#chartContainer {
-    width: 80%;
-    margin: 20px auto;
-    position: relative;
-    height: 400px;
-}
-canvas {
-    max-width: 100%;
-    height: auto;
-}
-table {
-    margin: 20px auto;
-    border-collapse: collapse;
-    width: 90%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-th, td {
-    border: 1px solid #e0e0e0;
-    padding: 12px 15px;
-    text-align: center;
-    font-size: 15px;
-}
-th {
-    background-color: #e9ecef;
-    font-weight: bold;
-    color: #333;
-}
-tr:nth-child(even) {
-    background-color: #f8f9fa;
-}
-tr:hover {
-    background-color: #e2f4e8;
-}
-.line-info {
-    font-size: 1.2em;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #444;
-}
-.back-button {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 20px;
-    transition: background-color 0.3s ease;
-}
-.back-button:hover {
-    background-color: #0056b3;
-}
-</style>
+    <meta charset="UTF-8">
+    <title id="pageTitle">Failures Dashboard by Tester</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+
+        .container {
+            max-width: 90%;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #chartContainer {
+            width: 80%;
+            margin: 20px auto;
+            position: relative;
+            height: 400px;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 90%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 12px 15px;
+            text-align: center;
+            font-size: 15px;
+        }
+
+        th {
+            background-color: #e9ecef;
+            font-weight: bold;
+            color: #333;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e2f4e8;
+        }
+
+        .line-info {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        .back-button, .action-button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-button {
+            margin-top: 20px;
+        }
+
+        .action-button {
+            margin-left: 10px;
+        }
+
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
 </head>
 <body>
 
@@ -93,25 +119,26 @@ tr:hover {
         <canvas id="failuresChart"></canvas>
     </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; margin-bottom: 10px; width: 90%; margin-left: auto; margin-right: auto;">
-
-        <div>
-            <input type="text" id="searchInput" placeholder="Search..." style="padding: 6px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;">
-        </div>
+    <div class="table-controls">
+        <input type="text" id="searchInput" placeholder="Search..."
+               style="padding: 6px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;">
+        <button id="toggleChartButton" class="action-button">Top 5 Failed</button>
     </div>
 
     <table>
         <thead>
-            <tr>
-                <th>Serial Number</th>
-                <th>Tester</th>
-                <th>Fixture</th>
-                <th>Fail Item</th>
-                <th>Date/Time</th>
-            </tr>
+        <tr>
+            <th>Serial Number</th>
+            <th>Tester</th>
+            <th>Fixture</th>
+            <th>Fail Item</th>
+            <th>Date/Time</th>
+        </tr>
         </thead>
         <tbody id="resultTableBody">
-            <tr><td colspan="5">Loading data...</td></tr>
+        <tr>
+            <td colspan="5">Loading data...</td>
+        </tr>
         </tbody>
     </table>
 
@@ -119,175 +146,198 @@ tr:hover {
 </div>
 
 <script>
-const stationColors = {
-    'VFLASH1': '#C77B55', 'HIPOT1': '#7D8B63', 'ATS1': '#D6C6B8',
-    'HEATUP': '#A6A57A', 'VIBRATION': '#6C7A89', 'BURNIN': '#BCA875',
-    'HIPOT2': '#4B4B4B', 'ATS2': '#9B5E4A', 'VFLASH2': '#C4A69F', 'ATS3': '#C4A69F'
-};
-
-const ctx = document.getElementById('failuresChart').getContext('2d');
-const tbody = document.getElementById('resultTableBody');
-const displayLineIdSpan = document.getElementById('displayLineId');
-const displayStationSpan = document.getElementById('displayStation');
-const displayWorkDateSpan = document.getElementById('displayWorkDate');
-const pageTitleHeader = document.getElementById('pageTitleHeader');
-
-let ws = null, chart = null;
-let currentLineId = '', currentStation = '', currentWorkDate = '';
-
-function getQueryParams() {
-    const params = {};
-    window.location.search.substring(1).split('&').forEach(param => {
-        const parts = param.split('=');
-        if (parts.length === 2) params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
-    });
-    return params;
-}
-
-function mapStationName(station) {
-    const mapping = {
-        '%LASH': 'VFLASH1', '%IPOT_1': 'HIPOT1', '%TS1': 'ATS1',
-        '%RATION':'VIBRATION', '%TUP': 'HEATUP', '%RN_IN': 'BURNIN',
-        '%IPOT_2': 'HIPOT2', '%TS2': 'ATS2', '%LASH2': 'VFLASH2', '%TS3': 'ATS3'
-    };
-    return mapping[station] || station;
-}
-
-function startWebSocket(lineId, station, workDate, displayStationName) {
-    if (ws) ws.close();
-
-    let wsUrl = `ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}`;
-    if (workDate) wsUrl += `&workDate=${workDate}`;
-
-    ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-        tbody.innerHTML = '<tr><td colspan="5">Waiting for data...</td></tr>';
+    const stationColors = {
+        'VFLASH1': '#C77B55', 'HIPOT1': '#7D8B63', 'ATS1': '#D6C6B8',
+        'HEATUP': '#A6A57A', 'VIBRATION': '#6C7A89', 'BURNIN': '#BCA875',
+        'HIPOT2': '#4B4B4B', 'ATS2': '#9B5E4A', 'VFLASH2': '#C4A69F', 'ATS3': '#C4A69F'
     };
 
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+    const ctx = document.getElementById('failuresChart').getContext('2d');
+    const tbody = document.getElementById('resultTableBody');
+    const displayLineIdSpan = document.getElementById('displayLineId');
+    const displayStationSpan = document.getElementById('displayStation');
+    const displayWorkDateSpan = document.getElementById('displayWorkDate');
+    const pageTitleHeader = document.getElementById('pageTitleHeader');
 
-        if (!data || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5">No failure data for ${displayStationName} on ${workDate}.</td></tr>`;
-            if (chart) chart.destroy();
-            chart = null;
-            return;
-        }
+    let ws = null, chart = null;
+    let currentLineId = '', currentStation = '', currentWorkDate = '';
+    let originalData = [];
+    let isTopFailedChart = false;
 
-        updateChart(data, displayStationName);
-        updateTable(data);
-    };
+    function getQueryParams() {
+        const params = {};
+        window.location.search.substring(1).split('&').forEach(param => {
+            const parts = param.split('=');
+            if (parts.length === 2) params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
+        });
+        return params;
+    }
 
-    ws.onclose = () => console.log("WebSocket closed");
-    ws.onerror = err => console.error("WebSocket error:", err);
-}
+    function mapStationName(station) {
+        const mapping = {
+            '%LASH': 'VFLASH1', '%IPOT_1': 'HIPOT1', '%TS1': 'ATS1',
+            '%RATION': 'VIBRATION', '%TUP': 'HEATUP', '%RN_IN': 'BURNIN',
+            '%IPOT_2': 'HIPOT2', '%TS2': 'ATS2', '%LASH2': 'VFLASH2', '%TS3': 'ATS3'
+        };
+        return mapping[station] || station;
+    }
 
-function updateChart(data, displayStationName) {
-    const testerIdCounts = {};
-    data.forEach(item => {
-        testerIdCounts[item.testerId] = (testerIdCounts[item.testerId] || 0) + 1;
-    });
+    function startWebSocket(lineId, station, workDate, displayStationName) {
+        if (ws) ws.close();
+        let wsUrl = `ws://10.216.128.133/failures/ws/station?lineId=${lineId}&station=${station}`;
+        if (workDate) wsUrl += `&workDate=${workDate}`;
+        ws = new WebSocket(wsUrl);
 
-    const sortedTesterIds = Object.entries(testerIdCounts).sort((a, b) => {
-        const numA = parseInt(a[0].match(/\d+/)?.[0] || '0', 10);
-        const numB = parseInt(b[0].match(/\d+/)?.[0] || '0', 10);
-        return numA - numB;
-    });
+        ws.onopen = () => {
+            tbody.innerHTML = '<tr><td colspan="5">Waiting for data...</td></tr>';
+        };
 
-    const labels = sortedTesterIds.map(([testerId]) => testerId);
-    const values = sortedTesterIds.map(([, count]) => count);
-
-    if (chart) chart.destroy();
-
-    const stationColor = stationColors[displayStationName.toUpperCase()] || 'rgba(0,0,0,0.6)';
-
-    chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels,
-            datasets: [{
-                label: `Failures (${displayStationName})`,
-                data: values,
-                backgroundColor: stationColor,
-                borderColor: stationColor,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: { display: true, text: 'Number of Failures' },
-                    ticks: { stepSize: 1 }
-                },
-                x: {
-                    title: { display: true, text: 'Tester ID' }
-                }
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5">No failure data for ${displayStationName} on ${workDate}.</td></tr>`;
+                if (chart) chart.destroy();
+                chart = null;
+                originalData = [];
+                return;
             }
+            originalData = data;
+            isTopFailedChart = false;
+            pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
+            updateChart(originalData, displayStationName, 'testerId', false); // Initial chart is vertical
+            updateTable(data);
+        };
+        ws.onclose = () => console.log("WebSocket closed");
+        ws.onerror = err => console.error("WebSocket error:", err);
+    }
+
+    function updateChart(data, displayStationName, categoryType, isHorizontal) {
+        let counts = {};
+        const categoryName = (categoryType === 'testerId') ? 'Tester ID' : 'Fail Item';
+        data.forEach(item => {
+            const category = item[categoryType];
+            if (category) {
+                counts[category] = (counts[category] || 0) + 1;
+            }
+        });
+
+        let sortedCounts = Object.entries(counts);
+        if (categoryType === 'testerId') {
+            sortedCounts = sortedCounts.sort((a, b) => {
+                const numA = parseInt(a[0].match(/\d+/)?.[0] || '0', 10);
+                const numB = parseInt(b[0].match(/\d+/)?.[0] || '0', 10);
+                return numA - numB;
+            });
+            pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
+        } else {
+            sortedCounts = sortedCounts.sort((a, b) => b[1] - a[1]).slice(0, 5); // Take top 5
+            pageTitleHeader.textContent = `Top 5 Failed Items at ${displayStationName}`;
         }
-    });
-}
+        const labels = sortedCounts.map(([key]) => key);
+        const values = sortedCounts.map(([, count]) => count);
 
-function updateTable(data) {
-    tbody.innerHTML = '';
+        if (chart) chart.destroy();
+        const stationColor = stationColors[displayStationName.toUpperCase()] || 'rgba(0,0,0,0.6)';
 
-    data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
-    data.forEach(row => {
-        const formattedDate = row.workDate.replace('T', ' ');
-        tbody.innerHTML += `
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: `${categoryType === 'failItem' ? 'Top 5 ' : ''}Failures (${displayStationName})`,
+                    data: values,
+                    backgroundColor: stationColor,
+                    borderColor: stationColor,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {display: true, text: isHorizontal ? categoryName : 'Number of Failures'},
+                        ticks: {stepSize: 1}
+                    },
+                    x: {
+                        title: {display: true, text: isHorizontal ? 'Number of Failures' : categoryName}
+                    }
+                },
+                indexAxis: isHorizontal ? 'y' : 'x',
+            }
+        });
+    }
+
+    function updateTable(data) {
+        tbody.innerHTML = '';
+        data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
+
+        data.forEach(row => {
+            const formattedDate = row.workDate.replace('T', ' ');
+            tbody.innerHTML += `
         <tr>
             <td>${row.sn || '-'}</td>
             <td>${row.testerId}</td>
             <td>${row.fixtureId}</td>
-            <td>${row.failItem}</td>
+            <td>${row.failItem || '-'}</td>
             <td>${formattedDate}</td>
         </tr>`;
-    });
-}
-
-function goBackToSummary() {
-    window.location.href = `index.html?lineId=${currentLineId}&startDate=${currentWorkDate}&endDate=${currentWorkDate}`;
-}
-
-// 📌 Search function
-document.getElementById('searchInput').addEventListener('input', function () {
-    const filter = this.value.trim().toLowerCase();
-    const rows = tbody.querySelectorAll('tr');
-
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(filter) ? '' : 'none';
-    });
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    const params = getQueryParams();
-    const lineIdFromUrl = params.lineId;
-    const stationFromUrl = params.station;
-    const workDateFromUrl = params.workDate;
-
-    if (lineIdFromUrl && stationFromUrl) {
-        currentLineId = lineIdFromUrl;
-        currentStation = stationFromUrl;
-        currentWorkDate = workDateFromUrl;
-
-        const displayStationName = mapStationName(currentStation);
-
-        displayLineIdSpan.textContent = currentLineId;
-        displayStationSpan.textContent = displayStationName;
-        displayWorkDateSpan.textContent = currentWorkDate;
-        pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
-        document.title = `${displayStationName} Failures Dashboard`;
-
-        startWebSocket(currentLineId, currentStation, currentWorkDate, displayStationName);
-    } else {
-        pageTitleHeader.textContent = "Error: Missing Line ID or Station";
-        tbody.innerHTML = '<tr><td colspan="5">Error: Missing parameters. Please go back to the summary page.</td></tr>';
+        });
     }
-});
+
+    document.getElementById('searchInput').addEventListener('input', function () {
+        const filter = this.value.trim().toLowerCase();
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+
+    const toggleButton = document.getElementById('toggleChartButton');
+    toggleButton.addEventListener('click', () => {
+        if (originalData.length > 0) {
+            const displayStationName = mapStationName(currentStation);
+            isTopFailedChart = !isTopFailedChart;
+            if (isTopFailedChart) {
+                // Switch to Top Failed chart
+                updateChart(originalData, displayStationName, 'failItem', true);
+                updateTable(originalData);
+                toggleButton.textContent = 'By Tester';
+            } else {
+                // Switch back to Tester Failed chart
+                updateChart(originalData, displayStationName, 'testerId', false);
+                updateTable(originalData);
+                toggleButton.textContent = 'Top 5 Failed';
+            }
+        }
+    });
+
+    function goBackToSummary() {
+        window.location.href = `index.html?lineId=${currentLineId}&startDate=${currentWorkDate}&endDate=${currentWorkDate}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = getQueryParams();
+        const lineIdFromUrl = params.lineId;
+        const stationFromUrl = params.station;
+        const workDateFromUrl = params.workDate;
+        if (lineIdFromUrl && stationFromUrl) {
+            currentLineId = lineIdFromUrl;
+            currentStation = stationFromUrl;
+            currentWorkDate = workDateFromUrl;
+            const displayStationName = mapStationName(currentStation);
+            displayLineIdSpan.textContent = currentLineId;
+            displayStationSpan.textContent = displayStationName;
+            displayWorkDateSpan.textContent = currentWorkDate;
+            document.title = `${displayStationName} Failures Dashboard`;
+            startWebSocket(currentLineId, currentStation, currentWorkDate, displayStationName);
+        } else {
+            pageTitleHeader.textContent = "Error: Missing Line ID or Station";
+            tbody.innerHTML = '<tr><td colspan="5">Error: Missing parameters. Please go back to the summary page.</td></tr>';
+        }
+    });
 </script>
 
 </body>

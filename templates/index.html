@@ -7,67 +7,85 @@
 <style>
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f7f6;
+    background-color: #000000; /* ดำสนิทเหมือนพื้นหลังรูป */
     text-align: center;
     padding: 20px;
+    color: #ffffff; /* ตัวอักษรสีขาว */
 }
+
 .container {
     max-width: 90%;
     margin: auto;
-    background: #fff;
+    background: #1a1a1a; /* เทาเข้ม */
     padding: 20px;
     border-radius: 8px;
 }
+
+h2, h3 {
+    color: #ffffff; /* ขาว */
+}
+
 label {
     margin-right: 5px;
     font-weight: bold;
-    color: #333;
+    color: #ffffff;
 }
+
 select.styled-select, input[type="date"].styled-date {
     margin: 5px;
     padding: 8px 12px;
     font-size: 14px;
-    border: 1px solid #ccc;
+    border: 1px solid #555555;
     border-radius: 4px;
-    background-color: #fdfaf6; /* sand */
-    color: #333;
+    background-color: #2a2a2a; /* เทาเข้ม */
+    color: #ffffff;
     transition: border-color 0.3s ease, box-shadow 0.2s ease;
 }
 select.styled-select:focus, input[type="date"].styled-date:focus {
     outline: none;
-    border-color: #C77B55;
-    box-shadow: 0 0 5px rgba(199, 123, 85, 0.4);
+    border-color: #ffc300; /* เหลือง */
+    box-shadow: 0 0 5px rgba(255, 195, 0, 0.4);
 }
+
 #chartContainer {
     width: 80%;
     margin: 20px auto;
     position: relative;
     height: 400px;
 }
+
 canvas {
     max-width: 100%;
     height: auto;
 }
+
 table {
     margin: 20px auto;
     width: 90%;
     border-collapse: collapse;
+    color: #ffffff;
 }
 th, td {
-    border: 1px solid #ccc;
+    border: 1px solid #444444;
     padding: 8px;
 }
 th {
-    background: #eee;
+    background: #2a2a2a;
+    color: #ffffff;
 }
+tr:nth-child(even) {
+    background-color: #1f1f1f;
+}
+
 td.station-clickable {
     cursor: pointer;
 }
 td.station-clickable:hover {
-    background-color: #eef;
+    background-color: #333333;
 }
+
 button.fixture-button {
-    background-color: #C77B55;
+    background-color: #f7941d; /* ส้มหลัก */
     color: #fff;
     border: none;
     padding: 10px 20px;
@@ -79,11 +97,11 @@ button.fixture-button {
     transition: background-color 0.3s ease, transform 0.1s ease;
 }
 button.fixture-button:hover {
-    background-color: #9B5E4A;
+    background-color: #d97b13; /* ส้มเข้ม */
     transform: translateY(-1px);
 }
 button.fixture-button:active {
-    background-color: #7D4A3B;
+    background-color: #b9650f; /* ส้มเข้มกว่า */
     transform: translateY(1px);
 }
 </style>
@@ -121,7 +139,7 @@ button.fixture-button:active {
                 <th>ATS1</th>
                 <th>Heatup</th>
                 <th>Vibration</th>
-                <th>Burn-in</th>
+                <th>BurnIn</th>
                 <th>Hipot2</th>
                 <th>ATS2</th>
                 <th>VFlash2</th>
@@ -136,209 +154,235 @@ button.fixture-button:active {
 </div>
 
 <script>
-const stationColors = {
-    'VFlash1': '#C77B55',   // Muted Terracotta (warm red-orange)
-    'Hipot1':  '#7D8B63',   // Moss Green
-    'ATS1':    '#D6C6B8',   // Warm Sand
-    'Heatup':  '#A6A57A',   // Soft Olive
-    'Vibration': '#6C7A89', // Slate Blue Gray
-    'Burn-in': '#BCA875',   // Accent Gold
-    'Hipot2':  '#4B4B4B',   // Neutral Dark Gray
-    'ATS2':    '#9B5E4A',   // Accent Rust
-    'VFlash2': '#D9D9D9',   // Neutral Light Gray
-    'ATS3':    '#C4A69F'    // Moss Green (ซ้ำได้เพราะใกล้กัน)
-};
-
-
-
-const stationMap = {
-    "VFlash1": "%LASH",
-    "Hipot1": "%IPOT_1",
-    "ATS1": "%TS1",
-    "Heatup": "%TUP",
-    "Vibration": "%RATION",
-    "Burn-in": "%RN_IN",
-    "Hipot2": "%IPOT_2",
-    "ATS2": "%TS2",
-    "VFlash2": "%LASH2",
-    "ATS3": "%TS3"
-};
-
-const lineIdSelect = document.getElementById('lineIdSelect');
-const startDateInput = document.getElementById('startDate');
-const endDateInput = document.getElementById('endDate');
-const tableBody = document.getElementById('tableBody');
-const ctx = document.getElementById('failuresChart').getContext('2d');
-
-let ws = null;
-let chart = null;
-let currentLineId = lineIdSelect.value;
-
-document.getElementById('fixtureButton').addEventListener('click', () => {
-    const lineId = lineIdSelect.value;
-    const startDate = startDateInput.value;
-    const endDate = endDateInput.value;
-
-    const url = `fixture-detail.html?lineId=${lineId}&startDate=${startDate}&endDate=${endDate}`;
-    window.location.href = url;
-});
-
-function saveState() {
-    sessionStorage.setItem("lineId", lineIdSelect.value);
-    sessionStorage.setItem("startDate", startDateInput.value);
-    sessionStorage.setItem("endDate", endDateInput.value);
-}
-
-function restoreState() {
-    const savedLineId = sessionStorage.getItem("lineId");
-    const savedStartDate = sessionStorage.getItem("startDate");
-    const savedEndDate = sessionStorage.getItem("endDate");
-    const today = new Date().toISOString().split('T')[0];
-
-    lineIdSelect.value = savedLineId || "BMA01";
-    startDateInput.value = savedStartDate || today;
-    endDateInput.value = savedEndDate || today;
-}
-
-function navigateToPage(pageName, lineId, stationName, workDate) {
-    saveState(); // เก็บสถานะก่อนเปลี่ยนหน้า
-    const timestamp = Date.now();
-    const url = `${pageName}.html?lineId=${lineId}&station=${encodeURIComponent(stationName)}&workDate=${workDate}&_ts=${timestamp}`;
-    window.location.href = url;
-}
-
-function reloadData() {
-    if (ws) ws.close();
-
-    currentLineId = lineIdSelect.value;
-    const startDate = startDateInput.value;
-    const endDate = endDateInput.value;
-    const ts = Date.now();
-
-    let wsUrl = `ws://10.216.128.133/failures/ws/filter?lineId=${currentLineId}&_ts=${ts}`;
-    if (startDate) wsUrl += `&startDate=${startDate}`;
-    if (endDate) wsUrl += `&endDate=${endDate}`;
-
-    ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-        tableBody.innerHTML = `<tr><td colspan="12">Loading...</td></tr>`;
+    // ปรับเรียงลำดับสีของสถานีให้ตรงตามในรูปภาพและตาราง
+    const stationColors = {
+        'VFlash1': '#ffa94d', // ส้มอ่อน
+        'Hipot1': '#ffd54f', // เหลืองอ่อน
+        'ATS1': '#ff5733', // แดงส้ม
+        'Heatup': '#f7941d', // ส้มหลัก
+        'Vibration': '#d6412b', // แดงเข้ม (เตือนแรง)
+        'BurnIn': 'rgba(126,15,15,0.6)', // สีแดงไหม้
+        'Hipot2': '#f9e79f', // เหลืองซีด
+        'ATS2': '#ffc300', // เหลืองสด
+        'VFlash2': '#555555',  // เทาเข้ม
+        'ATS3': '#888888' // เทากลาง
     };
 
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (!data || data.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="12">No data available</td></tr>`;
-            if (chart) {
-                chart.destroy();
-                chart = null;
+    // ปรับเรียงลำดับ stationMap ให้ตรงกับ stationColors และลำดับในตาราง
+    const stationMap = {
+        "VFlash1": "%LASH",
+        "Hipot1": "%IPOT_1",
+        "ATS1": "%TS1",
+        "Heatup": "%TUP",
+        "Vibration": "%RATION",
+        "BurnIn": "%RN_IN",
+        "Hipot2": "%IPOT_2",
+        "ATS2": "%TS2",
+        "VFlash2": "%LASH2",
+        "ATS3": "%TS3"
+    };
+
+    const lineIdSelect = document.getElementById('lineIdSelect');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const tableBody = document.getElementById('tableBody');
+    const ctx = document.getElementById('failuresChart').getContext('2d');
+
+    let ws = null;
+    let chart = null;
+    let currentLineId = lineIdSelect.value;
+
+    document.getElementById('fixtureButton').addEventListener('click', () => {
+        const lineId = lineIdSelect.value;
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+
+        const url = `fixture-detail.html?lineId=${lineId}&startDate=${startDate}&endDate=${endDate}`;
+        window.location.href = url;
+    });
+
+    function saveState() {
+        sessionStorage.setItem("lineId", lineIdSelect.value);
+        sessionStorage.setItem("startDate", startDateInput.value);
+        sessionStorage.setItem("endDate", endDateInput.value);
+    }
+
+    function restoreState() {
+        const savedLineId = sessionStorage.getItem("lineId");
+        const savedStartDate = sessionStorage.getItem("startDate");
+        const savedEndDate = sessionStorage.getItem("endDate");
+        const today = new Date().toISOString().split('T')[0];
+
+        lineIdSelect.value = savedLineId || "BMA01";
+        startDateInput.value = savedStartDate || today;
+        endDateInput.value = savedEndDate || today;
+    }
+
+    function navigateToPage(pageName, lineId, stationName, workDate) {
+        saveState();
+        const timestamp = Date.now();
+        const url = `${pageName}.html?lineId=${lineId}&station=${encodeURIComponent(stationName)}&workDate=${workDate}&_ts=${timestamp}`;
+        window.location.href = url;
+    }
+
+    function reloadData() {
+        if (ws) ws.close();
+
+        currentLineId = lineIdSelect.value;
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+        const ts = Date.now();
+
+        let wsUrl = `ws://localhost:8000/failures/ws/filter?lineId=${currentLineId}&_ts=${ts}`;
+        if (startDate) wsUrl += `&startDate=${startDate}`;
+        if (endDate) wsUrl += `&endDate=${endDate}`;
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            tableBody.innerHTML = `<tr><td colspan="12">Loading...</td></tr>`;
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (!data || data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="12">No data available</td></tr>`;
+                if (chart) {
+                    chart.destroy();
+                    chart = null;
+                }
+                return;
             }
-            return;
-        }
-        renderChart(data);
-        renderTable(data);
-    };
+            renderChart(data);
+            renderTable(data);
+        };
 
-    ws.onclose = () => console.log("WebSocket closed.");
-    ws.onerror = err => console.error("WebSocket error", err);
-}
+        ws.onclose = () => console.log("WebSocket closed.");
+        ws.onerror = err => console.error("WebSocket error", err);
+    }
 
-function renderChart(data) {
-    const labels = data.map(row => row.workDate);
-    const stationKeys = Object.keys(stationMap);
+    function renderChart(data) {
+        const labels = data.map(row => row.workDate);
+        // เรียงลำดับ stationKeys ให้ตรงกับลำดับที่ต้องการ
+        const stationKeys = [
+            'VFlash1', 'Hipot1', 'ATS1', 'Heatup', 'Vibration', 'BurnIn', 'Hipot2', 'ATS2', 'VFlash2', 'ATS3'
+        ];
 
-    const datasets = stationKeys.map(station => ({
-        label: station,
-        data: data.map(row => row[station.toLowerCase()]),
-        backgroundColor: stationColors[station],
-        borderColor: stationColors[station],
-        borderWidth: 1
-    }));
+        const datasets = stationKeys.map(station => ({
+            label: station,
+            data: data.map(row => row[station.toLowerCase()]),
+            backgroundColor: stationColors[station],
+            borderColor: stationColors[station],
+            borderWidth: 1
+        }));
 
-    if (chart) chart.destroy();
+        if (chart) chart.destroy();
 
-    chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            onClick: (event, elements) => {
-                if (elements.length > 0) {
-                    const element = elements[0];
-                    const datasetIndex = element.datasetIndex;
-                    const index = element.index;
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const element = elements[0];
+                        const datasetIndex = element.datasetIndex;
+                        const index = element.index;
 
-                    const station = stationKeys[datasetIndex];
-                    const mapped = stationMap[station];
-                    const workDate = data[index].workDate;
+                        const station = stationKeys[datasetIndex];
+                        const mapped = stationMap[station];
+                        const workDate = data[index].workDate;
 
-                    if (mapped && workDate) {
-                        navigateToPage('station-detail', currentLineId, mapped, workDate);
+                        if (mapped && workDate) {
+                            navigateToPage('station-detail', currentLineId, mapped, workDate);
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        title: { display: true, text: "Date", color: '#dbe4eb' },
+                        ticks: { color: '#dbe4eb' },
+                        grid: { color: '#5a7081' }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: { display: true, text: "Failures", color: '#dbe4eb' },
+                        ticks: { color: '#dbe4eb' },
+                        grid: { color: '#5a7081' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#dbe4eb'
+                        }
                     }
                 }
-            },
-            scales: {
-                x: { stacked: true, title: { display: true, text: "Date" } },
-                y: { stacked: true, beginAtZero: true, title: { display: true, text: "Failures" } }
             }
-        }
-    });
-}
-
-function renderTable(data) {
-    tableBody.innerHTML = "";
-    data.forEach(row => {
-        const workDate = row.workDate;
-        tableBody.innerHTML += `
-            <tr>
-                <td>${workDate}</td>
-                ${renderCell(row.vflash1, 'VFlash1', workDate)}
-                ${renderCell(row.hipot1, 'Hipot1', workDate)}
-                ${renderCell(row.ats1, 'ATS1', workDate)}
-                ${renderCell(row.heatup, 'Heatup', workDate)}
-                ${renderCell(row.vibration, 'Vibration', workDate)}
-                ${renderCell(row.burnin, 'Burn-in', workDate)}
-                ${renderCell(row.hipot2, 'Hipot2', workDate)}
-                ${renderCell(row.ats2, 'ATS2', workDate)}
-                ${renderCell(row.vflash2, 'VFlash2', workDate)}
-                ${renderCell(row.ats3, 'ATS3', workDate)}
-                <td>${row.total}</td>
-            </tr>
-        `;
-    });
-}
-
-// helper function
-function renderCell(value, stationKey, workDate) {
-    if (value > 0) {
-        return `<td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap[stationKey]}', '${workDate}')">${value}</td>`;
-    } else {
-        return `<td>${value}</td>`;
+        });
     }
-}
+
+    function renderTable(data) {
+        tableBody.innerHTML = "";
+        data.forEach(row => {
+            const workDate = row.workDate;
+            // สร้าง array ของ cell สำหรับแต่ละแถวในตาราง โดยใช้ลำดับที่ถูกต้อง
+            const cells = [
+                renderCell(row.vflash1, 'VFlash1', workDate),
+                renderCell(row.hipot1, 'Hipot1', workDate),
+                renderCell(row.ats1, 'ATS1', workDate),
+                renderCell(row.heatup, 'Heatup', workDate),
+                renderCell(row.vibration, 'Vibration', workDate),
+                renderCell(row.burnin, 'BurnIn', workDate),
+                renderCell(row.hipot2, 'Hipot2', workDate),
+                renderCell(row.ats2, 'ATS2', workDate),
+                renderCell(row.vflash2, 'VFlash2', workDate),
+                renderCell(row.ats3, 'ATS3', workDate)
+            ].join('');
+
+            tableBody.innerHTML += `
+                <tr>
+                    <td>${workDate}</td>
+                    ${cells}
+                    <td>${row.total}</td>
+                </tr>
+            `;
+        });
+    }
+
+    // helper function
+    function renderCell(value, stationKey, workDate) {
+        if (value > 0) {
+            return `<td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap[stationKey]}', '${workDate}')">${value}</td>`;
+        } else {
+            return `<td>${value}</td>`;
+        }
+    }
 
 
-document.addEventListener("DOMContentLoaded", () => {
-    restoreState();
-    reloadData();
+    document.addEventListener("DOMContentLoaded", () => {
+        restoreState();
+        reloadData();
 
-    lineIdSelect.addEventListener('change', () => {
-        saveState();
-        reloadData();
+        lineIdSelect.addEventListener('change', () => {
+            saveState();
+            reloadData();
+        });
+        startDateInput.addEventListener('change', () => {
+            saveState();
+            reloadData();
+        });
+        endDateInput.addEventListener('change', () => {
+            saveState();
+            reloadData();
+        });
     });
-    startDateInput.addEventListener('change', () => {
-        saveState();
-        reloadData();
-    });
-    endDateInput.addEventListener('change', () => {
-        saveState();
-        reloadData();
-    });
-});
 </script>
 
 </body>

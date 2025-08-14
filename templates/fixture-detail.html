@@ -7,24 +7,23 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #000000; /* ดำสนิท */
             text-align: center;
-            margin: 20px;
-            background-color: #f4f7f6;
-            color: #333;
+            padding: 20px;
+            color: #ffffff; /* ตัวอักษรสีขาว */
         }
 
-        h2 {
-            color: #2c3e50;
-            margin-bottom: 25px;
+        h2, h3 {
+            color: #ffffff; /* ขาว */
         }
 
         .container {
             max-width: 90%;
             margin: 0 auto;
-            background-color: #fff;
+            background-color: #1a1a1a; /* เทาเข้ม */
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
         #chartContainer {
@@ -45,6 +44,7 @@
             align-items: center;
             margin: 20px auto 10px auto;
             width: 90%;
+            color: #ffffff;
         }
 
         .table-header h3 {
@@ -54,55 +54,71 @@
         }
 
         .table-header input {
-            padding: 6px 10px;
+            padding: 8px 12px;
             font-size: 14px;
-            border: 1px solid #ccc;
+            border: 1px solid #555555;
             border-radius: 4px;
+            background-color: #2a2a2a; /* เทาเข้ม */
+            color: #ffffff;
             width: 200px;
+            transition: border-color 0.3s ease, box-shadow 0.2s ease;
+        }
+
+        .table-header input:focus {
+            outline: none;
+            border-color: #ffc300; /* เหลือง */
+            box-shadow: 0 0 5px rgba(255, 195, 0, 0.4);
         }
 
         table {
             margin: 0 auto;
             border-collapse: collapse;
             width: 90%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            color: #ffffff; /* ตัวอักษรตารางเป็นสีขาว */
         }
 
         th, td {
-            border: 1px solid #e0e0e0;
+            border: 1px solid #444444; /* เส้นขอบตารางสีเทาเข้ม */
             padding: 12px 15px;
             text-align: center;
             font-size: 15px;
         }
 
         th {
-            background-color: #e9ecef;
+            background-color: #2a2a2a; /* พื้นหลังหัวตารางสีเทา */
             font-weight: bold;
-            color: #333;
+            color: #ffffff; /* ตัวอักษรหัวตารางเป็นสีขาว */
         }
 
         tr:nth-child(even) {
-            background-color: #f8f9fa;
+            background-color: #1f1f1f; /* สีพื้นหลังแถวคู่ */
         }
 
         tr:hover {
-            background-color: #e2f4e8;
+            background-color: #333333; /* สีพื้นหลังเมื่อเมาส์ชี้ */
         }
 
         .back-button, .action-button {
-            background-color: #007bff;
-            color: white;
+            background-color: #2c98d0; /* ส้มหลัก */
+            color: #fff;
             padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
             margin-top: 20px;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.1s ease;
         }
 
         .back-button:hover, .action-button:hover {
-            background-color: #0056b3;
+            background-color: #2c98d0; /* ส้มเข้ม */
+            transform: translateY(-1px);
+        }
+
+        .back-button:active, .action-button:active {
+            background-color: #2c98d0; /* ส้มเข้มกว่า */
+            transform: translateY(1px);
         }
     </style>
 </head>
@@ -170,7 +186,7 @@
 
         currentLineId = lineId;
 
-        let wsUrl = `ws://10.216.128.133/failures/ws/fixture?lineId=${lineId}`;
+        let wsUrl = `ws://localhost:8000/failures/ws/fixture?lineId=${lineId}`;
         if (startDate) wsUrl += `&startDate=${startDate}`;
         if (endDate) wsUrl += `&endDate=${endDate}`;
 
@@ -246,8 +262,8 @@
                 datasets: [{
                     label: `${categoryType === 'failItem' ? 'Top 5' : 'Total'} Failures by ${categoryName}`,
                     data: values,
-                    backgroundColor: 'rgb(178,174,174)',
-                    borderColor: 'rgb(178,174,174)',
+                    backgroundColor: '#2ea4e3',
+                    borderColor: '#2ea4e3',
                     borderWidth: 1
                 }]
             },
@@ -258,14 +274,33 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        title: {display: true, text: isHorizontal ? categoryName : 'Number of Failures'},
-                        ticks: {stepSize: 1}
+                        title: {
+                            display: true,
+                            text: isHorizontal ? categoryName : 'Number of Failures',
+                            color: '#dbe4eb'
+                        },
+                        ticks: {stepSize: 1, color: '#dbe4eb'},
+                        grid: {color: '#5a7081'}
                     },
                     x: {
-                        title: {display: true, text: isHorizontal ? 'Number of Failures' : categoryName}
+                        title: {
+                            display: true,
+                            text: isHorizontal ? 'Number of Failures' : categoryName,
+                            color: '#dbe4eb'
+                        },
+                        ticks: {color: '#dbe4eb'},
+                        grid: {color: '#5a7081'}
                     }
                 },
-                plugins: {legend: {display: true, position: 'top'}}
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#dbe4eb'
+                        }
+                    }
+                }
             }
         });
     }
@@ -299,12 +334,10 @@
             if (isTopFailedChart) {
                 // Switch to Top Failed chart
                 updateChart(currentData, 'failItem', true);
-                renderTable(currentData);
                 toggleButton.textContent = 'By Fixture';
             } else {
                 // Switch back to Fixture Failed chart
                 updateChart(currentData, 'fixtureId', false);
-                renderTable(currentData);
                 toggleButton.textContent = 'Top 5 Failed';
             }
         }
@@ -317,7 +350,6 @@
         // ส่งกลับไปทั้ง lineId + วันที่
         window.location.href = `index.html?lineId=${encodeURIComponent(currentLineId)}&startDate=${encodeURIComponent(savedStartDate)}&endDate=${encodeURIComponent(savedEndDate)}`;
     }
-
 
     document.addEventListener('DOMContentLoaded', () => {
         const params = getQueryParams();

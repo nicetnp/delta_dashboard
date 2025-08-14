@@ -7,24 +7,24 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #000000; /* ดำสนิท */
             text-align: center;
-            margin: 20px;
-            background-color: #f4f7f6;
-            color: #333;
+            padding: 20px;
+            color: #ffffff; /* ตัวอักษรสีขาว */
         }
 
         h2 {
-            color: #2c3e50;
+            color: #ffffff;
             margin-bottom: 25px;
         }
 
         .container {
             max-width: 90%;
             margin: 0 auto;
-            background-color: #fff;
+            background-color: #1a1a1a; /* เทาเข้ม */
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
 
         #chartContainer {
@@ -43,46 +43,57 @@
             margin: 20px auto;
             border-collapse: collapse;
             width: 90%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            color: #ffffff; /* ตัวอักษรตารางเป็นสีขาว */
         }
 
         th, td {
-            border: 1px solid #e0e0e0;
+            border: 1px solid #444444; /* เส้นขอบตารางสีเทาเข้ม */
             padding: 12px 15px;
             text-align: center;
             font-size: 15px;
         }
 
         th {
-            background-color: #e9ecef;
+            background-color: #2a2a2a; /* พื้นหลังหัวตารางสีเทา */
             font-weight: bold;
-            color: #333;
+            color: #ffffff; /* ตัวอักษรหัวตารางเป็นสีขาว */
         }
 
         tr:nth-child(even) {
-            background-color: #f8f9fa;
+            background-color: #1f1f1f; /* สีพื้นหลังแถวคู่ */
         }
 
         tr:hover {
-            background-color: #e2f4e8;
+            background-color: #333333; /* สีพื้นหลังเมื่อเมาส์ชี้ */
         }
 
         .line-info {
             font-size: 1.2em;
             font-weight: bold;
             margin-bottom: 20px;
-            color: #444;
+            color: #ffffff; /* ข้อมูลบรรทัดเป็นสีขาว */
         }
 
         .back-button, .action-button {
-            background-color: #007bff;
-            color: white;
+            background-color: #f7941d; /* ส้มหลัก */
+            color: #fff;
             padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        .back-button:hover, .action-button:hover {
+            background-color: #d97b13; /* ส้มเข้ม */
+            transform: translateY(-1px);
+        }
+
+        .back-button:active, .action-button:active {
+            background-color: #b9650f; /* ส้มเข้มกว่า */
+            transform: translateY(1px);
         }
 
         .back-button {
@@ -103,6 +114,22 @@
             margin-left: auto;
             margin-right: auto;
         }
+
+        #searchInput {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #555555;
+            border-radius: 4px;
+            background-color: #2a2a2a; /* เทาเข้ม */
+            color: #ffffff;
+            transition: border-color 0.3s ease, box-shadow 0.2s ease;
+        }
+        #searchInput:focus {
+            outline: none;
+            border-color: #ffc300; /* เหลือง */
+            box-shadow: 0 0 5px rgba(255, 195, 0, 0.4);
+        }
+
     </style>
 </head>
 <body>
@@ -120,8 +147,7 @@
     </div>
 
     <div class="table-controls">
-        <input type="text" id="searchInput" placeholder="Search..."
-               style="padding: 6px 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;">
+        <input type="text" id="searchInput" placeholder="Search..." />
         <button id="toggleChartButton" class="action-button">Top 5 Failed</button>
     </div>
 
@@ -147,10 +173,18 @@
 
 <script>
     const stationColors = {
-        'VFLASH1': '#C77B55', 'HIPOT1': '#7D8B63', 'ATS1': '#D6C6B8',
-        'HEATUP': '#A6A57A', 'VIBRATION': '#6C7A89', 'BURNIN': '#BCA875',
-        'HIPOT2': '#4B4B4B', 'ATS2': '#9B5E4A', 'VFLASH2': '#C4A69F', 'ATS3': '#C4A69F'
+        'VIBRATION': '#d6412b', // แดงเข้ม (เตือนแรง)
+        'ATS1': '#ff5733',      // แดงส้ม
+        'HEATUP': '#f7941d',    // ส้มหลัก
+        'VFLASH1': '#ffa94d',   // ส้มอ่อน
+        'ATS2': '#ffc300',      // เหลืองสด
+        'HIPOT1': '#ffd54f',    // เหลืองอ่อน
+        'HIPOT2': '#f9e79f',    // เหลืองซีด
+        'BURNIN': 'rgba(114,9,9,0.6)', // ใช้สีเดียวกับโค้ดแรก
+        'ATS3': '#888888',      // เทากลาง
+        'VFLASH2': '#555555'    // เทาเข้ม
     };
+
 
     const ctx = document.getElementById('failuresChart').getContext('2d');
     const tbody = document.getElementById('resultTableBody');
@@ -184,7 +218,7 @@
 
     function startWebSocket(lineId, station, workDate, displayStationName) {
         if (ws) ws.close();
-        let wsUrl = `ws://10.216.128.133/failures/ws/station?lineId=${lineId}&station=${station}`;
+        let wsUrl = `ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}`;
         if (workDate) wsUrl += `&workDate=${workDate}`;
         ws = new WebSocket(wsUrl);
 
@@ -237,10 +271,11 @@
         const values = sortedCounts.map(([, count]) => count);
 
         if (chart) chart.destroy();
-        const stationColor = stationColors[displayStationName.toUpperCase()] || 'rgba(0,0,0,0.6)';
+        const stationColor = stationColors[displayStationName.toUpperCase()] || 'rgba(255, 195, 0, 0.6)'; // เปลี่ยนสี default
+        const chartType = isHorizontal ? 'bar' : 'bar'; // กราฟแท่งแนวนอน/แนวตั้ง
 
         chart = new Chart(ctx, {
-            type: 'bar',
+            type: chartType,
             data: {
                 labels,
                 datasets: [{
@@ -257,14 +292,24 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        title: {display: true, text: isHorizontal ? categoryName : 'Number of Failures'},
-                        ticks: {stepSize: 1}
+                        title: {display: true, text: isHorizontal ? categoryName : 'Number of Failures', color: '#dbe4eb'},
+                        ticks: {stepSize: 1, color: '#dbe4eb'},
+                        grid: {color: '#5a7081'}
                     },
                     x: {
-                        title: {display: true, text: isHorizontal ? 'Number of Failures' : categoryName}
+                        title: {display: true, text: isHorizontal ? 'Number of Failures' : categoryName, color: '#dbe4eb'},
+                        ticks: {color: '#dbe4eb'},
+                        grid: {color: '#5a7081'}
                     }
                 },
                 indexAxis: isHorizontal ? 'y' : 'x',
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#dbe4eb'
+                        }
+                    }
+                }
             }
         });
     }
@@ -315,7 +360,11 @@
     });
 
     function goBackToSummary() {
-        window.location.href = `index.html?lineId=${currentLineId}&startDate=${currentWorkDate}&endDate=${currentWorkDate}`;
+        // Retrieve state from sessionStorage to go back to the correct summary view
+        const savedLineId = sessionStorage.getItem("lineId") || currentLineId;
+        const savedStartDate = sessionStorage.getItem("startDate") || currentWorkDate;
+        const savedEndDate = sessionStorage.getItem("endDate") || currentWorkDate;
+        window.location.href = `index.html?lineId=${savedLineId}&startDate=${savedStartDate}&endDate=${savedEndDate}`;
     }
 
     document.addEventListener('DOMContentLoaded', () => {

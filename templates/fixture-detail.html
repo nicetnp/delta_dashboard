@@ -100,7 +100,7 @@
         }
 
         .back-button, .action-button {
-            background-color: #2c98d0; /* ส้มหลัก */
+            background-color: #2c98d0;
             color: #fff;
             padding: 10px 20px;
             border: none;
@@ -112,12 +112,12 @@
         }
 
         .back-button:hover, .action-button:hover {
-            background-color: #2c98d0; /* ส้มเข้ม */
+            background-color: #2ea4e3;
             transform: translateY(-1px);
         }
 
         .back-button:active, .action-button:active {
-            background-color: #2c98d0; /* ส้มเข้มกว่า */
+            background-color: #2c98d0;
             transform: translateY(1px);
         }
     </style>
@@ -306,18 +306,23 @@
     }
 
     function renderTable(data) {
+        // ใช้ innerHTML = '' ทำให้เกิดการลบและสร้างตารางใหม่ทุกครั้ง ซึ่งทำให้เกิดการกระพริบ
+        // แก้ไขโดยใช้การสร้างแถวและเพิ่มเข้าไปแทน
         tbody.innerHTML = '';
         data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
+        const fragment = document.createDocumentFragment();
         data.forEach(row => {
+            const tr = document.createElement('tr');
             const formattedDate = row.workDate.replace('T', ' ');
-            tbody.innerHTML += `
-        <tr>
-            <td>${row.testerId}</td>
-            <td>${row.fixtureId}</td>
-            <td>${row.failItem || '-'}</td>
-            <td>${formattedDate}</td>
-        </tr>`;
+            tr.innerHTML = `
+                <td>${row.testerId}</td>
+                <td>${row.fixtureId}</td>
+                <td>${row.failItem || '-'}</td>
+                <td>${formattedDate}</td>
+            `;
+            fragment.appendChild(tr);
         });
+        tbody.appendChild(fragment);
     }
 
     searchInput.addEventListener('input', () => {
@@ -340,6 +345,8 @@
                 updateChart(currentData, 'fixtureId', false);
                 toggleButton.textContent = 'Top 5 Failed';
             }
+            // เรียก renderTable() ที่นี่เพียงครั้งเดียว เพื่ออัปเดตข้อมูลในตาราง
+            renderTable(currentData);
         }
     });
 

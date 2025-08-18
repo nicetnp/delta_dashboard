@@ -203,6 +203,7 @@
         <thead>
         <tr>
             <th data-column="sn">Serial Number<span class="sort-icon"></span></th>
+            <th data-column="model">Model<span class="sort-icon"></span></th>
             <th data-column="testerId">Tester<span class="sort-icon"></span></th>
             <th data-column="fixtureId">Fixture<span class="sort-icon"></span></th>
             <th data-column="failItem">Fail Item<span class="sort-icon"></span></th>
@@ -451,6 +452,7 @@
             const formattedDate = row.workDate.replace('T', ' ');
             tr.innerHTML = `
                 <td>${row.sn || '-'}</td>
+                <td>${row.model}</td>
                 <td>${row.testerId}</td>
                 <td>${row.fixtureId}</td>
                 <td>${row.failItem || '-'}</td>
@@ -465,6 +467,7 @@
         const filter = this.value.trim().toLowerCase();
         const filteredData = originalData.filter(row =>
                 (row.sn || '').toLowerCase().includes(filter) ||
+                (row.model || '').toLowerCase().includes(filter) ||
                 (row.testerId || '').toLowerCase().includes(filter) ||
                 (row.fixtureId || '').toLowerCase().includes(filter) ||
                 (row.failItem || '').toLowerCase().includes(filter) ||
@@ -496,6 +499,7 @@
             const filter = document.getElementById('searchInput').value.trim().toLowerCase();
             const dataToSort = filter ? originalData.filter(row =>
                     (row.sn || '').toLowerCase().includes(filter) ||
+                    (row.model || '').toLowerCase().includes(filter) ||
                     (row.testerId || '').toLowerCase().includes(filter) ||
                     (row.fixtureId || '').toLowerCase().includes(filter) ||
                     (row.failItem || '').toLowerCase().includes(filter) ||

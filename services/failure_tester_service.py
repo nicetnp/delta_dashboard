@@ -5,6 +5,7 @@ from schemas.failure_schema import FailureTester
 def fetch_failure_tester(data:FailureTester,db: Session):
     query = text("""
         SELECT Trackingnumber AS sn,
+                FGpartnumber AS model,
                TesterID AS testerId,
                FixtureID AS fixtureId,
                CASE WHEN CHARINDEX(')', FailItem) > 0 AND CHARINDEX('}', FailItem) > 0
@@ -13,7 +14,7 @@ def fetch_failure_tester(data:FailureTester,db: Session):
                     CONVERT(VARCHAR, DateTime, 120) AS workDate
         FROM APBM_FailuresPareto
         WHERE LineID = :lineId AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) BETWEEN :startDate AND :endDate
-        GROUP BY TesterID,FixtureID, FailItem, DateTime, Trackingnumber
+        GROUP BY TesterID,FixtureID, FailItem, DateTime, Trackingnumber,FGpartnumber
         HAVING :station IS NULL OR COUNT(DISTINCT CASE WHEN Station LIKE :station THEN TrackingNumber END) > 0
 ORDER BY workDate ASC;
         """)

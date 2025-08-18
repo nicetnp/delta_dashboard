@@ -10,6 +10,7 @@ def fetch_failure_station(data:FailureStation,db: Session):
     query = text("""
         SELECT Trackingnumber AS sn,
                TesterID AS testerId,
+               FGpartnumber AS model,
                FixtureID AS fixtureId,
                CASE WHEN CHARINDEX(')', FailItem) > 0 AND CHARINDEX('}', FailItem) > 0
                     THEN SUBSTRING(FailItem,CHARINDEX(')', FailItem) + 1,
@@ -17,7 +18,7 @@ def fetch_failure_station(data:FailureStation,db: Session):
                     CONVERT(VARCHAR, DateTime, 120) AS workDate
         FROM APBM_FailuresPareto
         WHERE LineID = :lineId AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) = :workDate
-        GROUP BY TesterID,FixtureID, FailItem, DateTime, Trackingnumber
+        GROUP BY TesterID,FixtureID, FailItem, DateTime, Trackingnumber, FGpartnumber
         HAVING COUNT(DISTINCT CASE WHEN Station LIKE :station THEN TrackingNumber END) > 0
         ORDER BY workDate ASC;
         """)

@@ -1,110 +1,123 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>BMW Failures Summary</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body {
-    font-family: Arial, sans-serif;
-    background-color: #000000; /* ดำสนิทเหมือนพื้นหลังรูป */
-    text-align: center;
-    padding: 20px;
-    color: #ffffff; /* ตัวอักษรสีขาว */
-}
+    <meta charset="UTF-8"/>
+    <title>BMW Failures Summary</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000000;
+            text-align: center;
+            padding: 20px;
+            color: #ffffff;
+        }
 
-.container {
-    max-width: 90%;
-    margin: auto;
-    background: #1a1a1a; /* เทาเข้ม */
-    padding: 20px;
-    border-radius: 8px;
-}
+        .container {
+            max-width: 90%;
+            margin: auto;
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+        }
 
-h2, h3 {
-    color: #ffffff; /* ขาว */
-}
+        h2, h3 {
+            color: #ffffff;
+        }
 
-label {
-    margin-right: 5px;
-    font-weight: bold;
-    color: #ffffff;
-}
+        label {
+            margin-right: 5px;
+            font-weight: bold;
+            color: #ffffff;
+        }
 
-select.styled-select, input[type="date"].styled-date {
-    margin: 5px;
-    padding: 8px 12px;
-    font-size: 14px;
-    border: 1px solid #555555;
-    border-radius: 4px;
-    background-color: #2a2a2a; /* เทาเข้ม */
-    color: #ffffff;
-    transition: border-color 0.3s ease, box-shadow 0.2s ease;
-}
-select.styled-select:focus, input[type="date"].styled-date:focus {
-    outline: none;
-    border-color: #ffc300; /* เหลือง */
-    box-shadow: 0 0 5px rgba(255, 195, 0, 0.4);
-}
+        select.styled-select, input[type="date"].styled-date {
+            margin: 5px;
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #555555;
+            border-radius: 4px;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            transition: border-color 0.3s ease, box-shadow 0.2s ease;
+        }
 
-#chartContainer {
-    width: 80%;
-    margin: 20px auto;
-    position: relative;
-    height: 400px;
-}
+        select.styled-select:focus, input[type="date"].styled-date:focus {
+            outline: none;
+            border-color: #ffc300;
+            box-shadow: 0 0 5px rgba(255, 195, 0, 0.4);
+        }
 
-canvas {
-    max-width: 100%;
-    height: auto;
-}
+        #chartContainer {
+            width: 80%;
+            margin: 20px auto;
+            position: relative;
+            height: 400px;
+        }
 
-table {
-    margin: 20px auto;
-    width: 90%;
-    border-collapse: collapse;
-    color: #ffffff;
-}
-th, td {
-    border: 1px solid #444444;
-    padding: 8px;
-}
-th {
-    background: #2a2a2a;
-    color: #ffffff;
-}
-tr:nth-child(even) {
-    background-color: #1f1f1f;
-}
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
 
-td.station-clickable {
-    cursor: pointer;
-}
-td.station-clickable:hover {
-    background-color: #333333;
-}
+        table {
+            margin: 20px auto;
+            width: 90%;
+            border-collapse: collapse;
+            color: #ffffff;
+        }
 
-button.fixture-button {
-    background-color: #f7941d; /* ส้มหลัก */
-    color: #fff;
-    border: none;
-    padding: 10px 20px;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.1s ease;
-}
-button.fixture-button:hover {
-    background-color: #d97b13; /* ส้มเข้ม */
-    transform: translateY(-1px);
-}
-button.fixture-button:active {
-    background-color: #b9650f; /* ส้มเข้มกว่า */
-    transform: translateY(1px);
-}
-</style>
+        th, td {
+            border: 1px solid #444444;
+            padding: 8px;
+        }
+
+        th {
+            background: #2a2a2a;
+            color: #ffffff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #1f1f1f;
+        }
+
+        td.station-clickable {
+            cursor: pointer;
+        }
+
+        td.station-clickable:hover {
+            background-color: #333333;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .action-button {
+            background-color: #f7941d;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        .action-button:hover {
+            background-color: #d97b13;
+            transform: translateY(-1px);
+        }
+
+        .action-button:active {
+            background-color: #b9650f;
+            transform: translateY(1px);
+        }
+    </style>
 </head>
 <body>
 
@@ -118,12 +131,15 @@ button.fixture-button:active {
     </select>
 
     <label>Start Date:</label>
-    <input type="date" id="startDate" class="styled-date" />
+    <input type="date" id="startDate" class="styled-date"/>
 
     <label>End Date:</label>
-    <input type="date" id="endDate" class="styled-date" />
+    <input type="date" id="endDate" class="styled-date"/>
 
-    <button id="fixtureButton" class="fixture-button">View Fixture Details</button>
+    <div class="button-group">
+        <button id="fixtureButton" class="action-button">Fixture Failure</button>
+        <button id="testerButton" class="action-button">Tester Failure</button>
+    </div>
 
     <div id="chartContainer">
         <canvas id="failuresChart"></canvas>
@@ -132,23 +148,25 @@ button.fixture-button:active {
     <h3>Summary Table</h3>
     <table>
         <thead>
-            <tr>
-                <th>Work Date</th>
-                <th>VFlash1</th>
-                <th>Hipot1</th>
-                <th>ATS1</th>
-                <th>Heatup</th>
-                <th>Vibration</th>
-                <th>BurnIn</th>
-                <th>Hipot2</th>
-                <th>ATS2</th>
-                <th>VFlash2</th>
-                <th>ATS3</th>
-                <th>Total</th>
-            </tr>
+        <tr>
+            <th>Work Date</th>
+            <th>VFlash1</th>
+            <th>Hipot1</th>
+            <th>ATS1</th>
+            <th>Heatup</th>
+            <th>Vibration</th>
+            <th>BurnIn</th>
+            <th>Hipot2</th>
+            <th>ATS2</th>
+            <th>VFlash2</th>
+            <th>ATS3</th>
+            <th>Total</th>
+        </tr>
         </thead>
         <tbody id="tableBody">
-            <tr><td colspan="12">Loading...</td></tr>
+        <tr>
+            <td colspan="12">Loading...</td>
+        </tr>
         </tbody>
     </table>
 </div>
@@ -185,6 +203,8 @@ button.fixture-button:active {
     const lineIdSelect = document.getElementById('lineIdSelect');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
+    const fixtureButton = document.getElementById('fixtureButton');
+    const testerButton = document.getElementById('testerButton');
     const tableBody = document.getElementById('tableBody');
     const ctx = document.getElementById('failuresChart').getContext('2d');
 
@@ -192,14 +212,27 @@ button.fixture-button:active {
     let chart = null;
     let currentLineId = lineIdSelect.value;
 
-    document.getElementById('fixtureButton').addEventListener('click', () => {
+    // จัดการ Event Listener สำหรับปุ่มทั้งสอง
+    fixtureButton.addEventListener('click', () => {
         const lineId = lineIdSelect.value;
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
-
-        const url = `fixture-detail.html?lineId=${lineId}&startDate=${startDate}&endDate=${endDate}`;
-        window.location.href = url;
+        saveState();
+        window.location.href = `fixture-detail.html?lineId=${lineId}&startDate=${startDate}&endDate=${endDate}`;
     });
+
+    testerButton.addEventListener('click', () => {
+        const lineId = lineIdSelect.value;
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+        saveState();
+
+        // ใช้ workDate เป็น startDate หรือวันที่ล่าสุด
+        const workDate = startDate || new Date().toISOString().split("T")[0];
+
+        window.location.href = `tester-detail.html?lineId=${lineId}&workDate=${workDate}&startDate=${startDate}&endDate=${endDate}`;
+    });
+
 
     function saveState() {
         sessionStorage.setItem("lineId", lineIdSelect.value);
@@ -305,16 +338,16 @@ button.fixture-button:active {
                 scales: {
                     x: {
                         stacked: true,
-                        title: { display: true, text: "Date", color: '#dbe4eb' },
-                        ticks: { color: '#dbe4eb' },
-                        grid: { color: '#5a7081' }
+                        title: {display: true, text: "Date", color: '#dbe4eb'},
+                        ticks: {color: '#dbe4eb'},
+                        grid: {color: '#5a7081'}
                     },
                     y: {
                         stacked: true,
                         beginAtZero: true,
-                        title: { display: true, text: "Failures", color: '#dbe4eb' },
-                        ticks: { color: '#dbe4eb' },
-                        grid: { color: '#5a7081' }
+                        title: {display: true, text: "Failures", color: '#dbe4eb'},
+                        ticks: {color: '#dbe4eb'},
+                        grid: {color: '#5a7081'}
                     }
                 },
                 plugins: {

@@ -48,3 +48,16 @@ class FailureByFixture(BaseModel):
     fixtureId: str
     failItem: Optional[str] = None
     workDate: datetime
+
+class FailureTester(BaseModel):
+    lineId: str
+    station: Optional[str]  # สามารถเป็น None
+    startDate: date
+    endDate: date
+
+class FailureByTester(BaseModel):
+    sn: str
+    testerId: str
+    fixtureId: str
+    failItem: Optional[str] = None
+    workDate: datetime

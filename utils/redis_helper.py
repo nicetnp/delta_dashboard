@@ -1,7 +1,6 @@
 from typing import Optional
 from datetime import date
 
-
 def build_cache_key(
     namespace: str,
     scope: str,
@@ -9,24 +8,11 @@ def build_cache_key(
     station: Optional[str] = None,
     datatype: Optional[str] = None,
     day: Optional[date] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
 ) -> str:
     """
     สร้าง Redis key แบบ structured และอ่านง่าย
-
-    ตัวอย่าง output:
-        failures:today:B3:summary
-        failures:2025-07-15:B3:ATS1:detail
-
-    Parameters:
-        namespace (str): ชุดข้อมูล เช่น 'failures'
-        scope (str): today / yesterday / weekly / monthly
-        line_id (Optional[str]): line ID เช่น 'B3'
-        station (Optional[str]): station เช่น 'ATS1'
-        datatype (Optional[str]): summary / detail / …
-        day (Optional[date]): ระบุวันแบบ YYYY-MM-DD แทน scope ได้
-
-    Returns:
-        str: Redis key
     """
     parts = [namespace]
 
@@ -40,6 +26,12 @@ def build_cache_key(
 
     if station:
         parts.append(station)
+
+    # แก้ไขส่วนนี้เพื่อให้รองรับ start_date และ end_date
+    if start_date and end_date:
+        parts.append(f"{start_date}:{end_date}")
+    elif day:
+        parts.append(str(day))
 
     if datatype:
         parts.append(datatype)

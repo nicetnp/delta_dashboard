@@ -1,744 +1,469 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <title id="pageTitle">Failures Dashboard by Tester</title>
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
-
         body {
-
             font-family: Arial, sans-serif;
-
             background-color: #000000;
-
             text-align: center;
-
             padding: 20px;
-
             color: #ffffff;
-
         }
-
 
         h2 {
-
             color: #ffffff;
-
             margin-bottom: 25px;
-
         }
-
 
         .container {
-
             max-width: 90%;
-
             margin: 0 auto;
-
             background-color: #1a1a1a;
-
             padding: 20px;
-
             border-radius: 8px;
-
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-
         }
-
 
         #chartContainer {
-
             width: 80%;
-
             margin: 20px auto;
-
             position: relative;
-
             height: 400px;
-
         }
-
 
         canvas {
-
             max-width: 100%;
-
             height: auto;
-
         }
-
 
         table {
-
             margin: 20px auto;
-
             border-collapse: collapse;
-
             width: 90%;
-
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-
             color: #ffffff;
-
         }
-
 
         th, td {
-
             border: 1px solid #444444;
-
             padding: 12px 15px;
-
             text-align: center;
-
             font-size: 15px;
-
         }
-
 
         th {
-
             background-color: #2a2a2a;
-
             font-weight: bold;
-
             color: #ffffff;
-
             cursor: pointer;
-
             user-select: none;
-
         }
-
 
         .sort-icon {
-
             margin-left: 5px;
-
             font-size: 12px;
-
         }
-
 
         tr:nth-child(even) {
-
             background-color: #1f1f1f;
-
         }
-
 
         tr:hover {
-
             background-color: #333333;
-
         }
-
 
         .line-info {
-
             font-size: 1.2em;
-
             font-weight: bold;
-
             margin-bottom: 20px;
-
             color: #ffffff;
-
         }
 
+        .station-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .station-controls select {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #555555;
+            border-radius: 4px;
+            background-color: #2a2a2a;
+            color: #ffffff;
+            transition: border-color 0.3s ease, box-shadow 0.2s ease;
+        }
+
+        .station-controls select:focus {
+            outline: none;
+            border-color: #ffc300;
+            box-shadow: 0 0 5px rgba(255, 195, 0, 0.4);
+        }
 
         .back-button, .action-button {
-
-            background-color: #f7941d;
-
+            background-color: #37B019FF;
             color: #fff;
-
             padding: 10px 20px;
-
             border: none;
-
             border-radius: 5px;
-
             cursor: pointer;
-
             font-size: 16px;
-
             transition: background-color 0.3s ease, transform 0.1s ease;
-
         }
-
 
         .back-button:hover, .action-button:hover {
-
-            background-color: #d97b13;
-
+            background-color: #2d8f16;
             transform: translateY(-1px);
-
         }
-
 
         .back-button:active, .action-button:active {
-
             background-color: #b9650f;
-
             transform: translateY(1px);
-
         }
-
 
         .back-button {
-
             margin-top: 20px;
-
         }
-
 
         .action-button {
-
             margin-left: 10px;
-
         }
-
 
         .table-controls {
-
             display: flex;
-
             justify-content: space-between;
-
             align-items: center;
-
             margin-top: 30px;
-
             margin-bottom: 10px;
-
             width: 90%;
-
             margin-left: auto;
-
             margin-right: auto;
-
         }
-
 
         #searchInput {
-
             padding: 8px 12px;
-
             font-size: 14px;
-
             border: 1px solid #555555;
-
             border-radius: 4px;
-
             background-color: #2a2a2a;
-
             color: #ffffff;
-
             transition: border-color 0.3s ease, box-shadow 0.2s ease;
-
         }
-
 
         #searchInput:focus {
-
             outline: none;
-
             border-color: #ffc300;
-
             box-shadow: 0 0 5px rgba(255, 195, 0, 0.4);
-
         }
 
+        .back-to-summary-button {
+            display: block;
+            margin: 20px auto;
+        }
     </style>
-
 </head>
-
 <body>
 
-
 <div class="container">
-
     <h2 id="pageTitleHeader">Failure Count by Tester</h2>
-
     <div class="line-info">
-
         Line: <span id="displayLineId"></span> |
-
         Station: <span id="displayStation"></span> |
-
         Date: <span id="displayWorkDate"></span>
-
     </div>
 
+    <div class="station-controls">
+        <label for="stationSelect">Select Station:</label>
+        <select id="stationSelect">
+            <option value="">All Stations</option>
+            <option value="%LASH">VFlash1</option>
+            <option value="%IPOT_1">Hipot1</option>
+            <option value="%TS1">ATS1</option>
+            <option value="%TUP">Heatup</option>
+            <option value="%RATION">Vibration</option>
+            <option value="%RN_IN">BurnIn</option>
+            <option value="%IPOT_2">Hipot2</option>
+            <option value="%TS2">ATS2</option>
+            <option value="%LASH2">VFlash2</option>
+            <option value="%TS3">ATS3</option>
+        </select>
+    </div>
 
     <div id="chartContainer">
-
         <canvas id="failuresChart"></canvas>
-
     </div>
-
 
     <div class="table-controls">
-
         <input type="text" id="searchInput" placeholder="Search..."/>
-
         <button id="toggleChartButton" class="action-button">Top 5 Failed</button>
-
     </div>
 
-
     <table>
-
         <thead>
-
         <tr>
-
             <th data-column="sn">Serial Number<span class="sort-icon"></span></th>
-
             <th data-column="model">Model<span class="sort-icon"></span></th>
-
             <th data-column="testerId">Tester<span class="sort-icon"></span></th>
-
             <th data-column="fixtureId">Fixture<span class="sort-icon"></span></th>
-
             <th data-column="failItem">Fail Item<span class="sort-icon"></span></th>
-
             <th data-column="workDate">Date/Time<span class="sort-icon"></span></th>
-
         </tr>
-
         </thead>
-
         <tbody id="resultTableBody">
-
         <tr>
-
             <td colspan="5">Loading data...</td>
-
         </tr>
-
         </tbody>
-
     </table>
 
-
-    <button class="back-button" onclick="goBackToSummary()">Back to Summary</button>
-
+    <button class="back-button back-to-summary-button" onclick="goBackToSummary()">Back to Summary</button>
 </div>
 
-
 <script>
-
     const stationColors = {
-
         'VIBRATION': '#d6412b',
-
         'ATS1': '#ff5733',
-
         'HEATUP': '#f7941d',
-
         'VFLASH1': '#ffa94d',
-
         'ATS2': '#ffc300',
-
         'HIPOT1': '#ffd54f',
-
         'HIPOT2': '#f9e79f',
-
-        'BURNIN': 'rgb(143,11,11)',
-
+        'BURNIN': 'rgba(114,9,9)',
         'ATS3': '#888888',
-
         'VFLASH2': '#555555'
-
     };
-
 
     const ctx = document.getElementById('failuresChart').getContext('2d');
-
     const tbody = document.getElementById('resultTableBody');
-
     const displayLineIdSpan = document.getElementById('displayLineId');
-
     const displayStationSpan = document.getElementById('displayStation');
-
     const displayWorkDateSpan = document.getElementById('displayWorkDate');
-
     const pageTitleHeader = document.getElementById('pageTitleHeader');
-
     const tableHeaders = document.querySelectorAll('th');
-
-    const searchInput = document.getElementById('searchInput');
-
+    const stationSelect = document.getElementById('stationSelect');
+    const stationControls = document.querySelector('.station-controls');
     const toggleButton = document.getElementById('toggleChartButton');
-
+    const searchInput = document.getElementById('searchInput');
     const tableControls = document.querySelector('.table-controls');
-
     const dataTable = document.querySelector('table');
-
-    const backToSummaryButton = document.querySelector('.back-button');
-
+    const backToSummaryButton = document.querySelector('.back-to-summary-button');
 
     let ws = null, chart = null;
-
-    let currentLineId = '', currentStation = '', currentWorkDate = '';
-
+    let currentLineId = '', currentStation = '', currentStartDate = '', currentEndDate = '';
     let originalData = [];
-
     let isTopFailedChart = false;
-
     let sortStatus = {
-
         column: 'workDate',
-
         direction: 'desc'
-
     };
 
-
-    // Timer to handle single and double clicks
-
     let clickTimer = null;
-
     const clickDelay = 200; // milliseconds
 
-
     function getQueryParams() {
-
         const params = {};
-
         window.location.search.substring(1).split('&').forEach(param => {
-
             const parts = param.split('=');
-
             if (parts.length === 2) params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1].replace(/\+/g, ' '));
-
         });
-
         return params;
-
     }
-
 
     function mapStationName(station) {
-
         const mapping = {
-
             '%LASH': 'VFLASH1', '%IPOT_1': 'HIPOT1', '%TS1': 'ATS1',
-
             '%RATION': 'VIBRATION', '%TUP': 'HEATUP', '%RN_IN': 'BURNIN',
-
             '%IPOT_2': 'HIPOT2', '%TS2': 'ATS2', '%LASH2': 'VFLASH2', '%TS3': 'ATS3'
-
         };
-
-        return mapping[station] || station;
-
+        return mapping[station] || station || 'All Stations';
     }
 
-
-    function startWebSocket(lineId, station, workDate, displayStationName) {
-
+    function connectWebSocket(lineId, station, startDate, endDate) {
         if (ws) ws.close();
 
-        let wsUrl = `ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}`;
-
-        if (workDate) wsUrl += `&workDate=${workDate}`;
+        const stationParam = station ? `&station=${station}` : '';
+        const startDateParam = startDate ? `&startDate=${startDate}` : '';
+        const endDateParam = endDate ? `&endDate=${endDate}` : '';
+        let wsUrl = `ws://localhost:8000/failures/ws/tester?lineId=${lineId}${stationParam}${startDateParam}${endDateParam}`;
 
         ws = new WebSocket(wsUrl);
 
-
         ws.onopen = () => {
-
             tbody.innerHTML = '<tr><td colspan="6">Waiting for data...</td></tr>';
-
         };
 
-
         ws.onmessage = (event) => {
-
             const data = JSON.parse(event.data);
+            const displayStationName = station ? mapStationName(station) : 'All Stations';
 
             if (!data || data.length === 0) {
-
-                tbody.innerHTML = `<tr><td colspan="6">No failure data for ${displayStationName} on ${workDate}.</td></tr>`;
-
+                tbody.innerHTML = `<tr><td colspan="6">No failure data for ${displayStationName} on selected dates.</td></tr>`;
                 if (chart) chart.destroy();
-
                 chart = null;
-
                 originalData = [];
-
                 return;
-
             }
 
             originalData = data;
-
             isTopFailedChart = false;
-
             pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
-
+            toggleButton.textContent = 'Top 5 Failed';
             updateChart(originalData, displayStationName, 'testerId', false);
-
             sortAndRenderTable(originalData);
-
         };
-
         ws.onclose = () => console.log("WebSocket closed");
-
         ws.onerror = err => console.error("WebSocket error:", err);
-
     }
 
-
     function updateChart(data, displayStationName, categoryType, isHorizontal) {
-
         let counts = {};
-
         const categoryName = (categoryType === 'testerId') ? 'Tester ID' : 'Fail Item';
-
         data.forEach(item => {
-
             const category = item[categoryType];
-
             if (category) {
-
                 counts[category] = (counts[category] || 0) + 1;
-
             }
-
         });
-
 
         let sortedCounts = Object.entries(counts);
 
         if (categoryType === 'testerId') {
-
             sortedCounts = sortedCounts.sort((a, b) => {
-
                 const nameA = a[0].toLowerCase();
-
                 const nameB = b[0].toLowerCase();
-
                 if (nameA < nameB) return -1;
-
                 if (nameA > nameB) return 1;
-
                 return 0;
-
             });
-
             pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
-
         } else {
-
             sortedCounts = sortedCounts.sort((a, b) => b[1] - a[1]).slice(0, 5);
-
             pageTitleHeader.textContent = `Top 5 Failed Items at ${displayStationName}`;
-
         }
 
         const labels = sortedCounts.map(([key]) => key);
-
         const values = sortedCounts.map(([, count]) => count);
 
-
         if (chart) chart.destroy();
-
-        const stationColor = stationColors[displayStationName.toUpperCase()] || 'rgba(255, 195, 0, 0.6)';
-
+        const stationColor = stationColors[displayStationName.toUpperCase()] || 'rgb(55,176,25)';
         const chartType = 'bar';
 
-
         chart = new Chart(ctx, {
-
             type: chartType,
-
             data: {
-
                 labels,
-
                 datasets: [{
-
                     label: `${categoryType === 'failItem' ? 'Top 5 ' : ''}Failures (${displayStationName})`,
-
                     data: values,
-
                     backgroundColor: stationColor,
-
                     borderColor: stationColor,
-
                     borderWidth: 1
-
                 }]
-
             },
-
             options: {
-
                 responsive: true,
-
                 maintainAspectRatio: false,
-
                 scales: {
-
                     y: {
-
                         beginAtZero: true,
-
                         title: {
-
                             display: true,
-
-                            text: isHorizontal ? categoryName : 'Number of Failures',
-
+                            text: 'Number of Failures',
                             color: '#dbe4eb'
-
                         },
-
                         ticks: {stepSize: 1, color: '#dbe4eb'},
-
                         grid: {color: '#5a7081'}
-
                     },
-
                     x: {
-
                         title: {
-
                             display: true,
-
-                            text: isHorizontal ? 'Number of Failures' : categoryName,
-
+                            text: categoryName,
                             color: '#dbe4eb'
-
                         },
-
                         ticks: {color: '#dbe4eb'},
-
                         grid: {color: '#5a7081'}
-
                     }
-
                 },
-
                 indexAxis: isHorizontal ? 'y' : 'x',
-
                 plugins: {
-
                     legend: {
-
                         labels: {
-
                             color: '#dbe4eb'
-
                         }
-
                     }
-
                 },
-
                 onClick: (e) => {
-
                     const activePoints = chart.getElementsAtEventForMode(e, 'nearest', {intersect: true}, true);
-
                     if (activePoints.length > 0) {
-
                         const firstPoint = activePoints[0];
-
                         const label = chart.data.labels[firstPoint.index];
 
-
                         if (clickTimer) {
-
+                            // This is a double click
                             clearTimeout(clickTimer);
-
                             clickTimer = null;
-
-                            // Double-click handler: Show line chart for the selected category
                             const filterColumn = isTopFailedChart ? 'failItem' : 'testerId';
                             const filteredData = originalData.filter(row => (row[filterColumn] || '') === label);
                             createLineChart(filteredData, label, displayStationName, stationColor);
                         } else {
-
+                            // This is a single click, set a timer
                             clickTimer = setTimeout(() => {
-                                // Single-click handler: Render the filtered table
                                 const filterColumn = isTopFailedChart ? 'failItem' : 'testerId';
                                 const filteredData = originalData.filter(row => (row[filterColumn] || '') === label);
                                 renderTable(filteredData);
                                 clickTimer = null;
                             }, clickDelay);
-
                         }
-
                     }
-
                 }
-
             }
-
         });
-
     }
 
+    function generateDateRange(startDate, endDate) {
+        const dates = [];
+        let currentDate = new Date(startDate);
+        const end = new Date(endDate);
 
-    function generateContinuousTimeLabels(startDate, endDate, intervalMinutes) {
-
-        const labels = [];
-
-        const startDateTime = new Date(startDate + 'T07:20:00');
-
-        const endDateTime = new Date(endDate + 'T07:20:00');
-
-
-        let currentTime = new Date(startDateTime);
-
-
-        while (currentTime <= endDateTime) {
-
-            labels.push(currentTime.toLocaleString('th-TH', {hour: '2-digit', hour12: false}));
-
-            currentTime.setMinutes(currentTime.getMinutes() + intervalMinutes);
-
+        while (currentDate <= end) {
+            dates.push(currentDate.toISOString().split('T')[0]);
+            currentDate.setDate(currentDate.getDate() + 1);
         }
-
-        return labels;
-
+        return dates;
     }
 
+    // ... (โค้ดส่วนอื่นๆ)
 
     function createLineChart(data, label, displayStationName, color) {
-        const startDate = currentWorkDate;
-        const endDate = new Date(new Date(startDate).setDate(new Date(startDate).getDate() + 1)).toISOString().split('T')[0];
-
-        const labels = generateContinuousTimeLabels(startDate, endDate, 60);
-        const timeSeriesData = new Map(labels.map(time => [time, 0]));
+        const allDates = generateDateRange(currentStartDate, currentEndDate);
+        const timeSeriesData = new Map(allDates.map(date => [date, 0]));
 
         data.forEach(item => {
-            const hour = new Date(item.workDate).toLocaleString('th-TH', {hour: '2-digit', hour12: false});
-            if (timeSeriesData.has(hour)) {
-                timeSeriesData.set(hour, timeSeriesData.get(hour) + 1);
+            const date = item.workDate.split('T')[0];
+            if (timeSeriesData.has(date)) {
+                timeSeriesData.set(date, timeSeriesData.get(date) + 1);
             }
         });
 
-        const counts = labels.map(time => timeSeriesData.get(time));
+        const counts = allDates.map(date => timeSeriesData.get(date));
+
+        // เพิ่มบรรทัดนี้เพื่อเปลี่ยนหัวข้อของหน้าเมื่อเข้าสู่ Line Chart
+        // The topic of failure is passed in as the 'label' argument.
+        pageTitleHeader.textContent = `${label} at ${displayStationName}`;
 
         if (chart) chart.destroy();
         chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
+                labels: allDates,
                 datasets: [{
-                    label: `Failure Topic: ${label}`,
+                    label: `${label}`,
                     data: counts,
                     borderColor: color,
                     tension: 0.4,
@@ -763,7 +488,7 @@
                     x: {
                         title: {
                             display: true,
-                            text: 'Time (Hour)',
+                            text: 'Date',
                             color: '#dbe4eb'
                         },
                         ticks: {color: '#dbe4eb'},
@@ -780,25 +505,22 @@
             }
         });
 
-        tableControls.style.display = 'none';
-        dataTable.style.display = 'none';
-        backToSummaryButton.style.display = 'none';
-        pageTitleHeader.textContent = `Failure Trend for: ${label}`;
+        toggleControls(false);
 
-        let backButton = document.getElementById('backToChartButton');
-        if (!backButton) {
-            backButton = document.createElement('button');
-            backButton.id = 'backToChartButton';
-            backButton.className = 'action-button';
-            backButton.textContent = `Back to ${isTopFailedChart ? 'Top 5 Failed Chart' : 'Tester Chart'}`;
-            backButton.style.display = 'block';
-            backButton.style.marginLeft = 'auto';
-            backButton.style.marginRight = 'auto';
-            backButton.style.marginTop = '20px';
-            document.querySelector('.container').insertBefore(backButton, document.querySelector('.table-controls'));
+        let backToBarChartButton = document.getElementById('backToBarChartButton');
+        if (!backToBarChartButton) {
+            backToBarChartButton = document.createElement('button');
+            backToBarChartButton.id = 'backToBarChartButton';
+            backToBarChartButton.className = 'action-button';
+            backToBarChartButton.textContent = 'Back to Bar Chart';
+            backToBarChartButton.style.display = 'block';
+            backToBarChartButton.style.marginLeft = 'auto';
+            backToBarChartButton.style.marginRight = 'auto';
+            backToBarChartButton.style.marginTop = '20px';
+            document.querySelector('.container').insertBefore(backToBarChartButton, document.querySelector('.table-controls'));
 
-            backButton.onclick = () => {
-                const displayStationName = mapStationName(currentStation);
+            backToBarChartButton.onclick = () => {
+                const displayStationName = stationSelect.options[stationSelect.selectedIndex].text;
                 if (isTopFailedChart) {
                     updateChart(originalData, displayStationName, 'failItem', true);
                     toggleButton.textContent = 'By Tester';
@@ -807,274 +529,170 @@
                     toggleButton.textContent = 'Top 5 Failed';
                 }
                 sortAndRenderTable(originalData);
-                tableControls.style.display = 'flex';
-                dataTable.style.display = 'table';
-                backToSummaryButton.style.display = 'block';
-                backToSummaryButton.style.marginLeft = 'auto'; // แก้ไขตรงนี้
-                backToSummaryButton.style.marginRight = 'auto'; // และตรงนี้
-                backButton.remove();
+                toggleControls(true);
+                backToBarChartButton.remove();
             };
         }
     }
 
+    function toggleControls(show) {
+        stationControls.style.display = show ? 'flex' : 'none';
+        tableControls.style.display = show ? 'flex' : 'none';
+        dataTable.style.display = show ? 'table' : 'none';
+        backToSummaryButton.style.display = show ? 'block' : 'none';
+    }
 
     function sortAndRenderTable(data, column, direction) {
-
         if (!data || data.length === 0) {
-
             renderTable(data);
-
             return;
-
         }
-
 
         if (column && direction) {
-
             sortStatus.column = column;
-
             sortStatus.direction = direction;
-
         }
-
 
         const sortedData = [...data].sort((a, b) => {
-
             let valA = a[sortStatus.column] || '';
-
             let valB = b[sortStatus.column] || '';
 
-
             if (sortStatus.column === 'workDate') {
-
                 valA = new Date(valA);
-
                 valB = new Date(valB);
-
             } else if (typeof valA === 'string' && typeof valB === 'string') {
-
                 return sortStatus.direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-
             }
-
 
             if (valA < valB) return sortStatus.direction === 'asc' ? -1 : 1;
-
             if (valA > valB) return sortStatus.direction === 'asc' ? 1 : -1;
-
             return 0;
-
         });
-
 
         tableHeaders.forEach(th => {
-
             const sortIcon = th.querySelector('.sort-icon');
-
             if (th.dataset.column === sortStatus.column) {
-
                 sortIcon.textContent = sortStatus.direction === 'asc' ? '▲' : '▼';
-
             } else {
-
                 sortIcon.textContent = '';
-
             }
-
         });
-
 
         renderTable(sortedData);
-
     }
-
 
     function renderTable(data) {
-
         tbody.innerHTML = '';
-
         const fragment = document.createDocumentFragment();
-
         if (data.length === 0) {
-
             tbody.innerHTML = '<tr><td colspan="6">No matching data found.</td></tr>';
-
             return;
-
         }
-
         data.forEach(row => {
-
             const tr = document.createElement('tr');
-
             const formattedDate = row.workDate.replace('T', ' ');
-
             tr.innerHTML = `
-
-<td>${row.sn || '-'}</td>
-
-<td>${row.model}</td>
-
-<td>${row.testerId}</td>
-
-<td>${row.fixtureId}</td>
-
-<td>${row.failItem || '-'}</td>
-
-<td>${formattedDate}</td>
-
-`;
-
+                <td>${row.sn || '-'}</td>
+                <td>${row.model}</td>
+                <td>${row.testerId}</td>
+                <td>${row.fixtureId}</td>
+                <td>${row.failItem || '-'}</td>
+                <td>${formattedDate}</td>
+            `;
             fragment.appendChild(tr);
-
         });
-
         tbody.appendChild(fragment);
-
     }
-
 
     searchInput.addEventListener('input', function () {
-
         const filter = this.value.trim().toLowerCase();
-
         const filteredData = originalData.filter(row =>
-
                 (row.sn || '').toLowerCase().includes(filter) ||
-
                 (row.model || '').toLowerCase().includes(filter) ||
-
                 (row.testerId || '').toLowerCase().includes(filter) ||
-
                 (row.fixtureId || '').toLowerCase().includes(filter) ||
-
                 (row.failItem || '').toLowerCase().includes(filter) ||
-
                 (row.workDate || '').toLowerCase().includes(filter)
         );
-
         sortAndRenderTable(filteredData, sortStatus.column, sortStatus.direction);
-
     });
-
 
     toggleButton.addEventListener('click', () => {
-
         if (originalData.length > 0) {
-
-            const displayStationName = mapStationName(currentStation);
-
+            const displayStationName = stationSelect.options[stationSelect.selectedIndex].text;
             isTopFailedChart = !isTopFailedChart;
-
             if (isTopFailedChart) {
-
                 updateChart(originalData, displayStationName, 'failItem', true);
-
                 toggleButton.textContent = 'By Tester';
-
             } else {
-
                 updateChart(originalData, displayStationName, 'testerId', false);
-
                 toggleButton.textContent = 'Top 5 Failed';
-
             }
-
             sortAndRenderTable(originalData);
-
         }
-
     });
-
 
     tableHeaders.forEach(header => {
-
         header.addEventListener('click', () => {
-
             const column = header.dataset.column;
-
             const direction = (sortStatus.column === column && sortStatus.direction === 'asc') ? 'desc' : 'asc';
-
             const filter = searchInput.value.trim().toLowerCase();
-
             const dataToSort = filter ? originalData.filter(row =>
-
-                            (row.sn || '').toLowerCase().includes(filter) ||
-
-                            (row.model || '').toLowerCase().includes(filter) ||
-
-                            (row.testerId || '').toLowerCase().includes(filter) ||
-
-                            (row.fixtureId || '').toLowerCase().includes(filter) ||
-
-                            (row.failItem || '').toLowerCase().includes(filter) ||
-
-                            (row.workDate || '').toLowerCase().includes(filter)
+                    (row.sn || '').toLowerCase().includes(filter) ||
+                    (row.model || '').toLowerCase().includes(filter) ||
+                    (row.testerId || '').toLowerCase().includes(filter) ||
+                    (row.fixtureId || '').toLowerCase().includes(filter) ||
+                    (row.failItem || '').toLowerCase().includes(filter) ||
+                    (row.workDate || '').toLowerCase().includes(filter)
             ) : originalData;
-
             sortAndRenderTable(dataToSort, column, direction);
-
         });
-
     });
 
+    stationSelect.addEventListener('change', () => {
+        const selectedStationValue = stationSelect.value;
+        const selectedStationText = stationSelect.options[stationSelect.selectedIndex].text;
+
+        displayStationSpan.textContent = selectedStationText;
+        connectWebSocket(currentLineId, selectedStationValue, currentStartDate, currentEndDate);
+    });
 
     function goBackToSummary() {
-
         const savedLineId = sessionStorage.getItem("lineId") || currentLineId;
-
-        const savedStartDate = sessionStorage.getItem("startDate") || currentWorkDate;
-
-        const savedEndDate = sessionStorage.getItem("endDate") || currentWorkDate;
-
+        const savedStartDate = sessionStorage.getItem("startDate") || currentStartDate;
+        const savedEndDate = sessionStorage.getItem("endDate") || currentEndDate;
         window.location.href = `index.html?lineId=${savedLineId}&startDate=${savedStartDate}&endDate=${savedEndDate}`;
-
     }
 
-
     document.addEventListener('DOMContentLoaded', () => {
-
         const params = getQueryParams();
-
         const lineIdFromUrl = params.lineId;
-
         const stationFromUrl = params.station;
 
-        const workDateFromUrl = params.workDate;
+        currentLineId = lineIdFromUrl || sessionStorage.getItem("lineId");
+        currentStartDate = sessionStorage.getItem("startDate");
+        currentEndDate = sessionStorage.getItem("endDate");
 
-        if (lineIdFromUrl && stationFromUrl) {
-
-            currentLineId = lineIdFromUrl;
-
-            currentStation = stationFromUrl;
-
-            currentWorkDate = workDateFromUrl;
-
-            const displayStationName = mapStationName(currentStation);
+        if (currentLineId && currentStartDate && currentEndDate) {
+            if (stationFromUrl) {
+                stationSelect.value = stationFromUrl;
+                displayStationSpan.textContent = mapStationName(stationFromUrl);
+            } else {
+                stationSelect.value = '';
+                displayStationSpan.textContent = 'All Stations';
+            }
 
             displayLineIdSpan.textContent = currentLineId;
+            displayWorkDateSpan.textContent = `${currentStartDate} to ${currentEndDate}`;
+            document.title = `${displayStationSpan.textContent} Failures Dashboard`;
 
-            displayStationSpan.textContent = displayStationName;
-
-            displayWorkDateSpan.textContent = currentWorkDate;
-
-            document.title = `${displayStationName} Failures Dashboard`;
-
-            startWebSocket(currentLineId, currentStation, currentWorkDate, displayStationName);
-
+            connectWebSocket(currentLineId, stationSelect.value, currentStartDate, currentEndDate);
         } else {
-
-            pageTitleHeader.textContent = "Error: Missing Line ID or Station";
-
+            pageTitleHeader.textContent = "Error: Missing Line ID or Date Range";
             tbody.innerHTML = '<tr><td colspan="6">Error: Missing parameters. Please go back to the summary page.</td></tr>';
-
         }
-
     });
-
 </script>
 
-
 </body>
-
 </html>

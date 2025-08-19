@@ -89,6 +89,13 @@
             background-color: #2a2a2a; /* พื้นหลังหัวตารางสีเทา */
             font-weight: bold;
             color: #ffffff; /* ตัวอักษรหัวตารางเป็นสีขาว */
+            cursor: pointer; /* เพิ่ม cursor เพื่อให้รู้ว่าคลิกได้ */
+            user-select: none; /* ป้องกันการเลือกข้อความ */
+        }
+
+        .sort-icon {
+            margin-left: 5px;
+            font-size: 12px;
         }
 
         tr:nth-child(even) {
@@ -100,7 +107,7 @@
         }
 
         .back-button, .action-button {
-            background-color: #2c98d0; /* ส้มหลัก */
+            background-color: #2c98d0;
             color: #fff;
             padding: 10px 20px;
             border: none;
@@ -112,12 +119,12 @@
         }
 
         .back-button:hover, .action-button:hover {
-            background-color: #2c98d0; /* ส้มเข้ม */
+            background-color: #2ea4e3;
             transform: translateY(-1px);
         }
 
         .back-button:active, .action-button:active {
-            background-color: #2c98d0; /* ส้มเข้มกว่า */
+            background-color: #2c98d0;
             transform: translateY(1px);
         }
     </style>
@@ -140,10 +147,10 @@
     <table>
         <thead>
         <tr>
-            <th>Tester</th>
-            <th>Fixture</th>
-            <th>Fail Item</th>
-            <th>Date/Time</th>
+            <th data-column="testerId">Tester<span class="sort-icon"></span></th>
+            <th data-column="fixtureId">Fixture<span class="sort-icon"></span></th>
+            <th data-column="failItem">Fail Item<span class="sort-icon"></span></th>
+            <th data-column="workDate">Date/Time<span class="sort-icon"></span></th>
         </tr>
         </thead>
         <tbody id="resultTableBody">
@@ -162,14 +169,18 @@
     const searchInput = document.getElementById('searchInput');
     const toggleButton = document.getElementById('toggleChartButton');
     const pageTitleHeader = document.getElementById('pageTitle');
+    const tableHeaders = document.querySelectorAll('th');
 
     let ws = null;
     let chart = null;
     let currentLineId = '';
     let currentData = [];
     let isTopFailedChart = false;
+    let sortStatus = {
+        column: 'workDate',
+        direction: 'desc'
+    };
 
-    // อ่าน query params จาก URL
     function getQueryParams() {
         const params = {};
         window.location.search.substring(1).split('&').forEach(param => {
@@ -183,7 +194,6 @@
 
     function startWebSocket(lineId, startDate, endDate) {
         if (ws) ws.close();
-
         currentLineId = lineId;
 
         let wsUrl = `ws://localhost:8000/failures/ws/fixture?lineId=${lineId}`;
@@ -206,12 +216,11 @@
                 return;
             }
 
-            // Initially show the 'by Fixture' chart
             isTopFailedChart = false;
             pageTitleHeader.textContent = `Fixture Failure Count by Fixture`;
             toggleButton.textContent = 'Top 5 Failed';
             updateChart(currentData, 'fixtureId', false);
-            renderTable(currentData);
+            sortAndRenderTable(currentData);
         };
 
         ws.onclose = () => {
@@ -227,19 +236,44 @@
         const categoryCounts = {};
         const categoryName = (categoryType === 'fixtureId') ? 'Fixture ID' : 'Fail Item';
 
-        data.forEach(item => {
-            if (item.fixtureId && item.fixtureId.toLowerCase() === 'onstation' && categoryType === 'fixtureId') return;
-            const category = item[categoryType] || 'N/A';
-            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+        const filteredData = data.filter(item => {
+            return item.fixtureId && item.fixtureId.toLowerCase() !== 'onstation';
+        });
+
+        filteredData.forEach(item => {
+            if (categoryType === 'failItem') {
+                const combinedKey = `${item.fixtureId || 'N/A'} - ${item.failItem || 'N/A'}`;
+                categoryCounts[combinedKey] = (categoryCounts[combinedKey] || 0) + 1;
+            } else {
+                const category = item[categoryType] || 'N/A';
+                categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+            }
         });
 
         let sortedCategories = Object.entries(categoryCounts);
 
         if (categoryType === 'fixtureId') {
-            sortedCategories.sort((a, b) => a[0].localeCompare(b[0]));
-            pageTitleHeader.textContent = `Fixture Failure Count by Fixture`;
+            const hasDuplicates = sortedCategories.some(([key, count]) => count > 1);
+            if (hasDuplicates) {
+                sortedCategories.sort((a, b) => a[0].localeCompare(b[0]));
+                pageTitleHeader.textContent = `Fixture Failure Count by Fixture`;
+            } else {
+                const latestDates = {};
+                data.forEach(item => {
+                    const key = item.fixtureId || 'N/A';
+                    const date = new Date(item.workDate);
+                    if (!latestDates[key] || date > latestDates[key]) {
+                        latestDates[key] = date;
+                    }
+                });
+                sortedCategories.sort((a, b) => {
+                    const dateA = latestDates[a[0]];
+                    const dateB = latestDates[b[0]];
+                    return dateB - dateA;
+                });
+                pageTitleHeader.textContent = `Fixture Failure Count by Fixture (Latest Failures)`;
+            }
         } else {
-            // Sort by count for 'failItem' and take only the top 5
             sortedCategories.sort((a, b) => b[1] - a[1]);
             sortedCategories = sortedCategories.slice(0, 5);
             pageTitleHeader.textContent = `Top 5 Failed Items at ${currentLineId}`;
@@ -300,30 +334,94 @@
                             color: '#dbe4eb'
                         }
                     }
+                },
+                onClick: (e) => {
+                    const activePoints = chart.getElementsAtEventForMode(e, 'nearest', {intersect: true}, true);
+                    if (activePoints.length > 0) {
+                        const firstPoint = activePoints[0];
+                        const label = chart.data.labels[firstPoint.index];
+
+                        let filteredData = [];
+                        if (isTopFailedChart) {
+                            // กรองข้อมูลในตารางตามค่าที่คลิกสำหรับกราฟ Top 5
+                            filteredData = currentData.filter(row => {
+                                const combinedKey = `${row.fixtureId || 'N/A'} - ${row.failItem || 'N/A'}`;
+                                return combinedKey === label;
+                            });
+                        } else {
+                            // กรองข้อมูลสำหรับกราฟปกติ (Fixture)
+                            filteredData = currentData.filter(row => (row.fixtureId || '') === label);
+                        }
+
+                        renderTable(filteredData);
+                    }
                 }
             }
         });
     }
 
+    function sortAndRenderTable(data, column, direction) {
+        if (!data || data.length === 0) return;
+
+        // กำหนด column และ direction ที่จะเรียง
+        if (column && direction) {
+            sortStatus.column = column;
+            sortStatus.direction = direction;
+        }
+
+        // เรียงข้อมูล
+        data.sort((a, b) => {
+            let valA = a[sortStatus.column] || '';
+            let valB = b[sortStatus.column] || '';
+
+            if (sortStatus.column === 'workDate') {
+                valA = new Date(valA);
+                valB = new Date(valB);
+            }
+
+            if (valA < valB) return sortStatus.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sortStatus.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // อัปเดตไอคอนบนหัวตาราง
+        tableHeaders.forEach(th => {
+            const sortIcon = th.querySelector('.sort-icon');
+            if (th.dataset.column === sortStatus.column) {
+                sortIcon.textContent = sortStatus.direction === 'asc' ? '▲' : '▼';
+            } else {
+                sortIcon.textContent = '';
+            }
+        });
+
+        // แสดงผลในตาราง
+        renderTable(data);
+    }
+
     function renderTable(data) {
         tbody.innerHTML = '';
-        data.sort((a, b) => new Date(b.workDate) - new Date(a.workDate));
+        const fragment = document.createDocumentFragment();
         data.forEach(row => {
+            const tr = document.createElement('tr');
             const formattedDate = row.workDate.replace('T', ' ');
-            tbody.innerHTML += `
-        <tr>
-            <td>${row.testerId}</td>
-            <td>${row.fixtureId}</td>
-            <td>${row.failItem || '-'}</td>
-            <td>${formattedDate}</td>
-        </tr>`;
+            tr.innerHTML = `
+                <td>${row.testerId || '-'}</td>
+                <td>${row.fixtureId || '-'}</td>
+                <td>${row.failItem || '-'}</td>
+                <td>${formattedDate}</td>
+            `;
+            fragment.appendChild(tr);
         });
+        tbody.appendChild(fragment);
     }
 
     searchInput.addEventListener('input', () => {
         const filter = searchInput.value.trim().toLowerCase();
         const filteredData = currentData.filter(row =>
-                Object.values(row).some(val => String(val).toLowerCase().includes(filter))
+                (row.testerId || '').toLowerCase().includes(filter) ||
+                (row.fixtureId || '').toLowerCase().includes(filter) ||
+                (row.failItem || '').toLowerCase().includes(filter) ||
+                (row.workDate || '').toLowerCase().includes(filter)
         );
         renderTable(filteredData);
     });
@@ -332,29 +430,33 @@
         if (currentData.length > 0) {
             isTopFailedChart = !isTopFailedChart;
             if (isTopFailedChart) {
-                // Switch to Top Failed chart
                 updateChart(currentData, 'failItem', true);
                 toggleButton.textContent = 'By Fixture';
             } else {
-                // Switch back to Fixture Failed chart
                 updateChart(currentData, 'fixtureId', false);
                 toggleButton.textContent = 'Top 5 Failed';
             }
+            sortAndRenderTable(currentData);
         }
+    });
+
+    tableHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const column = header.dataset.column;
+            const direction = (sortStatus.column === column && sortStatus.direction === 'asc') ? 'desc' : 'asc';
+            sortAndRenderTable(currentData, column, direction);
+        });
     });
 
     function goBackToSummary() {
         const savedStartDate = sessionStorage.getItem("startDate") || '';
         const savedEndDate = sessionStorage.getItem("endDate") || '';
-
-        // ส่งกลับไปทั้ง lineId + วันที่
         window.location.href = `index.html?lineId=${encodeURIComponent(currentLineId)}&startDate=${encodeURIComponent(savedStartDate)}&endDate=${encodeURIComponent(savedEndDate)}`;
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         const params = getQueryParams();
         const lineIdFromUrl = params.lineId;
-
         const savedStartDate = sessionStorage.getItem("startDate");
         const savedEndDate = sessionStorage.getItem("endDate");
 

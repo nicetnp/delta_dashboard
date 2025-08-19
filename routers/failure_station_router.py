@@ -10,8 +10,8 @@ import json
 
 router = APIRouter(prefix="/failures", tags=["Failures"])
 
-UPDATE_INTERVAL_SEC = 5
-CACHE_TTL_SEC = 45
+UPDATE_INTERVAL_SEC = 175
+CACHE_TTL_SEC = 300
 
 
 @router.websocket("/ws/station")

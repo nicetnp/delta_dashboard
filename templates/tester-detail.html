@@ -438,6 +438,8 @@
         return dates;
     }
 
+    // ... (โค้ดส่วนอื่นๆ)
+
     function createLineChart(data, label, displayStationName, color) {
         const allDates = generateDateRange(currentStartDate, currentEndDate);
         const timeSeriesData = new Map(allDates.map(date => [date, 0]));
@@ -451,13 +453,17 @@
 
         const counts = allDates.map(date => timeSeriesData.get(date));
 
+        // เพิ่มบรรทัดนี้เพื่อเปลี่ยนหัวข้อของหน้าเมื่อเข้าสู่ Line Chart
+        // The topic of failure is passed in as the 'label' argument.
+        pageTitleHeader.textContent = `${label} at ${displayStationName}`;
+
         if (chart) chart.destroy();
         chart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: allDates,
                 datasets: [{
-                    label: `Failure topic: ${label}`,
+                    label: `${label}`,
                     data: counts,
                     borderColor: color,
                     tension: 0.4,

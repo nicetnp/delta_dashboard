@@ -161,6 +161,11 @@
             border-color: #ffc300;
             box-shadow: 0 0 5px rgba(255, 195, 0, 0.4);
         }
+
+        .back-to-summary-button {
+            display: block;
+            margin: 20px auto;
+        }
     </style>
 </head>
 <body>
@@ -217,7 +222,7 @@
         </tbody>
     </table>
 
-    <button class="back-button" onclick="goBackToSummary()">Back to Summary</button>
+    <button class="back-button back-to-summary-button" onclick="goBackToSummary()">Back to Summary</button>
 </div>
 
 <script>
@@ -242,8 +247,12 @@
     const pageTitleHeader = document.getElementById('pageTitleHeader');
     const tableHeaders = document.querySelectorAll('th');
     const stationSelect = document.getElementById('stationSelect');
+    const stationControls = document.querySelector('.station-controls');
     const toggleButton = document.getElementById('toggleChartButton');
     const searchInput = document.getElementById('searchInput');
+    const tableControls = document.querySelector('.table-controls');
+    const dataTable = document.querySelector('table');
+    const backToSummaryButton = document.querySelector('.back-to-summary-button');
 
     let ws = null, chart = null;
     let currentLineId = '', currentStation = '', currentStartDate = '', currentEndDate = '';
@@ -254,7 +263,6 @@
         direction: 'desc'
     };
 
-    // Timer to handle single and double clicks
     let clickTimer = null;
     const clickDelay = 200; // milliseconds
 
@@ -400,23 +408,15 @@
                             // This is a double click
                             clearTimeout(clickTimer);
                             clickTimer = null;
-                            if (isTopFailedChart) {
-                                // Double click on Top 5 chart: Show line chart
-                                const filteredData = originalData.filter(row => (row.failItem || '') === label);
-                                createLineChart(filteredData, label, displayStationName, stationColor);
-                            }
+                            const filterColumn = isTopFailedChart ? 'failItem' : 'testerId';
+                            const filteredData = originalData.filter(row => (row[filterColumn] || '') === label);
+                            createLineChart(filteredData, label, displayStationName, stationColor);
                         } else {
                             // This is a single click, set a timer
                             clickTimer = setTimeout(() => {
-                                if (isTopFailedChart) {
-                                    // Single click on Top 5 chart: Filter table
-                                    const filteredData = originalData.filter(row => (row.failItem || '') === label);
-                                    renderTable(filteredData);
-                                } else {
-                                    // Single click on By Tester chart: Filter table
-                                    const filteredData = originalData.filter(row => (row.testerId || '') === label);
-                                    renderTable(filteredData);
-                                }
+                                const filterColumn = isTopFailedChart ? 'failItem' : 'testerId';
+                                const filteredData = originalData.filter(row => (row[filterColumn] || '') === label);
+                                renderTable(filteredData);
                                 clickTimer = null;
                             }, clickDelay);
                         }
@@ -426,27 +426,43 @@
         });
     }
 
+    function generateDateRange(startDate, endDate) {
+        const dates = [];
+        let currentDate = new Date(startDate);
+        const end = new Date(endDate);
+
+        while (currentDate <= end) {
+            dates.push(currentDate.toISOString().split('T')[0]);
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return dates;
+    }
+
     function createLineChart(data, label, displayStationName, color) {
-        const timeSeriesData = {};
+        const allDates = generateDateRange(currentStartDate, currentEndDate);
+        const timeSeriesData = new Map(allDates.map(date => [date, 0]));
+
         data.forEach(item => {
             const date = item.workDate.split('T')[0];
-            timeSeriesData[date] = (timeSeriesData[date] || 0) + 1;
+            if (timeSeriesData.has(date)) {
+                timeSeriesData.set(date, timeSeriesData.get(date) + 1);
+            }
         });
 
-        const dates = Object.keys(timeSeriesData).sort();
-        const counts = dates.map(date => timeSeriesData[date]);
+        const counts = allDates.map(date => timeSeriesData.get(date));
 
         if (chart) chart.destroy();
         chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: dates,
+                labels: allDates,
                 datasets: [{
-                    label: `Failure Trend for: ${label}`,
+                    label: `Failure topic: ${label}`,
                     data: counts,
                     borderColor: color,
                     tension: 0.4,
-                    fill: false
+                    fill: true,
+                    backgroundColor: `${color}45`
                 }]
             },
             options: {
@@ -483,34 +499,41 @@
             }
         });
 
-        document.querySelector('.table-controls').style.display = 'none';
-        document.querySelector('table').style.display = 'none';
-        toggleButton.style.display = 'none';
-        pageTitleHeader.textContent = `Failure Trend for: ${label}`;
+        toggleControls(false);
 
-        let backButton = document.getElementById('backToChartButton');
-        if (!backButton) {
-            backButton = document.createElement('button');
-            backButton.id = 'backToChartButton';
-            backButton.className = 'action-button';
-            backButton.textContent = 'Back to Top 5 Failed Chart';
-            backButton.style.display = 'block';
-            backButton.style.marginLeft = 'auto';
-            backButton.style.marginRight = 'auto';
-            backButton.style.marginTop = '20px';
-            document.querySelector('.container').insertBefore(backButton, document.querySelector('.table-controls'));
+        let backToBarChartButton = document.getElementById('backToBarChartButton');
+        if (!backToBarChartButton) {
+            backToBarChartButton = document.createElement('button');
+            backToBarChartButton.id = 'backToBarChartButton';
+            backToBarChartButton.className = 'action-button';
+            backToBarChartButton.textContent = 'Back to Bar Chart';
+            backToBarChartButton.style.display = 'block';
+            backToBarChartButton.style.marginLeft = 'auto';
+            backToBarChartButton.style.marginRight = 'auto';
+            backToBarChartButton.style.marginTop = '20px';
+            document.querySelector('.container').insertBefore(backToBarChartButton, document.querySelector('.table-controls'));
 
-            backButton.onclick = () => {
-                isTopFailedChart = true;
-                updateChart(originalData, displayStationName, 'failItem', true);
-                document.querySelector('.table-controls').style.display = 'flex';
-                document.querySelector('table').style.display = 'table';
-                toggleButton.style.display = 'block';
-                backButton.remove();
-                toggleButton.textContent = 'By Tester';
-                pageTitleHeader.textContent = `Top 5 Failed Items at ${displayStationName}`;
+            backToBarChartButton.onclick = () => {
+                const displayStationName = stationSelect.options[stationSelect.selectedIndex].text;
+                if (isTopFailedChart) {
+                    updateChart(originalData, displayStationName, 'failItem', true);
+                    toggleButton.textContent = 'By Tester';
+                } else {
+                    updateChart(originalData, displayStationName, 'testerId', false);
+                    toggleButton.textContent = 'Top 5 Failed';
+                }
+                sortAndRenderTable(originalData);
+                toggleControls(true);
+                backToBarChartButton.remove();
             };
         }
+    }
+
+    function toggleControls(show) {
+        stationControls.style.display = show ? 'flex' : 'none';
+        tableControls.style.display = show ? 'flex' : 'none';
+        dataTable.style.display = show ? 'table' : 'none';
+        backToSummaryButton.style.display = show ? 'block' : 'none';
     }
 
     function sortAndRenderTable(data, column, direction) {

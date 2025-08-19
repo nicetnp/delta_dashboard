@@ -12,8 +12,8 @@ from datetime import datetime
 
 router = APIRouter(prefix="/failures", tags=["Failures"])
 
-UPDATE_INTERVAL_SEC = 30
-CACHE_TTL_SEC = 60
+UPDATE_INTERVAL_SEC = 175
+CACHE_TTL_SEC = 300
 
 
 @router.websocket("/ws/tester")

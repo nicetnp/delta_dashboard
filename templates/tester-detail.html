@@ -242,6 +242,8 @@
     const pageTitleHeader = document.getElementById('pageTitleHeader');
     const tableHeaders = document.querySelectorAll('th');
     const stationSelect = document.getElementById('stationSelect');
+    const toggleButton = document.getElementById('toggleChartButton');
+    const searchInput = document.getElementById('searchInput');
 
     let ws = null, chart = null;
     let currentLineId = '', currentStation = '', currentStartDate = '', currentEndDate = '';
@@ -251,6 +253,10 @@
         column: 'workDate',
         direction: 'desc'
     };
+
+    // Timer to handle single and double clicks
+    let clickTimer = null;
+    const clickDelay = 200; // milliseconds
 
     function getQueryParams() {
         const params = {};
@@ -281,7 +287,7 @@
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
-            tbody.innerHTML = '<tr><td colspan="5">Waiting for data...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">Waiting for data...</td></tr>';
         };
 
         ws.onmessage = (event) => {
@@ -289,7 +295,7 @@
             const displayStationName = station ? mapStationName(station) : 'All Stations';
 
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5">No failure data for ${displayStationName} on selected dates.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6">No failure data for ${displayStationName} on selected dates.</td></tr>`;
                 if (chart) chart.destroy();
                 chart = null;
                 originalData = [];
@@ -299,6 +305,7 @@
             originalData = data;
             isTopFailedChart = false;
             pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
+            toggleButton.textContent = 'Top 5 Failed';
             updateChart(originalData, displayStationName, 'testerId', false);
             sortAndRenderTable(originalData);
         };
@@ -359,7 +366,7 @@
                         beginAtZero: true,
                         title: {
                             display: true,
-                            text: isHorizontal ? categoryName : 'Number of Failures',
+                            text: 'Number of Failures',
                             color: '#dbe4eb'
                         },
                         ticks: {stepSize: 1, color: '#dbe4eb'},
@@ -368,7 +375,7 @@
                     x: {
                         title: {
                             display: true,
-                            text: isHorizontal ? 'Number of Failures' : categoryName,
+                            text: categoryName,
                             color: '#dbe4eb'
                         },
                         ticks: {color: '#dbe4eb'},
@@ -389,20 +396,121 @@
                         const firstPoint = activePoints[0];
                         const label = chart.data.labels[firstPoint.index];
 
-                        let filteredData = [];
-                        if (isTopFailedChart) {
-                            // กรองสำหรับกราฟ Top 5 Failed
-                            filteredData = originalData.filter(row => (row.failItem || '') === label);
+                        if (clickTimer) {
+                            // This is a double click
+                            clearTimeout(clickTimer);
+                            clickTimer = null;
+                            if (isTopFailedChart) {
+                                // Double click on Top 5 chart: Show line chart
+                                const filteredData = originalData.filter(row => (row.failItem || '') === label);
+                                createLineChart(filteredData, label, displayStationName, stationColor);
+                            }
                         } else {
-                            // กรองสำหรับกราฟปกติ (By Tester)
-                            filteredData = originalData.filter(row => (row.testerId || '') === label);
+                            // This is a single click, set a timer
+                            clickTimer = setTimeout(() => {
+                                if (isTopFailedChart) {
+                                    // Single click on Top 5 chart: Filter table
+                                    const filteredData = originalData.filter(row => (row.failItem || '') === label);
+                                    renderTable(filteredData);
+                                } else {
+                                    // Single click on By Tester chart: Filter table
+                                    const filteredData = originalData.filter(row => (row.testerId || '') === label);
+                                    renderTable(filteredData);
+                                }
+                                clickTimer = null;
+                            }, clickDelay);
                         }
-
-                        renderTable(filteredData);
                     }
                 }
             }
         });
+    }
+
+    function createLineChart(data, label, displayStationName, color) {
+        const timeSeriesData = {};
+        data.forEach(item => {
+            const date = item.workDate.split('T')[0];
+            timeSeriesData[date] = (timeSeriesData[date] || 0) + 1;
+        });
+
+        const dates = Object.keys(timeSeriesData).sort();
+        const counts = dates.map(date => timeSeriesData[date]);
+
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: `Failure Trend for: ${label}`,
+                    data: counts,
+                    borderColor: color,
+                    tension: 0.4,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Failures',
+                            color: '#dbe4eb'
+                        },
+                        ticks: {stepSize: 1, color: '#dbe4eb'},
+                        grid: {color: '#5a7081'}
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date',
+                            color: '#dbe4eb'
+                        },
+                        ticks: {color: '#dbe4eb'},
+                        grid: {color: '#5a7081'}
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#dbe4eb'
+                        }
+                    }
+                }
+            }
+        });
+
+        document.querySelector('.table-controls').style.display = 'none';
+        document.querySelector('table').style.display = 'none';
+        toggleButton.style.display = 'none';
+        pageTitleHeader.textContent = `Failure Trend for: ${label}`;
+
+        let backButton = document.getElementById('backToChartButton');
+        if (!backButton) {
+            backButton = document.createElement('button');
+            backButton.id = 'backToChartButton';
+            backButton.className = 'action-button';
+            backButton.textContent = 'Back to Top 5 Failed Chart';
+            backButton.style.display = 'block';
+            backButton.style.marginLeft = 'auto';
+            backButton.style.marginRight = 'auto';
+            backButton.style.marginTop = '20px';
+            document.querySelector('.container').insertBefore(backButton, document.querySelector('.table-controls'));
+
+            backButton.onclick = () => {
+                isTopFailedChart = true;
+                updateChart(originalData, displayStationName, 'failItem', true);
+                document.querySelector('.table-controls').style.display = 'flex';
+                document.querySelector('table').style.display = 'table';
+                toggleButton.style.display = 'block';
+                backButton.remove();
+                toggleButton.textContent = 'By Tester';
+                pageTitleHeader.textContent = `Top 5 Failed Items at ${displayStationName}`;
+            };
+        }
     }
 
     function sortAndRenderTable(data, column, direction) {
@@ -447,6 +555,10 @@
     function renderTable(data) {
         tbody.innerHTML = '';
         const fragment = document.createDocumentFragment();
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">No matching data found.</td></tr>';
+            return;
+        }
         data.forEach(row => {
             const tr = document.createElement('tr');
             const formattedDate = row.workDate.replace('T', ' ');
@@ -463,7 +575,7 @@
         tbody.appendChild(fragment);
     }
 
-    document.getElementById('searchInput').addEventListener('input', function () {
+    searchInput.addEventListener('input', function () {
         const filter = this.value.trim().toLowerCase();
         const filteredData = originalData.filter(row =>
                 (row.sn || '').toLowerCase().includes(filter) ||
@@ -476,7 +588,6 @@
         sortAndRenderTable(filteredData, sortStatus.column, sortStatus.direction);
     });
 
-    const toggleButton = document.getElementById('toggleChartButton');
     toggleButton.addEventListener('click', () => {
         if (originalData.length > 0) {
             const displayStationName = stationSelect.options[stationSelect.selectedIndex].text;
@@ -496,7 +607,7 @@
         header.addEventListener('click', () => {
             const column = header.dataset.column;
             const direction = (sortStatus.column === column && sortStatus.direction === 'asc') ? 'desc' : 'asc';
-            const filter = document.getElementById('searchInput').value.trim().toLowerCase();
+            const filter = searchInput.value.trim().toLowerCase();
             const dataToSort = filter ? originalData.filter(row =>
                     (row.sn || '').toLowerCase().includes(filter) ||
                     (row.model || '').toLowerCase().includes(filter) ||
@@ -549,7 +660,7 @@
             connectWebSocket(currentLineId, stationSelect.value, currentStartDate, currentEndDate);
         } else {
             pageTitleHeader.textContent = "Error: Missing Line ID or Date Range";
-            tbody.innerHTML = '<tr><td colspan="5">Error: Missing parameters. Please go back to the summary page.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">Error: Missing parameters. Please go back to the summary page.</td></tr>';
         }
     });
 </script>

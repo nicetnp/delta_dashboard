@@ -25,15 +25,17 @@ async def failure_station_ws(websocket: WebSocket):
 
     print(f"ℹ️ lineId: {line_id}, station: {station_name}, workDate: {work_date}")
 
-    failure_query_data = FailureStation(lineId=line_id,station=station_name,workDate=work_date)
+    failure_query_data = FailureStation(lineId=line_id, station=station_name, workDate=work_date)
 
     try:
         while True:
+            # แก้ไขส่วนนี้: เรียกใช้ build_cache_key โดยส่งค่าที่ถูกต้อง
             cache_key = build_cache_key(
                 namespace="failures",
-                scope="select_date",
+                scope="daily",
                 line_id=line_id,
-                datatype=station_name.lower()
+                station=station_name.lower(),
+                work_date=work_date # ส่ง work_date ที่เป็น string เข้าไปเลย
             )
 
             cached_data = redis_client.get(cache_key)

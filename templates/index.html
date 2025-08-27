@@ -117,9 +117,31 @@
             background-color: #b9650f;
             transform: translateY(1px);
         }
+
+        #notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #188308;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #notification.show {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
+
+<div id="notification">Data has been updated!</div>
 
 <div class="container">
     <h2>BMW Failures Summary</h2>
@@ -172,21 +194,20 @@
 </div>
 
 <script>
-    // ปรับเรียงลำดับสีของสถานีให้ตรงตามในรูปภาพและตาราง
+    // Constants and variables
     const stationColors = {
-        'VFlash1': '#ffa94d', // ส้มอ่อน
-        'Hipot1': '#ffd54f', // เหลืองอ่อน
-        'ATS1': '#ff5733', // แดงส้ม
-        'Heatup': '#f7941d', // ส้มหลัก
-        'Vibration': '#d6412b', // แดงเข้ม (เตือนแรง)
-        'BurnIn': 'rgba(126,15,15)', // สีแดงไหม้
-        'Hipot2': '#f9e79f', // เหลืองซีด
-        'ATS2': '#ffc300', // เหลืองสด
-        'VFlash2': '#555555',  // เทาเข้ม
-        'ATS3': '#888888' // เทากลาง
+        'VFlash1': '#ffa94d',
+        'Hipot1': '#ffd54f',
+        'ATS1': '#ff5733',
+        'Heatup': '#f7941d',
+        'Vibration': '#d6412b',
+        'BurnIn': 'rgba(126,15,15)',
+        'Hipot2': '#f9e79f',
+        'ATS2': '#ffc300',
+        'VFlash2': '#555555',
+        'ATS3': '#888888'
     };
 
-    // ปรับเรียงลำดับ stationMap ให้ตรงกับ stationColors และลำดับในตาราง
     const stationMap = {
         "VFlash1": "%LASH",
         "Hipot1": "%IPOT_1",
@@ -207,12 +228,14 @@
     const testerButton = document.getElementById('testerButton');
     const tableBody = document.getElementById('tableBody');
     const ctx = document.getElementById('failuresChart').getContext('2d');
+    const notification = document.getElementById('notification');
 
     let ws = null;
     let chart = null;
     let currentLineId = lineIdSelect.value;
+    let currentData = [];
 
-    // จัดการ Event Listener สำหรับปุ่มทั้งสอง
+    // Navigation functions
     fixtureButton.addEventListener('click', () => {
         const lineId = lineIdSelect.value;
         const startDate = startDateInput.value;
@@ -226,13 +249,9 @@
         const startDate = startDateInput.value;
         const endDate = endDateInput.value;
         saveState();
-
-        // ใช้ workDate เป็น startDate หรือวันที่ล่าสุด
         const workDate = startDate || new Date().toISOString().split("T")[0];
-
         window.location.href = `tester-detail.html?lineId=${lineId}&workDate=${workDate}&startDate=${startDate}&endDate=${endDate}`;
     });
-
 
     function saveState() {
         sessionStorage.setItem("lineId", lineIdSelect.value);
@@ -258,8 +277,11 @@
         window.location.href = url;
     }
 
+    // WebSocket and Data Handling functions
     function reloadData() {
-        if (ws) ws.close();
+        if (ws) {
+            ws.close();
+        }
 
         currentLineId = lineIdSelect.value;
         const startDate = startDateInput.value;
@@ -273,11 +295,17 @@
         ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
+            console.log("WebSocket connected.");
             tableBody.innerHTML = `<tr><td colspan="12">Loading...</td></tr>`;
         };
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
+
+            // Check if the new data is different from the old data
+            const isDataUpdated = JSON.stringify(data) !== JSON.stringify(currentData);
+            currentData = data; // Update global data with the latest
+
             if (!data || data.length === 0) {
                 tableBody.innerHTML = `<tr><td colspan="12">No data available</td></tr>`;
                 if (chart) {
@@ -286,21 +314,61 @@
                 }
                 return;
             }
-            renderChart(data);
-            renderTable(data);
+
+            updateChart(data);
+            updateTable(data);
+
+            // Show notification if data has been updated
+            if (isDataUpdated) {
+                showNotification();
+            }
         };
 
         ws.onclose = () => console.log("WebSocket closed.");
         ws.onerror = err => console.error("WebSocket error", err);
     }
 
-    function renderChart(data) {
+    // New function to show and hide the notification
+    function showNotification() {
+        notification.style.display = 'block';
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 500);
+        }, 3000); // Hide notification after 3 seconds
+    }
+
+    // Chart and Table Rendering
+    function updateChart(data) {
+        if (!chart) {
+            renderChart(data);
+            return;
+        }
+
         const labels = data.map(row => row.workDate);
-        // เรียงลำดับ stationKeys ให้ตรงกับลำดับที่ต้องการ
         const stationKeys = [
             'VFlash1', 'Hipot1', 'ATS1', 'Heatup', 'Vibration', 'BurnIn', 'Hipot2', 'ATS2', 'VFlash2', 'ATS3'
         ];
 
+        chart.data.labels = labels;
+        stationKeys.forEach((station, index) => {
+            if (chart.data.datasets[index]) {
+                chart.data.datasets[index].data = data.map(row => row[station.toLowerCase()]);
+            }
+        });
+
+        chart.update();
+    }
+
+    function renderChart(data) {
+        const labels = data.map(row => row.workDate);
+        const stationKeys = [
+            'VFlash1', 'Hipot1', 'ATS1', 'Heatup', 'Vibration', 'BurnIn', 'Hipot2', 'ATS2', 'VFlash2', 'ATS3'
+        ];
         const datasets = stationKeys.map(station => ({
             label: station,
             data: data.map(row => row[station.toLowerCase()]),
@@ -325,11 +393,9 @@
                         const element = elements[0];
                         const datasetIndex = element.datasetIndex;
                         const index = element.index;
-
                         const station = stationKeys[datasetIndex];
                         const mapped = stationMap[station];
-                        const workDate = data[index].workDate;
-
+                        const workDate = currentData[index].workDate;
                         if (mapped && workDate) {
                             navigateToPage('station-detail', currentLineId, mapped, workDate);
                         }
@@ -361,11 +427,10 @@
         });
     }
 
-    function renderTable(data) {
+    function updateTable(data) {
         tableBody.innerHTML = "";
         data.forEach(row => {
             const workDate = row.workDate;
-            // สร้าง array ของ cell สำหรับแต่ละแถวในตาราง โดยใช้ลำดับที่ถูกต้อง
             const cells = [
                 renderCell(row.vflash1, 'VFlash1', workDate),
                 renderCell(row.hipot1, 'Hipot1', workDate),
@@ -389,7 +454,6 @@
         });
     }
 
-    // helper function
     function renderCell(value, stationKey, workDate) {
         if (value > 0) {
             return `<td class="station-clickable" onclick="navigateToPage('station-detail', '${currentLineId}', '${stationMap[stationKey]}', '${workDate}')">${value}</td>`;
@@ -398,7 +462,7 @@
         }
     }
 
-
+    // Initialization
     document.addEventListener("DOMContentLoaded", () => {
         restoreState();
         reloadData();

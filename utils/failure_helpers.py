@@ -1,6 +1,6 @@
 def calculate_total(row: dict) -> int:
     stations = [
-        "vflash1", "hipot1", "ats1",
+        "vflash1", "hipot1", "ats1","vibration",
         "heatup", "burnin", "hipot2",
         "ats2","vflash2", "ats3"
     ]

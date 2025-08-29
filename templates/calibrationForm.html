@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Calibration Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <div class="container py-5">
+    <h1 class="text-center mb-4">Calibration Management</h1>
+
+    <!-- Form Create Calibration -->
+    <div class="card shadow mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Add New Calibration</h5>
+        <form id="calibrationForm" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Station</label>
+            <input type="text" class="form-control" id="station" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Equipment</label>
+            <input type="text" class="form-control" id="equipment" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Brand</label>
+            <input type="text" class="form-control" id="brand">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Model</label>
+            <input type="text" class="form-control" id="model">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">DT</label>
+            <input type="text" class="form-control" id="dt">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control" id="startDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control" id="endDate">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Line ID</label>
+            <input type="text" class="form-control" id="lineID">
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Comment</label>
+            <textarea class="form-control" id="comment"></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Status</label>
+            <input type="text" class="form-control" id="status">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Series Number</label>
+            <input type="text" class="form-control" id="seriesnumber">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Responsible</label>
+            <input type="text" class="form-control" id="responsible">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Asset Number</label>
+            <input type="text" class="form-control" id="assetNumber">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary">Add Calibration</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Table Calibration -->
+    <div class="card shadow">
+      <div class="card-body">
+        <h5 class="card-title">Calibration Records</h5>
+        <table class="table table-striped" id="calibrationTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Station</th>
+              <th>Equipment</th>
+              <th>Model</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Data จะถูกใส่มาทาง JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API_URL = "http://127.0.0.1:8000/calibration";
+
+// Load data
+async function loadCalibrations() {
+  const tableBody = document.querySelector("#calibrationTable tbody");
+  tableBody.innerHTML = "";
+
+  for (let id = 1; id <= 20; id++) { // สมมติ preload 20 record
+    const res = await fetch(`${API_URL}/${id}`);
+    if (res.ok) {
+      const cal = await res.json();
+      const row = `
+        <tr>
+          <td>${cal.ID}</td>
+          <td>${cal.Station}</td>
+          <td>${cal.Equipment}</td>
+          <td>${cal.Model}</td>
+          <td>${cal.StartDate?.split("T")[0]}</td>
+          <td>${cal.EndDate?.split("T")[0]}</td>
+          <td>${cal.Status}</td>
+          <td>
+            <button class="btn btn-sm btn-warning" onclick="editCalibration(${cal.ID})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteCalibration(${cal.ID})">Delete</button>
+          </td>
+        </tr>
+      `;
+      tableBody.innerHTML += row;
+    }
+  }
+}
+
+// Add calibration
+document.getElementById("calibrationForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const data = {
+    Station: document.getElementById("station").value,
+    Equipment: document.getElementById("equipment").value,
+    Brand: document.getElementById("brand").value,
+    Model: document.getElementById("model").value,
+    DT: document.getElementById("dt").value,
+    StartDate: document.getElementById("startDate").value,
+    EndDate: document.getElementById("endDate").value,
+    LineID: document.getElementById("lineID").value,
+    Comment: document.getElementById("comment").value,
+    Status: document.getElementById("status").value,
+    Seriesnumber: document.getElementById("seriesnumber").value,
+    Responsible: document.getElementById("responsible").value,
+    AssetNumber: document.getElementById("assetNumber").value
+  };
+
+  const res = await fetch(API_URL + "/", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    alert("Calibration added!");
+    loadCalibrations();
+  } else {
+    alert("Error adding calibration");
+  }
+});
+
+// Delete calibration
+async function deleteCalibration(id) {
+  const deleted_by = prompt("Enter your name:");
+  if (!deleted_by) return;
+
+  const res = await fetch(`${API_URL}/${id}?deleted_by=${deleted_by}`, { method: "DELETE" });
+  if (res.ok) {
+    alert("Deleted!");
+    loadCalibrations();
+  } else {
+    alert("Error deleting calibration");
+  }
+}
+
+// Edit calibration (แบบ basic)
+function editCalibration(id) {
+  alert("เปิด Modal สำหรับแก้ไข ID: " + id);
+  // TODO: เพิ่ม Modal Form สำหรับ update calibration
+}
+
+// โหลดข้อมูลตอนเริ่ม
+loadCalibrations();
+</script>
+</body>
+</html>

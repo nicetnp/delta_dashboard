@@ -343,7 +343,7 @@
             });
             pageTitleHeader.textContent = `${displayStationName} Failure Count by Tester`;
         } else {
-            sortedCounts = sortedCounts.sort((a, b) => b[1] - a[1]).slice(0, 5);
+            sortedCounts = sortedCounts.sort((a, b) => b[1] - a[1]).slice(0, 10);
             pageTitleHeader.textContent = `Top 5 Failed Items at ${displayStationName}`;
         }
 

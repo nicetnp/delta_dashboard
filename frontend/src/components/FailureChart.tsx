@@ -5,9 +5,9 @@ import { STATION_KEYS, stationColors, toProp, stationMap } from "../types/failur
 import { useNavigate } from "react-router-dom";
 
 export default function FailureChart({
-                                         data,
-                                         lineId,
-                                     }: {
+    data,
+    lineId,
+}: {
     data: FailureRow[];
     lineId: string;
 }) {
@@ -25,7 +25,9 @@ export default function FailureChart({
             data: data.map((r) => Number(r[toProp(k)] as number)),
             backgroundColor: stationColors[k],
             borderColor: stationColors[k],
-            borderWidth: 1,
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false,
             stack: "failures",
         }));
 
@@ -35,22 +37,86 @@ export default function FailureChart({
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "#e2e8f0",
+                            font: {
+                                size: 12,
+                                weight: 'normal'
+                            },
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 20
+                        },
+                        position: 'top',
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#e2e8f0',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: true,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        }
+                    }
+                },
                 scales: {
                     x: {
                         stacked: true,
-                        title: { display: true, text: "Date", color: "#dbe4eb" },
-                        grid: { color: "#5a7081" },
-                        ticks: { color: "#dbe4eb" },
+                        title: {
+                            display: true,
+                            text: "Date",
+                            color: "#94a3b8",
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: "rgba(255, 255, 255, 0.1)"
+                        },
+                        ticks: {
+                            color: "#cbd5e1",
+                            font: {
+                                size: 12
+                            }
+                        },
                     },
                     y: {
                         stacked: true,
                         beginAtZero: true,
-                        title: { display: true, text: "Failures", color: "#dbe4eb" },
-                        grid: { color: "#5a7081" },
-                        ticks: { color: "#dbe4eb" },
+                        title: {
+                            display: true,
+                            text: "Number of Failures",
+                            color: "#94a3b8",
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: "rgba(255, 255, 255, 0.1)"
+                        },
+                        ticks: {
+                            color: "#cbd5e1",
+                            font: {
+                                size: 12
+                            }
+                        },
                     },
                 },
-                plugins: { legend: { labels: { color: "#dbe4eb" } } },
                 onClick: (_evt, els) => {
                     if (!els.length) return;
                     const el = els[0] as ActiveElement;
@@ -72,13 +138,12 @@ export default function FailureChart({
             },
         });
 
-        // ✅ Double click event listener
+        // Double click event listener for zoom
         const canvas = canvasRef.current;
         const chart = chartRef.current;
         const handleDoubleClick = () => {
             if (!chart) return;
 
-            // ตัวอย่าง: Zoom ให้เหลือเฉพาะ 10 จุดล่าสุด
             const total = chart.data.labels?.length || 0;
             if (total > 10) {
                 chart.data.labels = chart.data.labels?.slice(total - 10);
@@ -95,11 +160,12 @@ export default function FailureChart({
             canvas?.removeEventListener("dblclick", handleDoubleClick);
             chartRef.current?.destroy();
         };
-    }, [data, lineId]);
+    }, [data, lineId, navigate]);
 
     return (
-        <div className="w-4/5 mx-auto h-[400px]">
-            <canvas ref={canvasRef} />
+        <div className="w-full h-[500px] relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-xl"></div>
+            <canvas ref={canvasRef} className="relative z-10" />
         </div>
     );
 }

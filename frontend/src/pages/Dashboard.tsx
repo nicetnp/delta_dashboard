@@ -1,4 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
+import Layout from "../components/Layout";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Input from "../components/Input";
+import Select from "../components/Select";
+import StatusBadge from "../components/StatusBadge";
 import FailureChart from "../components/FailureChart";
 import DataTable from "../components/DataTable";
 import Notification from "../components/Notification";
@@ -13,77 +19,146 @@ export default function Dashboard() {
     const [endDate, setEndDate] = useSessionState<string>("endDate", today);
 
     const { data, connected } = useFailuresWS({ lineId, startDate, endDate });
-
     const triggerKey = useMemo(() => (data.length ? `${data[0].workDate}-${data.length}` : ""), [data]);
 
-    const goFixture = () => {
+    const goFixture = useCallback(() => {
         const params = new URLSearchParams({ lineId, startDate, endDate });
         window.location.href = `/fixture-detail?${params.toString()}`;
-    };
+    }, [lineId, startDate, endDate]);
 
-    const goTester = () => {
+    const goTester = useCallback(() => {
         const workDate = startDate || new Date().toISOString().split("T")[0];
         const params = new URLSearchParams({ lineId, workDate, startDate, endDate });
         window.location.href = `/tester-detail?${params.toString()}`;
-    };
+    }, [lineId, startDate, endDate]);
+
+    const resetFilters = useCallback(() => {
+        setStartDate(today);
+        setEndDate(today);
+    }, [setStartDate, setEndDate, today]);
+
+    // Calculate summary statistics with useMemo for performance
+    const summaryStats = useMemo(() => {
+        const totalFailures = data.reduce((sum, row) => sum + (row.total || 0), 0);
+        const avgFailures = data.length > 0 ? (totalFailures / data.length).toFixed(1) : '0';
+        const latestDate = data.length > 0 ? data[data.length - 1]?.workDate : 'N/A';
+        return { totalFailures, avgFailures, latestDate };
+    }, [data]);
 
     return (
-        <div className="text-center p-5">
+        <Layout>
             <Notification triggerKey={triggerKey} />
+            
+            {/* Header Section */}
+            <div className="mb-10">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-4xl font-bold text-slate-100 mb-3 tracking-tight">Manufacturing Dashboard</h1>
+                        <p className="text-slate-400 text-lg font-medium">Real-time failure analysis and monitoring</p>
+                    </div>
+                    <StatusBadge status={connected ? 'connected' : 'disconnected'} size="lg" />
+                </div>
+            </div>
 
-            <div className="max-w-[90%] mx-auto bg-neutral-900 p-5 rounded-lg">
-                <h2 className="text-2xl font-bold mb-4">BMW Failures Summary</h2>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <Card title="Total Failures" icon="📊" variant="elevated" className="text-center group hover:scale-105 transition-transform duration-300">
+                    <div className="text-4xl font-bold text-slate-100 mb-2 group-hover:text-blue-400 transition-colors duration-300">{summaryStats.totalFailures}</div>
+                    <p className="text-slate-400 text-sm font-medium">All time failures</p>
+                </Card>
+                
+                <Card title="Average Daily" icon="📈" variant="elevated" className="text-center group hover:scale-105 transition-transform duration-300">
+                    <div className="text-4xl font-bold text-slate-100 mb-2 group-hover:text-emerald-400 transition-colors duration-300">{summaryStats.avgFailures}</div>
+                    <p className="text-slate-400 text-sm font-medium">Failures per day</p>
+                </Card>
+                
+                <Card title="Data Points" icon="📅" variant="elevated" className="text-center group hover:scale-105 transition-transform duration-300">
+                    <div className="text-4xl font-bold text-slate-100 mb-2 group-hover:text-purple-400 transition-colors duration-300">{data.length}</div>
+                    <p className="text-slate-400 text-sm font-medium">Days recorded</p>
+                </Card>
+                
+                <Card title="Latest Update" icon="🕒" variant="elevated" className="text-center group hover:scale-105 transition-transform duration-300">
+                    <div className="text-xl font-bold text-slate-100 mb-2 group-hover:text-amber-400 transition-colors duration-300">{summaryStats.latestDate}</div>
+                    <p className="text-slate-400 text-sm font-medium">Most recent data</p>
+                </Card>
+            </div>
 
-                {/* Controls */}
-                <div className="flex flex-wrap justify-center items-center gap-3 mb-5">
-                    <label className="font-bold">Line:</label>
-                    <select
+            {/* Controls Section */}
+            <Card title="Filter Controls" icon="🎛️" variant="glass" className="mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Select
+                        label="Production Line"
                         value={lineId}
                         onChange={(e) => setLineId(e.target.value)}
-                        className="bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        icon="🏭"
                     >
                         <option value="BMA01">BMA01</option>
                         <option value="B3">B3</option>
-                    </select>
+                    </Select>
 
-                    <label className="font-bold">Start Date:</label>
-                    <input
+                    <Input
+                        label="Start Date"
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        icon="📅"
                     />
 
-                    <label className="font-bold">End Date:</label>
-                    <input
+                    <Input
+                        label="End Date"
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
-                        className="bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        icon="📅"
                     />
-                </div>
 
-                {/* Buttons */}
-                <div className="flex justify-center gap-4 mb-5">
-                    <button onClick={goFixture} className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded text-white">
-                        Fixture Failure
-                    </button>
-                    <button onClick={goTester} className="bg-orange-500 hover:bg-orange-600 px-4 py-2 rounded text-white">
-                        Tester Failure
-                    </button>
+                    <div className="flex items-end">
+                        <Button
+                            onClick={resetFilters}
+                            variant="secondary"
+                            size="md"
+                            className="w-full"
+                            icon="🔄"
+                        >
+                            Reset
+                        </Button>
+                    </div>
                 </div>
+            </Card>
 
-                {/* Chart */}
+            {/* Action Buttons */}
+            <Card title="Quick Actions" icon="⚡" variant="glass" className="mb-10">
+                <div className="flex flex-wrap gap-4">
+                    <Button
+                        onClick={goFixture}
+                        variant="primary"
+                        size="lg"
+                        icon="🔧"
+                        className="flex-1 min-w-[200px]"
+                    >
+                        Fixture Failure Analysis
+                    </Button>
+                    <Button
+                        onClick={goTester}
+                        variant="primary"
+                        size="lg"
+                        icon="⚙️"
+                        className="flex-1 min-w-[200px]"
+                    >
+                        Tester Failure Analysis
+                    </Button>
+                </div>
+            </Card>
+
+            {/* Chart Section */}
+            <Card title="Failure Trends" subtitle="Click on chart segments to drill down" icon="📊" variant="elevated" className="mb-10">
                 <FailureChart data={data as FailureRow[]} lineId={lineId} />
+            </Card>
 
-                {/* Table */}
-                <h3 className="text-xl mt-6 mb-3">Summary Table</h3>
+            {/* Data Table Section */}
+            <Card title="Summary Table" subtitle="Click on failure counts to view details" icon="📋" variant="elevated">
                 <DataTable rows={data as FailureRow[]} lineId={lineId} />
-
-                <div className="mt-4 text-xs text-neutral-400">
-                    WS: {connected ? "connected" : "disconnected"}
-                </div>
-            </div>
-        </div>
+            </Card>
+        </Layout>
     );
 }

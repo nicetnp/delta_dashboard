@@ -77,11 +77,30 @@ export default function StationDetail() {
                         label: chartType === "testerId" ? "Failures by Tester" : "Top 5 Failed Items",
                         data: sorted.map(([, v]) => v),
                         backgroundColor: "#f7941d",
+                        borderColor: "#f7941d",
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
                     },
                 ],
             },
             options: {
                 responsive: true,
+                indexAxis: chartType === "failItem" ? "y" : "x",
+                animation: { duration: 300, easing: 'easeOutQuart' as any },
+                plugins: {
+                    legend: { labels: { color: '#e2e8f0' } },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#e2e8f0',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        cornerRadius: 8 as any,
+                        titleFont: { size: 14, weight: 'bold' } as any,
+                        bodyFont: { size: 13 } as any,
+                    },
+                },
                 onClick: (_, elements) => {
                     if (!elements.length) return;
                     const idx = elements[0].index;
@@ -337,11 +356,30 @@ export default function StationDetail() {
                             label: chartType === "testerId" ? "Failures by Tester" : "Top 5 Failed Items",
                             data: sorted.map(([, v]) => v),
                             backgroundColor: "#f7941d",
+                            borderColor: "#f7941d",
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
                         },
                     ],
                 },
                 options: {
                     responsive: true,
+                    indexAxis: chartType === "failItem" ? "y" : "x",
+                    animation: { duration: 300, easing: 'easeOutQuart' as any },
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            cornerRadius: 8 as any,
+                            titleFont: { size: 14, weight: 'bold' } as any,
+                            bodyFont: { size: 13 } as any,
+                        },
+                    },
                     onClick: (_, elements) => {
                         if (!elements.length) return;
                         const idx = elements[0].index;
@@ -454,7 +492,7 @@ export default function StationDetail() {
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-sm">
+                        <table className="w-full border-collapse text-sm text-center">
                             <thead>
                             <tr>
                                 {["sn", "model", "testerId", "fixtureId", "failItem", "workDate"].map((col) => (
@@ -466,7 +504,7 @@ export default function StationDetail() {
                                                 dir: sort.dir === "asc" ? "desc" : "asc",
                                             })
                                         }
-                                        className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200"
+                                        className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200 text-center"
                                     >
                                         {col} {sort.column === col ? (sort.dir === "asc" ? "▲" : "▼") : ""}
                                     </th>
@@ -476,7 +514,7 @@ export default function StationDetail() {
                             <tbody>
                             {visibleData.length === 0 ? (
                                 <tr>
-                                                                         <td colSpan={6} className="text-center py-4 text-slate-400">
+                                    <td colSpan={6} className="text-center py-4 text-slate-400">
                                         No data
                                     </td>
                                 </tr>
@@ -489,12 +527,12 @@ export default function StationDetail() {
                                             i % 2 === 0 ? "bg-slate-800/30" : "bg-slate-700/20"
                                         )}
                                     >
-                                        <td className="px-3 py-2 text-slate-200">{row.sn}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.model}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.testerId}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.fixtureId}</td>
-                                                                                 <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
-                                         <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.sn}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.model}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.testerId}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.fixtureId}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.failItem}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.workDate.replace("T", " ")}</td>
                                     </tr>
                                 ))
                             )}

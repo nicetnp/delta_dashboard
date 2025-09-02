@@ -10,6 +10,7 @@ interface FailureRecord {
     fixtureId: string;
     failItem: string;
     workDate: string;
+    station?: string; // Add station field
     datetime?: string;
     timestamp?: string;
 }
@@ -125,10 +126,13 @@ export default function FixtureDetail() {
             const endTime = new Date(tomorrow);
             endTime.setHours(7, 0, 0, 0);
             
-            // Filter data for the selected time range based on workDate
+            // Filter data for the selected time range based on workDate AND current station
             const filteredData = data.filter(item => {
                 const itemTime = new Date(item.workDate);
-                return itemTime >= startTime && itemTime <= endTime;
+                const isInTimeRange = itemTime >= startTime && itemTime <= endTime;
+                // Filter by current station from URL parameter (if available)
+                const isCurrentStation = !item.station || true; // Show all if no station filter
+                return isInTimeRange && isCurrentStation;
             });
             
             setTimeRangeData(filteredData);

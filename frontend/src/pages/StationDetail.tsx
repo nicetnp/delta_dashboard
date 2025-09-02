@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Chart } from "chart.js/auto";
 import clsx from "clsx";
@@ -12,6 +12,7 @@ interface FailureRecord {
     fixtureId: string;
     failItem: string;
     workDate: string;
+    station?: string; // Add station field
     datetime?: string;
     timestamp?: string;
 }
@@ -31,12 +32,12 @@ export default function StationDetail() {
         column: "workDate",
         dir: "desc",
     });
-    const [showTimeRangeChart, setShowTimeRangeChart] = useState(false);
-    const [timeRangeData, setTimeRangeData] = useState<any[]>([]);
-    const [timeRangeChartRef, setTimeRangeChartRef] = useState<Chart<"line"> | null>(null);
-    const [timeRangeCanvasRef, setTimeRangeCanvasRef] = useState<HTMLCanvasElement | null>(null);
 
-    const chartRef = useRef<Chart<"bar"> | null>(null);
+    
+    // Timer for click detection
+    const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const chartRef = useRef<Chart | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     // Connect WebSocket
@@ -85,90 +86,100 @@ export default function StationDetail() {
                     if (!elements.length) return;
                     const idx = elements[0].index;
                     const label = sorted[idx][0];
-                    // single click → filter table
-                    setFiltered(data.filter((r) => r[chartType] === label));
+
+                    if (clickTimerRef.current) {
+                        clearTimeout(clickTimerRef.current);
+                        clickTimerRef.current = null;
+                        
+                        // This is a double click - show line chart for the selected category
+                        const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
+                        const filteredData = data.filter(row => (row[filterColumn] || '') === label);
+                        createLineChart(filteredData, label, station, "#f7941d");
+                    } else {
+                        // This is a single click - filter table
+                        clickTimerRef.current = setTimeout(() => {
+                            const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
+                            const filteredData = data.filter(row => (row[filterColumn] || '') === label);
+                            setFiltered(filteredData);
+                            clickTimerRef.current = null;
+                        }, 200); // 200ms delay for double click detection
+                    }
                 },
             },
         });
 
-        // Add double click event listener
-        const canvas = canvasRef.current;
-        const handleDoubleClick = () => {
-            // Calculate time range: 7:00 today to 7:00 tomorrow
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            const startTime = new Date(today);
-            startTime.setHours(7, 0, 0, 0);
-            
-            const endTime = new Date(tomorrow);
-            endTime.setHours(7, 0, 0, 0);
-            
-            // Filter data for the selected time range based on workDate
-            const filteredData = data.filter(item => {
-                const itemTime = new Date(item.workDate);
-                return itemTime >= startTime && itemTime <= endTime;
-            });
-            
-            setTimeRangeData(filteredData);
-            setShowTimeRangeChart(true);
-            
-            // Create time range chart after a short delay to ensure state is updated
-            setTimeout(() => {
-                createTimeRangeChart(filteredData);
-            }, 100);
-        };
-        canvas?.addEventListener("dblclick", handleDoubleClick);
 
-        return () => {
-            canvas?.removeEventListener("dblclick", handleDoubleClick);
-        };
     }, [data, chartType]);
 
-    // Function to create time range chart
-    const createTimeRangeChart = (chartData: any[]) => {
-        if (!timeRangeCanvasRef) return;
-        if (timeRangeChartRef) timeRangeChartRef.destroy();
+    // Function to create line chart for specific category (like in templates)
+    const createLineChart = useCallback((data: any[], label: string, displayStationName: string, color: string) => {
+        if (data.length === 0) return;
+        
+        // Get the workDate from the data to determine the time range
+        const workDates = data.map(item => new Date(item.workDate)).filter(date => !isNaN(date.getTime()));
+        if (workDates.length === 0) return;
+        
+        const earliestDate = new Date(Math.min(...workDates.map(d => d.getTime())));
 
-        // Generate time labels (every hour from 7:00 to 7:00)
-        const timeLabels = [];
-        const startTime = new Date();
+        
+        // Set time range from 7:00 of the earliest date to 7:00 of the next day
+        const startTime = new Date(earliestDate);
         startTime.setHours(7, 0, 0, 0);
-        const endTime = new Date(startTime);
+        
+        const endTime = new Date(earliestDate);
         endTime.setDate(endTime.getDate() + 1);
         endTime.setHours(7, 0, 0, 0);
         
-        for (let time = new Date(startTime); time <= endTime; time.setHours(time.getHours() + 1)) {
-            timeLabels.push(time.toLocaleTimeString('th-TH', { 
+        // Generate time labels (every hour from 7:00 to 7:00)
+        const timeLabels = [];
+        const currentTime = new Date(startTime);
+        
+        while (currentTime <= endTime) {
+            timeLabels.push(currentTime.toLocaleTimeString('th-TH', { 
                 hour: '2-digit', 
                 minute: '2-digit' 
             }));
+            currentTime.setHours(currentTime.getHours() + 1);
         }
-
-        // Group data by hour
-        const hourlyData = new Array(24).fill(0);
-        chartData.forEach(item => {
-            const itemTime = new Date(item.workDate);
-            const hour = itemTime.getHours();
-            if (hour >= 0 && hour < 24) {
-                hourlyData[hour]++;
+        
+        // Group data by hour based on workDate within the specified time range
+        const totalHours = Math.ceil((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
+        const hourlyData = new Array(totalHours).fill(0);
+        
+        data.forEach(item => {
+            try {
+                const itemTime = new Date(item.workDate);
+                if (!isNaN(itemTime.getTime())) {
+                    const timeDiff = itemTime.getTime() - startTime.getTime();
+                    const hourIndex = Math.floor(timeDiff / (1000 * 60 * 60));
+                    if (hourIndex >= 0 && hourIndex < totalHours) {
+                        hourlyData[hourIndex]++;
+                    }
+                }
+            } catch (error) {
+                console.warn('Invalid date format:', item.workDate);
             }
         });
-
-        const newChart = new Chart(timeRangeCanvasRef, {
-            type: "line",
+        
+        // Hide controls and table
+        setFiltered(null);
+        
+        // Create line chart
+        if (chartRef.current) chartRef.current.destroy();
+        
+        const newChart = new Chart(canvasRef.current!, {
+            type: 'line',
             data: {
                 labels: timeLabels,
                 datasets: [{
-                    label: 'Failures',
+                    label: `Failure Topic: ${label}`,
                     data: hourlyData,
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
+                    borderColor: color,
+                    backgroundColor: `${color}45`,
                     tension: 0.4,
-                    pointBackgroundColor: '#3b82f6',
+                    fill: true,
+                    borderWidth: 3,
+                    pointBackgroundColor: color,
                     pointBorderColor: '#ffffff',
                     pointBorderWidth: 2,
                     pointRadius: 6,
@@ -178,6 +189,10 @@ export default function StationDetail() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: {
+                    duration: 0, // Disable animation to prevent flickering
+                    easing: 'linear'
+                },
                 interaction: {
                     intersect: false,
                     mode: 'index',
@@ -251,9 +266,129 @@ export default function StationDetail() {
                 },
             },
         });
+        
+        chartRef.current = newChart;
+        
+        // Update page title
+        const pageTitle = document.querySelector('h1');
+        if (pageTitle) {
+            pageTitle.textContent = `${label}`;
+        }
+        
+        // Hide table and controls
+        const tableCard = document.querySelector('[data-table-card]');
+        if (tableCard) {
+            (tableCard as HTMLElement).style.display = 'none';
+        }
+        
+        // Create back button
+        createBackButton(label, displayStationName, color);
+        
+    }, [data, chartType]);
 
-        setTimeRangeChartRef(newChart);
-    };
+    // Function to create back button (like in templates)
+    const createBackButton = useCallback((_label: string, _displayStationName: string, _color: string) => {
+        // Remove existing back button if any
+        const existingButton = document.getElementById('backToChartButton');
+        if (existingButton) {
+            existingButton.remove();
+        }
+
+        // Create new back button
+        const backButton = document.createElement('button');
+        backButton.id = 'backToChartButton';
+        backButton.className = 'px-8 py-4 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white rounded-xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 font-medium';
+        backButton.style.display = 'block';
+        backButton.style.marginLeft = 'auto';
+        backButton.style.marginRight = 'auto';
+        backButton.style.marginTop = '20px';
+        
+        // Set button text based on chart type
+        const buttonText = chartType === "failItem" ? 'Back to Top 5 Failed Chart' : 'Back to Tester Chart';
+        backButton.textContent = buttonText;
+
+        // Insert button before table controls
+        const container = document.querySelector('.max-w-7xl');
+        if (container) {
+            container.appendChild(backButton);
+        }
+
+        // Add click handler
+        backButton.onclick = () => {
+            // Restore original chart
+            if (chartRef.current) chartRef.current.destroy();
+            
+            // Recreate bar chart
+            const counts: Record<string, number> = {};
+            data.forEach((d) => {
+                const key = d[chartType];
+                if (key) counts[key] = (counts[key] || 0) + 1;
+            });
+
+            const entries = Object.entries(counts);
+            const sorted = chartType === "failItem" ? entries.sort((a, b) => b[1] - a[1]).slice(0, 5) : entries;
+
+            chartRef.current = new Chart(canvasRef.current!, {
+                type: "bar",
+                data: {
+                    labels: sorted.map(([k]) => k),
+                    datasets: [
+                        {
+                            label: chartType === "testerId" ? "Failures by Tester" : "Top 5 Failed Items",
+                            data: sorted.map(([, v]) => v),
+                            backgroundColor: "#f7941d",
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    onClick: (_, elements) => {
+                        if (!elements.length) return;
+                        const idx = elements[0].index;
+                        const label = sorted[idx][0];
+
+                        if (clickTimerRef.current) {
+                            clearTimeout(clickTimerRef.current);
+                            clickTimerRef.current = null;
+                            
+                            // This is a double click - show line chart for the selected category
+                            const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
+                            const filteredData = data.filter(row => (row[filterColumn] || '0') === label);
+                            createLineChart(filteredData, label, station, "#f7941d");
+                        } else {
+                            // This is a single click - filter table
+                            clickTimerRef.current = setTimeout(() => {
+                                const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
+                                const filteredData = data.filter(row => (row[filterColumn] || '0') === label);
+                                setFiltered(filteredData);
+                                clickTimerRef.current = null;
+                            }, 200);
+                        }
+                    },
+                },
+            });
+
+            // Restore page title
+            const pageTitle = document.querySelector('h1');
+            if (pageTitle) {
+                pageTitle.textContent = `${station} Failures Dashboard`;
+            }
+
+            // Show table and controls
+            const tableCard = document.querySelector('[data-table-card]');
+            if (tableCard) {
+                (tableCard as HTMLElement).style.display = 'block';
+            }
+
+            // Clear filtered data
+            setFiltered(null);
+
+            // Remove back button
+            backButton.remove();
+        };
+    }, [data, chartType, station]);
+
+
 
     const [filtered, setFiltered] = useState<FailureRecord[] | null>(null);
 
@@ -291,41 +426,9 @@ export default function StationDetail() {
                     </div>
                 </Card>
 
-                {/* Time Range Chart - Displayed directly */}
-                {showTimeRangeChart && (
-                    <Card title="Time Range Analysis (7:00 - 7:00)" subtitle="Failures by hour based on workDate" variant="elevated" className="mb-8">
-                        <div className="h-96 flex items-center justify-center">
-                            <canvas 
-                                ref={(el) => {
-                                    if (el) {
-                                        setTimeRangeCanvasRef(el);
-                                        // Create chart when canvas is ready
-                                        if (timeRangeData.length > 0) {
-                                            setTimeout(() => createTimeRangeChart(timeRangeData), 100);
-                                        }
-                                    }
-                                }}
-                                className="max-w-full max-h-full"
-                            />
-                        </div>
-                        <div className="mt-4 text-center">
-                            <button
-                                onClick={() => {
-                                    setShowTimeRangeChart(false);
-                                    if (timeRangeChartRef) {
-                                        timeRangeChartRef.destroy();
-                                        setTimeRangeChartRef(null);
-                                    }
-                                }}
-                                className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors duration-200"
-                            >
-                                ปิดกราฟ
-                            </button>
-                        </div>
-                    </Card>
-                )}
 
-                <Card title="Data Table" subtitle="Click column headers to sort" variant="glass" className="mb-6">
+
+                <Card title="Data Table" subtitle="Click column headers to sort" variant="glass" className="mb-6" data-table-card>
                     <div className="flex justify-between items-center mb-4">
                         <input
                             type="text"
@@ -367,7 +470,7 @@ export default function StationDetail() {
                             <tbody>
                             {visibleData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-4 text-slate-400">
+                                                                         <td colSpan={6} className="text-center py-4 text-slate-400">
                                         No data
                                     </td>
                                 </tr>
@@ -384,8 +487,8 @@ export default function StationDetail() {
                                         <td className="px-3 py-2 text-slate-200">{row.model}</td>
                                         <td className="px-3 py-2 text-slate-200">{row.testerId}</td>
                                         <td className="px-3 py-2 text-slate-200">{row.fixtureId}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
+                                                                                 <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
+                                         <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
                                     </tr>
                                 ))
                             )}
@@ -406,3 +509,4 @@ export default function StationDetail() {
         </Layout>
     );
 }
+

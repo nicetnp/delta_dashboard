@@ -33,7 +33,7 @@ export default function StationDetail() {
         dir: "desc",
     });
 
-    
+
     // Timer for click detection
     const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -90,7 +90,7 @@ export default function StationDetail() {
                     if (clickTimerRef.current) {
                         clearTimeout(clickTimerRef.current);
                         clickTimerRef.current = null;
-                        
+
                         // This is a double click - show line chart for the selected category
                         const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
                         const filteredData = data.filter(row => (row[filterColumn] || '') === label);
@@ -114,38 +114,41 @@ export default function StationDetail() {
     // Function to create line chart for specific category (like in templates)
     const createLineChart = useCallback((data: any[], label: string, displayStationName: string, color: string) => {
         if (data.length === 0) return;
-        
+
+        // Set filtered data to show in table (like single click)
+        setFiltered(data);
+
         // Get the workDate from the data to determine the time range
         const workDates = data.map(item => new Date(item.workDate)).filter(date => !isNaN(date.getTime()));
         if (workDates.length === 0) return;
-        
+
         const earliestDate = new Date(Math.min(...workDates.map(d => d.getTime())));
 
-        
+
         // Set time range from 7:00 of the earliest date to 7:00 of the next day
         const startTime = new Date(earliestDate);
         startTime.setHours(7, 0, 0, 0);
-        
+
         const endTime = new Date(earliestDate);
         endTime.setDate(endTime.getDate() + 1);
         endTime.setHours(7, 0, 0, 0);
-        
+
         // Generate time labels (every hour from 7:00 to 7:00)
         const timeLabels = [];
         const currentTime = new Date(startTime);
-        
+
         while (currentTime <= endTime) {
-            timeLabels.push(currentTime.toLocaleTimeString('th-TH', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+            timeLabels.push(currentTime.toLocaleTimeString('th-TH', {
+                hour: '2-digit',
+                minute: '2-digit'
             }));
             currentTime.setHours(currentTime.getHours() + 1);
         }
-        
+
         // Group data by hour based on workDate within the specified time range
         const totalHours = Math.ceil((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
         const hourlyData = new Array(totalHours).fill(0);
-        
+
         data.forEach(item => {
             try {
                 const itemTime = new Date(item.workDate);
@@ -160,13 +163,10 @@ export default function StationDetail() {
                 console.warn('Invalid date format:', item.workDate);
             }
         });
-        
-        // Hide controls and table
-        setFiltered(null);
-        
+
         // Create line chart
         if (chartRef.current) chartRef.current.destroy();
-        
+
         const newChart = new Chart(canvasRef.current!, {
             type: 'line',
             data: {
@@ -266,24 +266,24 @@ export default function StationDetail() {
                 },
             },
         });
-        
+
         chartRef.current = newChart;
-        
+
         // Update page title
         const pageTitle = document.querySelector('h1');
         if (pageTitle) {
             pageTitle.textContent = `${label}`;
         }
-        
-        // Hide table and controls
+
+        // Show table and controls (don't hide them)
         const tableCard = document.querySelector('[data-table-card]');
         if (tableCard) {
-            (tableCard as HTMLElement).style.display = 'none';
+            (tableCard as HTMLElement).style.display = 'block';
         }
-        
+
         // Create back button
         createBackButton(label, displayStationName, color);
-        
+
     }, [data, chartType]);
 
     // Function to create back button (like in templates)
@@ -302,7 +302,7 @@ export default function StationDetail() {
         backButton.style.marginLeft = 'auto';
         backButton.style.marginRight = 'auto';
         backButton.style.marginTop = '20px';
-        
+
         // Set button text based on chart type
         const buttonText = chartType === "failItem" ? 'Back to Top 5 Failed Chart' : 'Back to Tester Chart';
         backButton.textContent = buttonText;
@@ -317,7 +317,7 @@ export default function StationDetail() {
         backButton.onclick = () => {
             // Restore original chart
             if (chartRef.current) chartRef.current.destroy();
-            
+
             // Recreate bar chart
             const counts: Record<string, number> = {};
             data.forEach((d) => {
@@ -350,7 +350,7 @@ export default function StationDetail() {
                         if (clickTimerRef.current) {
                             clearTimeout(clickTimerRef.current);
                             clickTimerRef.current = null;
-                            
+
                             // This is a double click - show line chart for the selected category
                             const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
                             const filteredData = data.filter(row => (row[filterColumn] || '0') === label);
@@ -380,7 +380,7 @@ export default function StationDetail() {
                 (tableCard as HTMLElement).style.display = 'block';
             }
 
-            // Clear filtered data
+            // Clear filtered data to show all data in table
             setFiltered(null);
 
             // Remove back button
@@ -428,7 +428,13 @@ export default function StationDetail() {
 
 
 
-                <Card title="Data Table" subtitle="Click column headers to sort" variant="glass" className="mb-6" data-table-card>
+                <Card
+                    title="Data Table"
+                    subtitle={filtered ? `Showing filtered data for selected category` : "Click column headers to sort"}
+                    variant="glass"
+                    className="mb-6"
+                    data-table-card
+                >
                     <div className="flex justify-between items-center mb-4">
                         <input
                             type="text"
@@ -462,7 +468,7 @@ export default function StationDetail() {
                                         }
                                         className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200"
                                     >
-                                        {col} {sort.column === col ? (sort.dir === "asc" ? "▲" : "▼") : ""}
+                                        {col} {sort.column === col ? (sort.dir === "asc" ? "" : "") : ""}
                                     </th>
                                 ))}
                             </tr>
@@ -470,7 +476,7 @@ export default function StationDetail() {
                             <tbody>
                             {visibleData.length === 0 ? (
                                 <tr>
-                                                                         <td colSpan={6} className="text-center py-4 text-slate-400">
+                                    <td colSpan={6} className="text-center py-4 text-slate-400">
                                         No data
                                     </td>
                                 </tr>
@@ -487,8 +493,8 @@ export default function StationDetail() {
                                         <td className="px-3 py-2 text-slate-200">{row.model}</td>
                                         <td className="px-3 py-2 text-slate-200">{row.testerId}</td>
                                         <td className="px-3 py-2 text-slate-200">{row.fixtureId}</td>
-                                                                                 <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
-                                         <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
+                                        <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
+                                        <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
                                     </tr>
                                 ))
                             )}

@@ -5,9 +5,9 @@ import { STATION_KEYS, stationColors, toProp, stationMap } from "../types/failur
 import { useNavigate } from "react-router-dom";
 
 export default function FailureChart({
-    data,
-    lineId,
-}: {
+                                         data,
+                                         lineId,
+                                     }: {
     data: FailureRow[];
     lineId: string;
 }) {
@@ -38,8 +38,9 @@ export default function FailureChart({
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: {
-                    intersect: false,
-                    mode: 'index',
+                    // Exact segment selection like the template behavior
+                    intersect: true,
+                    mode: 'nearest',
                 },
                 plugins: {
                     legend: {
@@ -117,9 +118,17 @@ export default function FailureChart({
                         },
                     },
                 },
-                onClick: (_evt, els) => {
+                onHover: (evt, elements) => {
+                    const target = evt.native?.target as HTMLCanvasElement | undefined;
+                    if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
+                },
+                onClick: (evt) => {
+                    const chart = chartRef.current;
+                    if (!chart) return;
+                    // Compute exact bar segment under cursor
+                    const els = chart.getElementsAtEventForMode(evt as unknown as Event, 'nearest', { intersect: true }, true) as ActiveElement[];
                     if (!els.length) return;
-                    const el = els[0] as ActiveElement;
+                    const el = els[0];
                     const datasetIndex = el.datasetIndex;
                     const index = el.index;
                     const station = STATION_KEYS[datasetIndex];

@@ -38,8 +38,8 @@ export default function FailureChart({
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: {
-                    intersect: false,
-                    mode: 'index',
+                    intersect: true,
+                    mode: 'nearest',
                 },
                 plugins: {
                     legend: {
@@ -121,9 +121,12 @@ export default function FailureChart({
                     const target = evt.native?.target as HTMLCanvasElement | undefined;
                     if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
                 },
-                onClick: (_evt, els) => {
+                onClick: (evt) => {
+                    const chart = chartRef.current;
+                    if (!chart) return;
+                    const els = chart.getElementsAtEventForMode(evt as unknown as Event, 'nearest', { intersect: true }, true) as ActiveElement[];
                     if (!els.length) return;
-                    const el = els[0] as ActiveElement;
+                    const el = els[0];
                     const datasetIndex = el.datasetIndex;
                     const index = el.index;
                     const station = STATION_KEYS[datasetIndex];

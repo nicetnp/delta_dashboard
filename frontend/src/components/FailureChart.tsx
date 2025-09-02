@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import "../chartTheme";
 import { Chart, type ActiveElement } from "chart.js/auto";
 import type { FailureRow, StationKey } from "../types/failure";
 import { STATION_KEYS, stationColors, toProp, stationMap } from "../types/failure";
@@ -39,9 +38,8 @@ export default function FailureChart({
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: {
-                    // Exact segment selection like the template behavior
-                    intersect: true,
-                    mode: 'nearest',
+                    intersect: false,
+                    mode: 'index',
                 },
                 plugins: {
                     legend: {
@@ -123,13 +121,9 @@ export default function FailureChart({
                     const target = evt.native?.target as HTMLCanvasElement | undefined;
                     if (target) target.style.cursor = elements.length ? 'pointer' : 'default';
                 },
-                onClick: (evt) => {
-                    const chart = chartRef.current;
-                    if (!chart) return;
-                    // Compute exact bar segment under cursor
-                    const els = chart.getElementsAtEventForMode(evt as unknown as Event, 'nearest', { intersect: true }, true) as ActiveElement[];
+                onClick: (_evt, els) => {
                     if (!els.length) return;
-                    const el = els[0];
+                    const el = els[0] as ActiveElement;
                     const datasetIndex = el.datasetIndex;
                     const index = el.index;
                     const station = STATION_KEYS[datasetIndex];

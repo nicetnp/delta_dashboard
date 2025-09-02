@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Chart } from "chart.js/auto";
-import "../chartTheme";
 import clsx from "clsx";
 import Layout from "../components/Layout";
 import Card from "../components/Card";

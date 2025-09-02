@@ -6,8 +6,7 @@ Chart.defaults.font.family = "ui-sans-serif, system-ui, -apple-system, Segoe UI,
 Chart.defaults.font.size = 12;
 
 // Layout and animations
-Chart.defaults.animation.duration = 300;
-Chart.defaults.animation.easing = "easeOutQuart" as any;
+Chart.defaults.animation = { duration: 300, easing: "easeOutQuart" } as any;
 
 // Gridlines and scales
 Chart.defaults.scale.grid.color = "rgba(255, 255, 255, 0.1)";
@@ -16,8 +15,8 @@ Chart.defaults.scale.ticks.color = "#cbd5e1"; // slate-300
 // Elements
 Chart.defaults.elements.bar.borderWidth = 2;
 Chart.defaults.elements.bar.borderSkipped = false;
-// @ts-expect-error chart.js typing for borderRadius may not be declared on defaults
-Chart.defaults.elements.bar.borderRadius = 8;
+// Set rounded bars (cast for broader Chart.js typing compatibility)
+(Chart.defaults.elements.bar as any).borderRadius = 8;
 Chart.defaults.elements.line.borderWidth = 3;
 Chart.defaults.elements.line.tension = 0.4;
 Chart.defaults.elements.point.radius = 4;
@@ -37,8 +36,8 @@ Chart.defaults.plugins.tooltip.titleColor = "#ffffff";
 Chart.defaults.plugins.tooltip.bodyColor = "#e2e8f0";
 Chart.defaults.plugins.tooltip.borderColor = "rgba(255, 255, 255, 0.1)";
 Chart.defaults.plugins.tooltip.borderWidth = 1;
-// @ts-expect-error Missing in types
-Chart.defaults.plugins.tooltip.cornerRadius = 8;
+// Rounded tooltip corners
+(Chart.defaults.plugins.tooltip as any).cornerRadius = 8;
 Chart.defaults.plugins.tooltip.titleFont = { size: 14, weight: "bold" } as any;
 Chart.defaults.plugins.tooltip.bodyFont = { size: 13 } as any;
 

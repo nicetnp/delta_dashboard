@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calibration Management</title>
+  <!-- Tailwind & Lucide CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    .fade-in { animation: fadeIn .25s ease-out; }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)} }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <!-- Header -->
+  <header class="bg-white border-b">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-blue-600 p-2 rounded-lg"><i data-lucide="settings" class="w-6 h-6 text-white"></i></div>
+        <h1 class="text-2xl font-bold">Calibration Management</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="refreshBtn" class="px-3 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+          <i data-lucide="refresh-ccw" class="w-4 h-4"></i><span>Refresh</span>
+        </button>
+        <button id="addBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2">
+          <i data-lucide="plus" class="w-4 h-4"></i><span>Add New</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- Filters -->
+    <section class="bg-white border rounded-xl p-4 md:p-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div>
+          <label class="block text-sm font-medium mb-1">Search</label>
+          <input id="searchInput" type="text" placeholder="Search equipment, brand, model, serial..." class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Line</label>
+          <select id="lineFilter" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Station</label>
+          <select id="stationFilter" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Status</label>
+          <select id="statusFilter" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All</option>
+            <option value="Missing">Missing</option>
+            <option value="Damage">Damage</option>
+            <option value="On-Station">On-Station</option>
+            <option value="On-Calibration">On-Calibration</option>
+          </select>
+        </div>
+
+      </div>
+    </section>
+
+      <!-- Table -->
+      <section class="bg-white border rounded-xl overflow-hidden">
+          <div class="px-4 py-4 border-b flex items-center justify-between">
+              <h2 class="text-lg font-semibold">Calibration Records</h2>
+              <div id="recordCount" class="text-sm text-gray-500">Loading...</div>
+          </div>
+          <div class="overflow-x-auto">
+              <table class="w-full text-sm" id="calTable">
+                  <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
+                  <tr>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Equipment')">Equipment</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Station')">Station</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Brand')">Brand / Model</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('DT')">Asset / SN</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('AssetNumber')">DT</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('StartDate')">Start</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('DueDate')">Due Date</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Status')">Status</th>
+                      <th class="px-4 py-3">Actions</th>
+                  </tr>
+                  </thead>
+                  <tbody id="tableBody" class="divide-y">
+                  <tr id="loadingRow">
+                      <td colspan="9" class="px-6 py-12 text-center text-gray-500">
+                          <div class="inline-flex items-center gap-2">
+                              <span class="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full spin"></span>
+                              Loading...
+                          </div>
+                      </td>
+                  </tr>
+                  </tbody>
+              </table>
+          </div>
+      </section>
+  </main>
+
+  <!-- Modal (Add/Edit) -->
+  <div id="modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
+      <div class="px-6 py-4 border-b flex items-center justify-between">
+        <h3 id="modalTitle" class="text-lg font-semibold">Add Calibration</h3>
+        <button id="closeModal" class="text-gray-500 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form id="calForm" class="p-6 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm font-medium mb-1">Station *</label><input name="Station" list="stationList" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Type or choose" /><datalist id="stationList"></datalist></div>
+          <div><label class="block text-sm font-medium mb-1">Equipment *</label><input name="Equipment" list="equipmentList" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Type or choose" /><datalist id="equipmentList"></datalist></div>
+          <div><label class="block text-sm font-medium mb-1">Brand *</label><input name="Brand" list="brandList" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Type or choose" /><datalist id="brandList"></datalist></div>
+          <div><label class="block text-sm font-medium mb-1">Model *</label><input name="Model" list="modelList" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Type or choose" /><datalist id="modelList"></datalist></div>
+          <div><label class="block text-sm font-medium mb-1">DT *</label><input name="DT" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="e.g. CERT-2025-001" /></div>
+          <div><label class="block text-sm font-medium mb-1">Serial Number *</label><input name="Seriesnumber" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" /></div>
+          <div><label class="block text-sm font-medium mb-1">Start Date *</label><input type="datetime-local" name="StartDate" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" /></div>
+          <div><label class="block text-sm font-medium mb-1">End Date *</label><input type="datetime-local" name="EndDate" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" /></div>
+          <div><label class="block text-sm font-medium mb-1">Line *</label><input name="LineID" list="lineList" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Type or choose" /><datalist id="lineList"></datalist></div>
+          <div><label class="block text-sm font-medium mb-1">Status *</label><select name="Status" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"><option value="Missing">Missing</option><option value="Damage">Damage</option><option value="On-Station">On-Station</option><option value="On-Calibration">On-Calibration</option></select></div>
+          <div><label class="block text-sm font-medium mb-1">Responsible *</label><input name="Responsible" list="personList" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Type or choose" /><datalist id="personList"></datalist></div>
+          <div><label class="block text-sm font-medium mb-1">Asset Number *</label><input name="AssetNumber" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" /></div>
+        </div>
+        <div><label class="block text-sm font-medium mb-1">Comment</label><textarea name="Comment" rows="3" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Optional note..."></textarea></div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="cancelBtn" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"><span id="submitText">Save</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div id="historyModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl mx-4 overflow-hidden">
+      <div class="px-6 py-4 border-b flex items-center justify-between">
+        <h3 id="historyTitle" class="text-lg font-semibold">History</h3>
+        <button onclick="closeHistory()" class="text-gray-500 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <div class="p-6 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
+            <tr>
+              <th class="px-4 py-2 text-left">Modify</th>
+              <th class="px-4 py-2 text-left">Action</th>
+              <th class="px-4 py-2 text-left">By</th>
+              <th class="px-4 py-2 text-left">Date</th>
+              <th class="px-4 py-2 text-left">Station</th>
+              <th class="px-4 py-2 text-left">Equipment</th>
+              <th class="px-4 py-2 text-left">Brand / Model</th>
+              <th class="px-4 py-2 text-left">DT / SN</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody" class="divide-y"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast" class="fixed top-4 right-4 z-[60] space-y-2"></div>
+
+  <script>
+    const API_BASE_URL = "http://127.0.0.1:8000";
+    const CAL_API = "/calibration";
+    const api = (path) => `${API_BASE_URL}${path}`;
+
+    let modelsByBrand = {};
+    let equipmentSet = new Set();
+    let editingId = null;
+
+    const tableBody = document.getElementById('tableBody');
+    const loadingRow = document.getElementById('loadingRow');
+    const recordCount = document.getElementById('recordCount');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const addBtn = document.getElementById('addBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const closeModalBtn = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const calForm = document.getElementById('calForm');
+    const searchInput = document.getElementById('searchInput');
+    const stationFilter = document.getElementById('stationFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const lineFilter = document.getElementById('lineFilter');
+    const historyModal = document.getElementById('historyModal');
+    const historyBody = document.getElementById('historyBody');
+    const historyTitle = document.getElementById('historyTitle');
+
+    function toast(type, title, msg){
+      const el = document.createElement('div');
+      const color = type==='error' ? 'bg-red-600' : type==='warn' ? 'bg-yellow-500' : 'bg-green-600';
+      el.className = `fade-in ${color} text-white px-4 py-3 rounded-lg shadow flex items-start gap-3`;
+      el.innerHTML = `<i data-lucide="${type==='error'?'x-circle':type==='warn'?'alert-triangle':'check-circle'}" class="w-5 h-5 mt-0.5"></i><div><div class='font-semibold'>${title}</div><div class='text-sm opacity-90'>${msg||''}</div></div>`;
+      document.getElementById('toast').appendChild(el);
+      window.lucide?.createIcons?.();
+      setTimeout(()=> el.remove(), 3200);
+    }
+
+    function fmtDate(dt) {
+        if (!dt) return "";
+        const d = new Date(dt);
+        return d.toLocaleDateString('th-TH'); // ✅ แค่วันที่
+    }
+
+    function statusBadge(s){
+      const map={Missing:'bg-green-100 text-green-800', Damage:'bg-red-100 text-red-800', 'On-Station':'bg-yellow-100 text-yellow-800', 'On-Calibration':'bg-gray-100 text-gray-800'};
+      return `<span class="px-2 py-1 text-xs font-semibold rounded-full ${map[s]||'bg-gray-100 text-gray-800'}">${s}</span>`;
+    }
+    function escapeHtml(s){ return (s||'').toString().replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;","}>":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+    function toISO(v){ if(!v) return null; return new Date(v).toISOString(); }
+
+    async function fetchJSON(url, opts={}, timeoutMs=8000){
+      const ctrl = new AbortController();
+      const id = setTimeout(()=> ctrl.abort(), timeoutMs);
+      const res = await fetch(url, { ...opts, signal: ctrl.signal });
+      clearTimeout(id);
+      if(!res.ok){ const text = await res.text().catch(()=> ''); throw new Error(`${res.status} ${res.statusText}${text?` - ${text}`:''}`); }
+      const ct = res.headers.get('content-type') || '';
+      if(ct.includes('application/json')) return await res.json();
+      return JSON.parse(await res.text());
+    }
+
+    async function loadChoices(){
+      const c = await fetchJSON(api(CAL_API + '/choices'));
+      fillSelect(stationFilter, c.stations||[], 'All');
+      fillSelect(lineFilter, c.lines||[], 'All');
+      const f = calForm.elements;
+      fillDatalist('stationList', c.stations||[]);
+      fillDatalist('lineList', c.lines||[]);
+      fillDatalist('brandList', c.brands||[]);
+      fillDatalist('personList', (c.people&&c.people.length?c.people:['User']));
+      modelsByBrand = c.modelsByBrand || {};
+      f['Brand'].addEventListener('change', ()=>{ fillDatalist('modelList', modelsByBrand[f['Brand'].value] || []); });
+      fillDatalist('modelList', []);
+      equipmentSet = new Set(c.equipments || []);
+      fillDatalist('equipmentList', c.equipments || []);
+    }
+
+    function fillSelect(el, arr, placeholder='All'){
+      el.innerHTML = '';
+      const o=document.createElement('option'); o.value=''; o.textContent=placeholder; el.appendChild(o);
+      arr.forEach(v=>{ const op=document.createElement('option'); op.value=v; op.textContent=v; el.appendChild(op); });
+    }
+    function fillDatalist(id, arr){ const dl=document.getElementById(id); dl.innerHTML=''; arr.forEach(v=>{ const op=document.createElement('option'); op.value=v; dl.appendChild(op); }); }
+
+    async function loadData(){
+      const params = new URLSearchParams();
+      const q = searchInput.value.trim();
+      if(q) params.set('q', q);
+      if(stationFilter.value) params.set('station', stationFilter.value);
+      if(statusFilter.value) params.set('status', statusFilter.value);
+      if(lineFilter.value) params.set('line_id', lineFilter.value);
+      loadingRow.style.display = '';
+      tableBody.querySelectorAll('tr:not(#loadingRow)').forEach(tr=>tr.remove());
+      const rows = await fetchJSON(api(CAL_API + '/?' + params.toString()));
+      renderRows(rows);
+      recordCount.textContent = `Showing ${rows.length} records`;
+      loadingRow.style.display = 'none';
+    }
+let sortConfig = { key: null, asc: true };
+
+function sortTable(key) {
+  const rows = Array.from(window.currentRows || []);
+  if (!rows.length) return;
+
+  // toggle ASC/DESC
+  if (sortConfig.key === key) {
+    sortConfig.asc = !sortConfig.asc;
+  } else {
+    sortConfig.key = key;
+    sortConfig.asc = true;
+  }
+
+  rows.sort((a, b) => {
+    let v1 = a[key] ?? "";
+    let v2 = b[key] ?? "";
+
+    // แปลงวันที่เป็นตัวเลขเปรียบเทียบ
+    if (key.toLowerCase().includes("date")) {
+      v1 = v1 ? new Date(v1).getTime() : 0;
+      v2 = v2 ? new Date(v2).getTime() : 0;
+    }
+    // แปลงเป็น string เพื่อเทียบ
+    v1 = typeof v1 === "string" ? v1.toLowerCase() : v1;
+    v2 = typeof v2 === "string" ? v2.toLowerCase() : v2;
+
+    if (v1 < v2) return sortConfig.asc ? -1 : 1;
+    if (v1 > v2) return sortConfig.asc ? 1 : -1;
+    return 0;
+  });
+
+  renderRows(rows);
+  updateSortIcons();
+}
+
+// แสดงลูกศรขึ้น/ลงที่หัวตาราง
+function updateSortIcons() {
+  document.querySelectorAll("th").forEach(th => {
+    th.classList.remove("bg-blue-50");
+    th.innerHTML = th.innerHTML.replace(/ ▲| ▼/g, ""); // ลบลูกศรเก่า
+  });
+  if (!sortConfig.key) return;
+
+  const map = {
+    Equipment: 0,
+    Station: 1,
+    Brand: 2,
+    DT: 3,
+    AssetNumber: 4,
+    StartDate: 5,
+    EndDate: 6,
+    Status: 7,
+  };
+  const idx = map[sortConfig.key];
+  if (idx === undefined) return;
+
+  const th = document.querySelectorAll("th")[idx];
+  if (th) {
+    th.classList.add("bg-blue-50");
+    th.innerHTML += sortConfig.asc ? " ▲" : " ▼";
+  }
+}
+
+
+    function renderRows(rows){
+  window.currentRows = rows; // 👉 เก็บ rows ไว้ใน global
+  if(!rows.length){
+    tableBody.innerHTML = `<tr><td colspan="9" class="px-6 py-12 text-center text-gray-500">No calibration records found</td></tr>`;
+    return;
+  }
+
+  // ✅ เก็บ record ล่าสุดของแต่ละ Seriesnumber
+  const latestMap = {};
+  rows.forEach(r => {
+    if (!latestMap[r.Seriesnumber] || new Date(r.Timestamp) > new Date(latestMap[r.Seriesnumber].Timestamp)) {
+      latestMap[r.Seriesnumber] = r;
+    }
+  });
+  const latestRows = Object.values(latestMap);
+
+  const html = rows.map(cal=>`
+    <tr class="hover:bg-gray-50">
+      <td class="px-4 py-3"><div class="font-medium">${escapeHtml(cal.Equipment||'')}</td>
+      <td class="px-4 py-3">${escapeHtml(cal.Station||'')}</td>
+      <td class="px-4 py-3"><div class="font-medium">${escapeHtml(cal.Brand||'')}</div><div class="text-gray-500 text-xs">${escapeHtml(cal.Model||'')}</div></td>
+      <td class="px-4 py-3"><div class="font-medium">${escapeHtml(cal.AssetNumber||'')}</div><div class="text-gray-500 text-xs">${escapeHtml(cal.Seriesnumber||'')}</div></td>
+      <td class="px-4 py-3">${escapeHtml(cal.DT||'')}</td>
+      <td class="px-4 py-3">${cal.StartDate?fmtDate(cal.StartDate):''}</td>
+      <td class="px-4 py-3">${cal.EndDate?fmtDate(cal.EndDate):''}</td>
+      <td class="px-4 py-3">
+        ${statusBadge(cal.Status||'')}
+        ${countdownBar(cal.StartDate, cal.EndDate)}
+      </td>
+      <td class="px-4 py-3">
+        <div class="flex items-center gap-2">
+          <button class="text-blue-600 hover:text-blue-800" title="Edit" onclick='openModal(${cal.ID})'><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+          <button class="text-red-600 hover:text-red-800" title="Delete" onclick='confirmDelete(${cal.ID})'><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          <button class="text-gray-600 hover:text-gray-800" title="History" onclick='viewHistory("${cal.Seriesnumber}")'><i data-lucide="clock" class="w-4 h-4"></i></button>
+        </div>
+      </td>
+    </tr>`).join('');
+  tableBody.innerHTML = html;
+  window.lucide?.createIcons?.();
+}
+
+    async function createCalibration(payload){
+      return await fetchJSON(api(CAL_API + '/'), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    }
+    async function updateCalibration(id, payload){
+      return await fetchJSON(api(CAL_API + '/' + id), { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    }
+    async function deleteCalibration(id){
+      await fetchJSON(api(`${CAL_API}/${id}?deleted_by=${encodeURIComponent('Web User')}`), { method:'DELETE' });
+      return true;
+    }
+
+    // ✅ ensureChoiceExists
+    async function ensureChoiceExists(kind, value){
+      if(!value) return true;
+      let exists = false;
+      const f = calForm.elements;
+      switch(kind){
+        case "equipment": exists = equipmentSet.has(value); break;
+        case "station": exists = [...document.getElementById('stationList').options].some(o=>o.value===value); break;
+        case "brand": exists = [...document.getElementById('brandList').options].some(o=>o.value===value); break;
+        case "model": exists = [...document.getElementById('modelList').options].some(o=>o.value===value); break;
+        case "line": exists = [...document.getElementById('lineList').options].some(o=>o.value===value); break;
+        case "responsible": exists = [...document.getElementById('personList').options].some(o=>o.value===value); break;
+        case "status": exists = [...f['Status'].options].some(o=>o.value===value); break;
+      }
+      if(exists) return true;
+
+      const pass = prompt(`เพิ่มค่าใหม่ \"${value}\" ใน ${kind}\nกรอกรหัสยืนยัน:`);
+      if(!pass) return false;
+      try {
+        await fetchJSON(api(CAL_API + '/add_choice'), {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ kind, value, passcode: pass })
+        });
+        toast('green', 'เพิ่มสำเร็จ', `${kind} "${value}" ถูกบันทึกแล้ว`);
+        await loadChoices();
+        return true;
+      } catch(err){
+        toast('error', 'เพิ่มไม่สำเร็จ', String(err));
+        return false;
+      }
+    }
+
+    function openModal(id=null){ editingId = id; modalTitle.textContent = id? 'Edit Calibration' : 'Add Calibration'; calForm.reset(); fillDatalist('modelList', []); if(id) preloadForm(id); modal.classList.remove('hidden'); modal.classList.add('flex'); }
+    function closeModal(){ modal.classList.add('hidden'); modal.classList.remove('flex'); editingId=null; }
+
+    async function preloadForm(id){
+      try{
+        const data = await fetchJSON(api(CAL_API + '/' + id));
+        const f = calForm.elements;
+        ['Station','Equipment','Brand','Model','DT','Seriesnumber','LineID','Status','Responsible','AssetNumber','Comment'].forEach(k=>{ if(f[k]) f[k].value = data[k] ?? ''; });
+        fillDatalist('modelList', modelsByBrand[f['Brand'].value] || []);
+        if(f['Model']) f['Model'].value = data['Model'] ?? '';
+        if(f['StartDate']) f['StartDate'].value = data['StartDate'] ? new Date(data['StartDate']).toISOString().slice(0,16) : '';
+        if(f['EndDate']) f['EndDate'].value   = data['EndDate'] ? new Date(data['EndDate']).toISOString().slice(0,16) : '';
+      }catch(err){ toast('error','Unable to load record', String(err)); }
+    }
+
+    calForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = calForm.elements;
+      const payload = {
+        Station: f['Station'].value, Equipment: f['Equipment'].value, Brand: f['Brand'].value,
+        Model: f['Model'].value, DT: f['DT'].value, StartDate: toISO(f['StartDate'].value),
+        EndDate: toISO(f['EndDate'].value), LineID: f['LineID'].value, Comment: f['Comment'].value || null,
+        Status: f['Status'].value, Seriesnumber: f['Seriesnumber'].value, Responsible: f['Responsible'].value,
+        AssetNumber: f['AssetNumber'].value,
+      };
+      try {
+        // ✅ ตรวจสอบค่าที่กรอกใหม่
+        const checks = [
+          await ensureChoiceExists("station", payload.Station),
+          await ensureChoiceExists("equipment", payload.Equipment),
+          await ensureChoiceExists("brand", payload.Brand),
+          await ensureChoiceExists("model", payload.Model),
+          await ensureChoiceExists("line", payload.LineID),
+          await ensureChoiceExists("responsible", payload.Responsible),
+          await ensureChoiceExists("status", payload.Status),
+        ];
+        if (checks.includes(false)) return;
+
+        if (editingId) { await updateCalibration(editingId, payload); toast('green', 'Updated', 'Record saved'); }
+        else { await createCalibration(payload); toast('green', 'Created', 'Record added'); }
+        closeModal(); await loadData();
+      } catch (err) { toast('error', 'Save failed', String(err)); }
+    });
+
+    function confirmDelete(id){ if(confirm('Delete this record?')) doDelete(id); }
+    async function doDelete(id){ try{ await deleteCalibration(id); toast('green','Deleted'); await loadData(); } catch(err){ toast('error','Delete failed', String(err)); } }
+
+// ✅ คำนวณ % เวลาที่เหลือ
+function countdownBar(startDate, endDate) {
+  if (!endDate) return "";
+  const today = new Date();
+  const start = startDate ? new Date(startDate) : today;
+  const end = new Date(endDate);
+
+  const total = end - start;
+  const remaining = end - today;
+
+  if (total <= 0) return "";
+
+  let percent = Math.max(0, Math.min(100, (remaining / total) * 100));
+  let days = Math.ceil(remaining / (1000 * 60 * 60 * 24));
+
+  // สีตามสถานะ
+  let color = "bg-green-500";
+  if (percent <= 30) color = "bg-red-500";
+  else if (percent <= 60) color = "bg-yellow-500";
+
+  return `
+    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+      <div class="${color} h-2 rounded-full" style="width:${percent}%"></div>
+    </div>
+    <div class="text-xs text-gray-600 mt-1">${days >= 0 ? days + " days left" : "Expired"}</div>
+  `;
+}
+
+    // ---- History functions ----
+    async function viewHistory(series) {
+        try {
+            const rows = await fetchJSON(api(`/calibration/history/${series}`));
+            if (!rows.length) {
+                toast('warn', 'No History', 'ไม่พบประวัติย้อนหลัง');
+                return;
+            }
+            historyTitle.textContent = `History for SN: ${series}`;
+            historyBody.innerHTML = rows.map(r => `
+          <tr>
+            <td class="px-4 py-2">${r.Version}</td>
+            <td class="px-4 py-2">${escapeHtml(r.ActionType)}</td>
+            <td class="px-4 py-2">${escapeHtml(r.ActionBy)}</td>
+            <td class="px-4 py-2">${fmtDate(r.ActionDate)}</td>   <!-- ✅ ใช้ fmtDate -->
+            <td class="px-4 py-2">${escapeHtml(r.Station||'')}</td>
+            <td class="px-4 py-2">${escapeHtml(r.Equipment||'')}</td>
+            <td class="px-4 py-2">${escapeHtml(r.Brand||'')} / ${escapeHtml(r.Model||'')}</td>
+            <td class="px-4 py-2">${escapeHtml(r.DT||'')} / ${escapeHtml(r.Seriesnumber||'')}</td>
+          </tr>`).join('');
+            historyModal.classList.remove('hidden');
+            historyModal.classList.add('flex');
+            window.lucide?.createIcons?.();
+        } catch (err) {
+            toast('error', 'Load history failed', String(err));
+        }
+    }
+
+    function closeHistory(){ historyModal.classList.add('hidden'); historyModal.classList.remove('flex'); }
+
+    addBtn.addEventListener('click', ()=> openModal());
+    refreshBtn.addEventListener('click', ()=> loadData());
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    document.getElementById('modal').addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); if(e.key==='Escape' && !historyModal.classList.contains('hidden')) closeHistory(); });
+
+    const debounce=(fn,ms=300)=>{let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+    const onFilterChange = debounce(()=> loadData(), 250);
+    [searchInput, stationFilter, statusFilter, lineFilter].forEach(el=> el.addEventListener('input', onFilterChange));
+    [stationFilter, statusFilter, lineFilter].forEach(el=> el.addEventListener('change', onFilterChange));
+
+    (async function init(){ window.lucide?.createIcons?.(); try{ await loadChoices(); }catch(err){ toast('error','โหลดรายการตัวเลือกไม่สำเร็จ', String(err)); } try{ await loadData(); }catch(err){ loadingRow.style.display = 'none'; toast('error','โหลดข้อมูลไม่สำเร็จ', String(err)); }})();
+  </script>
+</body>
+</html>

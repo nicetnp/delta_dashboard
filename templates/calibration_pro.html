@@ -22,14 +22,21 @@
         <div class="bg-blue-600 p-2 rounded-lg"><i data-lucide="settings" class="w-6 h-6 text-white"></i></div>
         <h1 class="text-2xl font-bold">Calibration Management</h1>
       </div>
-      <div class="flex items-center gap-2">
-        <button id="refreshBtn" class="px-3 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
-          <i data-lucide="refresh-ccw" class="w-4 h-4"></i><span>Refresh</span>
-        </button>
-        <button id="addBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2">
-          <i data-lucide="plus" class="w-4 h-4"></i><span>Add New</span>
-        </button>
-      </div>
+        <div class="flex items-center gap-2">
+            <button id="refreshBtn" class="px-3 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2">
+                <i data-lucide="refresh-ccw" class="w-4 h-4"></i><span>Refresh</span>
+            </button>
+            <button id="overdueBtn"
+                    class="px-3 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2 text-red-600">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                <span>Overdue &lt;30d</span>
+            </button>
+            <button id="addBtn"
+                    class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i><span>Add New</span>
+            </button>
+        </div>
+
     </div>
   </header>
 
@@ -58,6 +65,7 @@
           <label class="block text-sm font-medium mb-1">Status</label>
           <select id="statusFilter" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">All</option>
+            <option value="Spare">Spare</option>
             <option value="Missing">Missing</option>
             <option value="Damage">Damage</option>
             <option value="On-Station">On-Station</option>
@@ -78,13 +86,15 @@
               <table class="w-full text-sm" id="calTable">
                   <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
                   <tr>
-                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Equipment')">Equipment</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('LineID')">Line</th>
                       <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Station')">Station</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Equipment')">Equipment</th>
                       <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Brand')">Brand / Model</th>
-                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('DT')">Asset / SN</th>
-                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('AssetNumber')">DT</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('AssetNumber')">Asset / SN</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('DT')">DT</th>
                       <th class="px-4 py-3 cursor-pointer" onclick="sortTable('StartDate')">Start</th>
-                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('DueDate')">Due Date</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('EndDate')">Due Date</th>
+                      <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Comment')">Comment</th>
                       <th class="px-4 py-3 cursor-pointer" onclick="sortTable('Status')">Status</th>
                       <th class="px-4 py-3">Actions</th>
                   </tr>
@@ -122,7 +132,7 @@
           <div><label class="block text-sm font-medium mb-1">Start Date *</label><input type="datetime-local" name="StartDate" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" /></div>
           <div><label class="block text-sm font-medium mb-1">End Date *</label><input type="datetime-local" name="EndDate" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" /></div>
           <div><label class="block text-sm font-medium mb-1">Line *</label><input name="LineID" list="lineList" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Type or choose" /><datalist id="lineList"></datalist></div>
-          <div><label class="block text-sm font-medium mb-1">Status *</label><select name="Status" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"><option value="Missing">Missing</option><option value="Damage">Damage</option><option value="On-Station">On-Station</option><option value="On-Calibration">On-Calibration</option></select></div>
+          <div><label class="block text-sm font-medium mb-1">Status *</label><select name="Status" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"><option value="Spare">Spare</option><option value="Missing">Missing</option><option value="Damage">Damage</option><option value="On-Station">On-Station</option><option value="On-Calibration">On-Calibration</option></select></div>
           <div><label class="block text-sm font-medium mb-1">Responsible *</label><input name="Responsible" list="personList" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" placeholder="Type or choose" /><datalist id="personList"></datalist></div>
           <div><label class="block text-sm font-medium mb-1">Asset Number *</label><input name="AssetNumber" required class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500" /></div>
         </div>
@@ -137,30 +147,94 @@
 
   <!-- History Modal -->
   <div id="historyModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl mx-4 overflow-hidden">
-      <div class="px-6 py-4 border-b flex items-center justify-between">
-        <h3 id="historyTitle" class="text-lg font-semibold">History</h3>
-        <button onclick="closeHistory()" class="text-gray-500 hover:text-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl mx-4 flex flex-col max-h-[90vh]">
+          <div class="px-6 py-4 border-b flex items-center justify-between shrink-0 bg-white sticky top-0 z-10">
+              <h3 id="historyTitle" class="text-lg font-semibold">History</h3>
+              <button onclick="closeHistory()" class="text-gray-500 hover:text-gray-700">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+          </div>
+          <div class="p-6 overflow-y-auto grow">
+              <table class="w-full text-sm">
+                  <thead class="bg-gray-50 text-gray-600 text-xs uppercase sticky top-0 z-10">
+                  <tr>
+                      <th class="px-4 py-2 text-left">Modify</th>
+                      <th class="px-4 py-2 text-left">Action</th>
+                      <th class="px-4 py-2 text-left">By</th>
+                      <th class="px-4 py-2 text-left">Date</th>
+                      <th class="px-4 py-2 text-left">Station</th>
+                      <th class="px-4 py-2 text-left">Equipment</th>
+                      <th class="px-4 py-2 text-left">Brand / Model</th>
+                      <th class="px-4 py-2 text-left">DT / SN</th>
+                  </tr>
+                  </thead>
+                  <tbody id="historyBody" class="divide-y"></tbody>
+              </table>
+          </div>
       </div>
-      <div class="p-6 overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
-            <tr>
-              <th class="px-4 py-2 text-left">Modify</th>
-              <th class="px-4 py-2 text-left">Action</th>
-              <th class="px-4 py-2 text-left">By</th>
-              <th class="px-4 py-2 text-left">Date</th>
-              <th class="px-4 py-2 text-left">Station</th>
-              <th class="px-4 py-2 text-left">Equipment</th>
-              <th class="px-4 py-2 text-left">Brand / Model</th>
-              <th class="px-4 py-2 text-left">DT / SN</th>
-            </tr>
-          </thead>
-          <tbody id="historyBody" class="divide-y"></tbody>
-        </table>
+  </div>
+
+
+  <!-- Overdue Modal -->
+  <div id="overdueModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl mx-4 flex flex-col max-h-[90vh]">
+          <!-- Header (fixed) -->
+          <div class="px-6 py-4 border-b flex items-center justify-between shrink-0 bg-white sticky top-0 z-10">
+              <h3 id="overdueTitle" class="text-lg font-semibold">Overdue &lt;30 Days</h3>
+              <button onclick="closeOverdue()" class="text-gray-500 hover:text-gray-700">
+                  <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+          </div>
+          <!-- Body (scrollable) -->
+          <div class="p-6 overflow-y-auto grow">
+              <table class="w-full text-sm">
+                  <thead class="bg-gray-50 text-gray-600 text-xs uppercase sticky top-0 z-10">
+                  <tr>
+                      <th class="px-4 py-2">Line</th>
+                      <th class="px-4 py-2">Station</th>
+                      <th class="px-4 py-2">Equipment</th>
+                      <th class="px-4 py-2">Brand / Model</th>
+                      <th class="px-4 py-2">Asset / SN</th>
+                      <th class="px-4 py-2">DT</th>
+                      <th class="px-4 py-2">Start</th>
+                      <th class="px-4 py-2">Due</th>
+                      <th class="px-4 py-2">Status</th>
+                  </tr>
+                  </thead>
+                  <tbody id="overdueBody" class="divide-y"></tbody>
+              </table>
+          </div>
+      </div>
+  </div>
+
+  <div id="overdueModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+      <div class="bg-white rounded-xl shadow-xl w-full max-w-5xl mx-4 overflow-hidden">
+        <div class="px-6 py-4 border-b flex items-center justify-between">
+          <h3 id="overdueTitle" class="text-lg font-semibold">Overdue &lt;30 Days</h3>
+          <button onclick="closeOverdue()" class="text-gray-500 hover:text-gray-700">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
+              <tr>
+                <th class="px-4 py-2">Line</th>
+                <th class="px-4 py-2">Station</th>
+                <th class="px-4 py-2">Equipment</th>
+                <th class="px-4 py-2">Brand / Model</th>
+                <th class="px-4 py-2">Asset / SN</th>
+                <th class="px-4 py-2">DT</th>
+                <th class="px-4 py-2">Start</th>
+                <th class="px-4 py-2">Due</th>
+                <th class="px-4 py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody id="overdueBody" class="divide-y"></tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
 
   <!-- Toast container -->
   <div id="toast" class="fixed top-4 right-4 z-[60] space-y-2"></div>
@@ -209,7 +283,7 @@
     }
 
     function statusBadge(s){
-      const map={Missing:'bg-green-100 text-green-800', Damage:'bg-red-100 text-red-800', 'On-Station':'bg-yellow-100 text-yellow-800', 'On-Calibration':'bg-gray-100 text-gray-800'};
+      const map={Spare:'bg-gray-100 text-gray-800', Missing:'bg-gray-100 text-gray-800', Damage:'bg-red-100 text-red-800', 'On-Station':'bg-green-100 text-green-800', 'On-Calibration':'bg-yellow-100 text-yellow-800'};
       return `<span class="px-2 py-1 text-xs font-semibold rounded-full ${map[s]||'bg-gray-100 text-gray-800'}">${s}</span>`;
     }
     function escapeHtml(s){ return (s||'').toString().replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;","}>":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
@@ -250,19 +324,22 @@
     function fillDatalist(id, arr){ const dl=document.getElementById(id); dl.innerHTML=''; arr.forEach(v=>{ const op=document.createElement('option'); op.value=v; dl.appendChild(op); }); }
 
     async function loadData(){
-      const params = new URLSearchParams();
-      const q = searchInput.value.trim();
-      if(q) params.set('q', q);
-      if(stationFilter.value) params.set('station', stationFilter.value);
-      if(statusFilter.value) params.set('status', statusFilter.value);
-      if(lineFilter.value) params.set('line_id', lineFilter.value);
-      loadingRow.style.display = '';
-      tableBody.querySelectorAll('tr:not(#loadingRow)').forEach(tr=>tr.remove());
-      const rows = await fetchJSON(api(CAL_API + '/?' + params.toString()));
-      renderRows(rows);
-      recordCount.textContent = `Showing ${rows.length} records`;
-      loadingRow.style.display = 'none';
-    }
+  const params = new URLSearchParams();
+  const q = searchInput.value.trim();
+  if(q) params.set('q', q);
+  if(stationFilter.value) params.set('station', stationFilter.value);
+  if(statusFilter.value) params.set('status', statusFilter.value);
+  if(lineFilter.value) params.set('line_id', lineFilter.value);
+
+  loadingRow.style.display = '';
+  tableBody.querySelectorAll('tr:not(#loadingRow)').forEach(tr=>tr.remove());
+
+  const rows = await fetchJSON(api(CAL_API + '/?' + params.toString()));
+  renderRows(rows);
+
+  loadingRow.style.display = 'none';
+}
+
 let sortConfig = { key: null, asc: true };
 
 function sortTable(key) {
@@ -307,16 +384,18 @@ function updateSortIcons() {
   });
   if (!sortConfig.key) return;
 
-  const map = {
-    Equipment: 0,
-    Station: 1,
-    Brand: 2,
-    DT: 3,
-    AssetNumber: 4,
-    StartDate: 5,
-    EndDate: 6,
-    Status: 7,
-  };
+      const map = {
+      LineID: 0,
+      Station: 1,
+      Equipment: 2,
+      Brand: 3,
+      AssetNumber: 4,
+      DT: 5,
+      StartDate: 6,
+      EndDate: 7,
+      Status: 8,
+    };
+
   const idx = map[sortConfig.key];
   if (idx === undefined) return;
 
@@ -328,31 +407,48 @@ function updateSortIcons() {
 }
 
 
-    function renderRows(rows){
-  window.currentRows = rows; // 👉 เก็บ rows ไว้ใน global
+        function renderRows(rows){
   if(!rows.length){
-    tableBody.innerHTML = `<tr><td colspan="9" class="px-6 py-12 text-center text-gray-500">No calibration records found</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="10" class="px-6 py-12 text-center text-gray-500">No calibration records found</td></tr>`;
+    recordCount.textContent = "Showing 0 records";
     return;
   }
 
-  // ✅ เก็บ record ล่าสุดของแต่ละ Seriesnumber
   const latestMap = {};
   rows.forEach(r => {
     if (!latestMap[r.Seriesnumber] || new Date(r.Timestamp) > new Date(latestMap[r.Seriesnumber].Timestamp)) {
       latestMap[r.Seriesnumber] = r;
     }
   });
-  const latestRows = Object.values(latestMap);
+  let latestRows = Object.values(latestMap);
 
-  const html = rows.map(cal=>`
+  // ✅ กรองไม่ให้แสดง Missing
+  latestRows = latestRows.filter(r => r.Status !== "Missing");
+  latestRows = latestRows.filter(r => r.Status !== "Damage");
+
+  // ✅ ให้ sort ใช้ข้อมูลล่าสุดเสมอ
+  window.currentRows = latestRows;
+
+  // ✅ update recordCount ตามที่แสดงจริง
+  recordCount.textContent = `Showing ${latestRows.length} records`;
+
+  const html = latestRows.map(cal=>`
     <tr class="hover:bg-gray-50">
-      <td class="px-4 py-3"><div class="font-medium">${escapeHtml(cal.Equipment||'')}</td>
+      <td class="px-4 py-3">${escapeHtml(cal.LineID||'')}</td>
       <td class="px-4 py-3">${escapeHtml(cal.Station||'')}</td>
-      <td class="px-4 py-3"><div class="font-medium">${escapeHtml(cal.Brand||'')}</div><div class="text-gray-500 text-xs">${escapeHtml(cal.Model||'')}</div></td>
-      <td class="px-4 py-3"><div class="font-medium">${escapeHtml(cal.AssetNumber||'')}</div><div class="text-gray-500 text-xs">${escapeHtml(cal.Seriesnumber||'')}</div></td>
+      <td class="px-4 py-3">${escapeHtml(cal.Equipment||'')}</td>
+      <td class="px-4 py-3">
+        <div class="font-medium">${escapeHtml(cal.Brand||'')}</div>
+        <div class="text-gray-500 text-xs">${escapeHtml(cal.Model||'')}</div>
+      </td>
+      <td class="px-4 py-3">
+        <div class="font-medium">${escapeHtml(cal.AssetNumber||'')}</div>
+        <div class="text-gray-500 text-xs">${escapeHtml(cal.Seriesnumber||'')}</div>
+      </td>
       <td class="px-4 py-3">${escapeHtml(cal.DT||'')}</td>
       <td class="px-4 py-3">${cal.StartDate?fmtDate(cal.StartDate):''}</td>
       <td class="px-4 py-3">${cal.EndDate?fmtDate(cal.EndDate):''}</td>
+      <td class="px-4 py-3">${escapeHtml(cal.Comment||'')}</td>
       <td class="px-4 py-3">
         ${statusBadge(cal.Status||'')}
         ${countdownBar(cal.StartDate, cal.EndDate)}
@@ -365,6 +461,7 @@ function updateSortIcons() {
         </div>
       </td>
     </tr>`).join('');
+
   tableBody.innerHTML = html;
   window.lucide?.createIcons?.();
 }
@@ -519,10 +616,10 @@ function countdownBar(startDate, endDate) {
     function closeHistory(){ historyModal.classList.add('hidden'); historyModal.classList.remove('flex'); }
 
     addBtn.addEventListener('click', ()=> openModal());
+    document.getElementById('overdueBtn').addEventListener('click', ()=> loadOverdue());
     refreshBtn.addEventListener('click', ()=> loadData());
     closeModalBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
-    document.getElementById('modal').addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
     document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !modal.classList.contains('hidden')) closeModal(); if(e.key==='Escape' && !historyModal.classList.contains('hidden')) closeHistory(); });
 
     const debounce=(fn,ms=300)=>{let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
@@ -531,6 +628,52 @@ function countdownBar(startDate, endDate) {
     [stationFilter, statusFilter, lineFilter].forEach(el=> el.addEventListener('change', onFilterChange));
 
     (async function init(){ window.lucide?.createIcons?.(); try{ await loadChoices(); }catch(err){ toast('error','โหลดรายการตัวเลือกไม่สำเร็จ', String(err)); } try{ await loadData(); }catch(err){ loadingRow.style.display = 'none'; toast('error','โหลดข้อมูลไม่สำเร็จ', String(err)); }})();
+
+    async function loadOverdue() {
+        try {
+            const rows = await fetchJSON(api(CAL_API + '/'));
+            const today = new Date();
+
+            const overdue = rows.filter(r => {
+                if (!r.EndDate || r.Status === "Missing") return false; // ❌ ตัด Missing ออก
+                const end = new Date(r.EndDate);
+                const diffDays = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+                return diffDays >= 0 && diffDays < 30;
+            });
+
+            const overdueBody = document.getElementById('overdueBody');
+            if (!overdue.length) {
+                overdueBody.innerHTML = `<tr><td colspan="9" class="px-6 py-6 text-center text-gray-500">🎉 No overdue records</td></tr>`;
+            } else {
+                overdueBody.innerHTML = overdue.map(cal => `
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-2">${escapeHtml(cal.LineID||'')}</td>
+              <td class="px-4 py-2">${escapeHtml(cal.Station||'')}</td>
+              <td class="px-4 py-2">${escapeHtml(cal.Equipment||'')}</td>
+              <td class="px-4 py-2">${escapeHtml(cal.Brand||'')} / ${escapeHtml(cal.Model||'')}</td>
+              <td class="px-4 py-2">${escapeHtml(cal.AssetNumber||'')} / ${escapeHtml(cal.Seriesnumber||'')}</td>
+              <td class="px-4 py-2">${escapeHtml(cal.DT||'')}</td>
+              <td class="px-4 py-2">${cal.StartDate?fmtDate(cal.StartDate):''}</td>
+              <td class="px-4 py-2">${cal.EndDate?fmtDate(cal.EndDate):''}</td>
+              <td class="px-4 py-2">${statusBadge(cal.Status||'')}</td>
+            </tr>
+          `).join('');
+            }
+
+            document.getElementById('overdueModal').classList.remove('hidden');
+            document.getElementById('overdueModal').classList.add('flex');
+            window.lucide?.createIcons?.();
+        } catch (err) {
+            toast('error', 'โหลด overdue ล้มเหลว', String(err));
+        }
+    }
+
+    function closeOverdue() {
+        document.getElementById('overdueModal').classList.add('hidden');
+        document.getElementById('overdueModal').classList.remove('flex');
+    }
+
+
   </script>
 </body>
 </html>

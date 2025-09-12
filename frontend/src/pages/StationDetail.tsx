@@ -468,7 +468,7 @@ export default function StationDetail() {
                                         }
                                         className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200"
                                     >
-                                        {col} {sort.column === col ? (sort.dir === "asc" ? "" : "") : ""}
+                                        {col} {sort.column === col ? (sort.dir === "asc" ? "▲" : "▼") : ""}
                                     </th>
                                 ))}
                             </tr>
@@ -476,7 +476,7 @@ export default function StationDetail() {
                             <tbody>
                             {visibleData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-4 text-slate-400">
+                                                                         <td colSpan={6} className="text-center py-4 text-slate-400">
                                         No data
                                     </td>
                                 </tr>
@@ -493,8 +493,8 @@ export default function StationDetail() {
                                         <td className="px-3 py-2 text-slate-200">{row.model}</td>
                                         <td className="px-3 py-2 text-slate-200">{row.testerId}</td>
                                         <td className="px-3 py-2 text-slate-200">{row.fixtureId}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
+                                                                                 <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
+                                         <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
                                     </tr>
                                 ))
                             )}

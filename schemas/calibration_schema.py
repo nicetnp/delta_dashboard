@@ -2,7 +2,28 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
+# -----------------------
+# Base Schema
+# -----------------------
 class CalibrationBase(BaseModel):
+    Station: Optional[str] = None
+    Equipment: Optional[str] = None
+    Brand: Optional[str] = None
+    Model: Optional[str] = None
+    DT: Optional[str] = None
+    StartDate: Optional[datetime] = None
+    EndDate: Optional[datetime] = None
+    LineID: Optional[str] = None
+    Comment: Optional[str] = None
+    Status: Optional[str] = None
+    Seriesnumber: Optional[str] = None
+    Responsible: Optional[str] = None
+    AssetNumber: Optional[str] = None
+
+# -----------------------
+# Create / Update
+# -----------------------
+class CalibrationCreate(CalibrationBase):
     Station: str
     Equipment: str
     Brand: str
@@ -11,33 +32,51 @@ class CalibrationBase(BaseModel):
     StartDate: datetime
     EndDate: datetime
     LineID: str
-    Comment: Optional[str] = None
     Status: str
     Seriesnumber: str
     Responsible: str
     AssetNumber: str
 
-class CalibrationCreate(CalibrationBase):
+class CalibrationUpdate(CalibrationBase):
     pass
 
-class CalibrationUpdate(BaseModel):
-    Station: Optional[str]
-    Equipment: Optional[str]
-    Brand: Optional[str]
-    Model: Optional[str]
-    DT: Optional[str]
-    StartDate: Optional[datetime]
-    EndDate: Optional[datetime]
-    LineID: Optional[str]
-    Comment: Optional[str]
-    Status: Optional[str]
-    Seriesnumber: Optional[str]
-    Responsible: Optional[str]
-    AssetNumber: Optional[str]
-
+# -----------------------
+# Response
+# -----------------------
 class CalibrationResponse(CalibrationBase):
     ID: int
-    Timestamp: datetime
+    Timestamp: Optional[datetime] = None
+    IsDeleted: Optional[bool] = False
+    DeletedBy: Optional[str] = None
+    DeletedDate: Optional[datetime] = None
 
     class Config:
-        from_attributes = True
+        orm_mode = True
+
+# -----------------------
+# History Response
+# -----------------------
+class CalibrationHistoryResponse(BaseModel):
+    HistoryID: int
+    CalibrationID: int
+    Seriesnumber: str
+    Version: int
+    ActionType: str
+    ActionBy: str
+    ActionDate: datetime
+
+    Station: Optional[str] = None
+    Equipment: Optional[str] = None
+    Brand: Optional[str] = None
+    Model: Optional[str] = None
+    DT: Optional[str] = None
+    StartDate: Optional[datetime] = None
+    EndDate: Optional[datetime] = None
+    LineID: Optional[str] = None
+    Comment: Optional[str] = None
+    Status: Optional[str] = None
+    Responsible: Optional[str] = None
+    AssetNumber: Optional[str] = None
+
+    class Config:
+        orm_mode = True

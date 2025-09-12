@@ -18,6 +18,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
     { path: '/station-detail', label: 'Station Detail', icon: '🏭' },
     { path: '/tester-detail', label: 'Tester Detail', icon: '🔧' },
     { path: '/fixture-detail', label: 'Fixture Detail', icon: '⚙️' },
+    { path: '/calibration', label: 'Calibration', icon: '🔬' },
   ];
 
   return (

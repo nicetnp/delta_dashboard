@@ -56,6 +56,7 @@ export default function TesterDetail() {
     const [filtered, setFiltered] = useState<FailureRecord[] | null>(null);
     const [chartType, setChartType] = useState<"testerId" | "failItem">("testerId");
     const [search, setSearch] = useState("");
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const [sort, setSort] = useState<{ column: keyof FailureRecord; dir: "asc" | "desc" }>({
         column: "workDate",
         dir: "desc",
@@ -88,6 +89,24 @@ export default function TesterDetail() {
         };
         return () => ws.close();
     }, [lineId, station, startDate, endDate]);
+
+    // Handle scroll to show/hide scroll-to-top button
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 300);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Scroll to top function
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
 
     // Draw Chart
     useEffect(() => {
@@ -546,6 +565,20 @@ export default function TesterDetail() {
                     </button>
                 </div>
             </div>
+
+            {/* Scroll to Top Button */}
+            {showScrollTop && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    title="Scroll to Top"
+                    aria-label="Scroll to Top"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                </button>
+            )}
         </Layout>
     );
 }

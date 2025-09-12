@@ -65,9 +65,10 @@ export default function Calibration() {
         models: {},
         lines: [],
         responsible: [],
-        statuses: ['Spare', 'Missing', 'Damage', 'On-Station', 'On-Calibration']
+        statuses: ['Spare', 'Missing', 'Damage', 'On-Station', 'On-Calibration', 'On-Test']
     });
     const [dueSoonItems, setDueSoonItems] = useState<CalibrationRow[]>([]);
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [historySerialNumber, setHistorySerialNumber] = useState("");
@@ -448,6 +449,24 @@ export default function Calibration() {
         // User needs to select filters first
     }, []);
 
+    // Handle scroll to show/hide scroll-to-top button
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 300);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Scroll to top function
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
+
     // Filter and sort rows based on search, filters, and sort config
     const filteredAndSortedRows = (() => {
         // First filter
@@ -678,10 +697,10 @@ export default function Calibration() {
                             <thead className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 border-b border-slate-600/30">
                             <tr>
                                 <th 
-                                    className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
+                                    className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
                                     onClick={() => handleSort('LineID')}
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
                                         Line
                                         {sortConfig.key === 'LineID' && (
                                             <span className="text-blue-400">
@@ -691,10 +710,10 @@ export default function Calibration() {
                                     </div>
                                 </th>
                                 <th 
-                                    className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
+                                    className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
                                     onClick={() => handleSort('Station')}
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
                                         Station
                                         {sortConfig.key === 'Station' && (
                                             <span className="text-blue-400">
@@ -704,10 +723,10 @@ export default function Calibration() {
                                     </div>
                                 </th>
                                 <th 
-                                    className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
+                                    className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
                                     onClick={() => handleSort('Equipment')}
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
                                         Equipment
                                         {sortConfig.key === 'Equipment' && (
                                             <span className="text-blue-400">
@@ -717,10 +736,10 @@ export default function Calibration() {
                                     </div>
                                 </th>
                                 <th 
-                                    className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
+                                    className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
                                     onClick={() => handleSort('Brand')}
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
                                         Brand / Model
                                         {sortConfig.key === 'Brand' && (
                                             <span className="text-blue-400">
@@ -730,10 +749,10 @@ export default function Calibration() {
                                     </div>
                                 </th>
                                 <th 
-                                    className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
+                                    className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
                                     onClick={() => handleSort('AssetNumber')}
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
                                         Asset / SN
                                         {sortConfig.key === 'AssetNumber' && (
                                             <span className="text-blue-400">
@@ -743,10 +762,10 @@ export default function Calibration() {
                                     </div>
                                 </th>
                                 <th 
-                                    className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
+                                    className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
                                     onClick={() => handleSort('DT')}
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
                                         DT
                                         {sortConfig.key === 'DT' && (
                                             <span className="text-blue-400">
@@ -756,10 +775,10 @@ export default function Calibration() {
                                     </div>
                                 </th>
                                 <th 
-                                    className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
+                                    className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
                                     onClick={() => handleSort('StartDate')}
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
                                         Start
                                         {sortConfig.key === 'StartDate' && (
                                             <span className="text-blue-400">
@@ -769,10 +788,10 @@ export default function Calibration() {
                                     </div>
                                 </th>
                                 <th 
-                                    className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
+                                    className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
                                     onClick={() => handleSort('EndDate')}
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
                                         Due Date
                                         {sortConfig.key === 'EndDate' && (
                                             <span className="text-blue-400 font-bold">
@@ -782,10 +801,10 @@ export default function Calibration() {
                                     </div>
                                 </th>
                                 <th 
-                                    className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
+                                    className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase cursor-pointer hover:bg-slate-700/50 transition-colors select-none"
                                     onClick={() => handleSort('Status')}
                                 >
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center gap-1">
                                         Status
                                         {sortConfig.key === 'Status' && (
                                             <span className="text-blue-400">
@@ -794,25 +813,25 @@ export default function Calibration() {
                                         )}
                                     </div>
                                 </th>
-                                <th className="px-3 py-2 text-left text-xs font-semibold text-slate-200 tracking-wide uppercase">Actions</th>
+                                <th className="px-3 py-2 text-center text-xs font-semibold text-slate-200 tracking-wide uppercase">Actions</th>
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-600/20">
                             {filteredRows.map((row) => (
                                 <tr key={row.ID} className="hover:bg-slate-800/30 transition-colors duration-200 group">
-                                    <td className="px-3 py-2 text-slate-200 text-sm">{row.LineID}</td>
-                                    <td className="px-3 py-2 text-slate-200 text-sm">{row.Station}</td>
-                                    <td className="px-3 py-2 text-slate-200 text-sm">{row.Equipment}</td>
-                                    <td className="px-3 py-2">
+                                    <td className="px-3 py-2 text-slate-200 text-sm text-center">{row.LineID}</td>
+                                    <td className="px-3 py-2 text-slate-200 text-sm text-center">{row.Station}</td>
+                                    <td className="px-3 py-2 text-slate-200 text-sm text-center">{row.Equipment}</td>
+                                    <td className="px-3 py-2 text-center">
                                         <div className="text-slate-200 text-sm">{row.Brand}</div>
                                         <div className="text-slate-400 text-xs">{row.Model}</div>
                                     </td>
-                                    <td className="px-3 py-2">
+                                    <td className="px-3 py-2 text-center">
                                         <div className="text-slate-200 text-sm">{row.AssetNumber}</div>
                                         <div className="text-slate-400 text-xs font-mono">{row.Seriesnumber}</div>
                                     </td>
-                                    <td className="px-3 py-2 text-slate-200 font-mono text-xs">{row.DT}</td>
-                                    <td className="px-3 py-2 text-slate-200 text-sm">
+                                    <td className="px-3 py-2 text-slate-200 font-mono text-xs text-center">{row.DT}</td>
+                                    <td className="px-3 py-2 text-slate-200 text-sm text-center">
                                         {row.StartDate
                                             ? new Date(row.StartDate).toLocaleDateString('th-TH', {
                                                 day: '2-digit',
@@ -821,7 +840,7 @@ export default function Calibration() {
                                             })
                                             : "-"}
                                     </td>
-                                    <td className="px-3 py-2">
+                                    <td className="px-3 py-2 text-center">
                                         <div className="text-slate-200 text-sm">
                                             {row.EndDate
                                                 ? new Date(row.EndDate).toLocaleDateString('th-TH', {
@@ -833,7 +852,7 @@ export default function Calibration() {
                                         </div>
                                         {getCountdownBar(row.StartDate || '', row.EndDate || '')}
                                     </td>
-                                    <td className="px-3 py-2">
+                                    <td className="px-3 py-2 text-center">
                                         <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${getStatusBadge(row.Status || '')}`}>
                                             {row.Status === 'Spare' && '🟢'}
                                             {row.Status === 'On-Station' && '🔵'}
@@ -841,8 +860,8 @@ export default function Calibration() {
                                             <span className="ml-1 text-xs">{row.Status}</span>
                                         </span>
                                     </td>
-                                    <td className="px-3 py-2">
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <td className="px-3 py-2 text-center">
+                                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                             <button 
                                                 onClick={() => openModal(row.ID)}
                                                 className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-all duration-200" 
@@ -905,7 +924,7 @@ export default function Calibration() {
                                     <option value="">Select Station</option>
                                     {dropdownOptions.stations.map(station => (
                                         <option key={station} value={station}>{station}</option>
-                                    ))}}
+                                    ))}
                                 </Select>
                             ) : (
                                 <>
@@ -920,7 +939,7 @@ export default function Calibration() {
                                     <datalist id="stationList">
                                         {dropdownOptions.stations.map(station => (
                                             <option key={station} value={station} />
-                                        ))}}
+                                        ))}
                                     </datalist>
                                 </>
                             )}
@@ -947,7 +966,7 @@ export default function Calibration() {
                                     <datalist id="equipmentList">
                                         {dropdownOptions.equipment.map(equipment => (
                                             <option key={equipment} value={equipment} />
-                                        ))}}
+                                        ))}
                                     </datalist>
                                 </>
                             )}
@@ -976,7 +995,7 @@ export default function Calibration() {
                                     <datalist id="brandList">
                                         {dropdownOptions.brands.map(brand => (
                                             <option key={brand} value={brand} />
-                                        ))}}
+                                        ))}
                                     </datalist>
                                 </>
                             )}
@@ -1056,7 +1075,7 @@ export default function Calibration() {
                                     <option value="">Select Line</option>
                                     {dropdownOptions.lines.map(line => (
                                         <option key={line} value={line}>{line}</option>
-                                    ))}}
+                                    ))}
                                 </Select>
                             ) : (
                                 <>
@@ -1071,7 +1090,7 @@ export default function Calibration() {
                                     <datalist id="lineList">
                                         {dropdownOptions.lines.map(line => (
                                             <option key={line} value={line} />
-                                        ))}}
+                                        ))}
                                     </datalist>
                                 </>
                             )}
@@ -1084,7 +1103,7 @@ export default function Calibration() {
                             <option value="">Select Status</option>
                             {dropdownOptions.statuses.map(status => (
                                 <option key={status} value={status}>{status}</option>
-                            ))}}
+                            ))}
                         </Select>
                         <div>
                             <label className="block text-sm font-semibold text-slate-200 tracking-tight mb-2">Responsible *</label>
@@ -1096,7 +1115,7 @@ export default function Calibration() {
                                     <option value="">Select Responsible</option>
                                     {dropdownOptions.responsible.map(person => (
                                         <option key={person} value={person}>{person}</option>
-                                    ))}}
+                                    ))}
                                 </Select>
                             ) : (
                                 <>
@@ -1111,7 +1130,7 @@ export default function Calibration() {
                                     <datalist id="responsibleList">
                                         {dropdownOptions.responsible.map(person => (
                                             <option key={person} value={person} />
-                                        ))}}
+                                        ))}
                                     </datalist>
                                 </>
                             )}
@@ -1188,13 +1207,14 @@ export default function Calibration() {
                                 <table className="w-full text-sm">
                                     <thead className="bg-slate-700/60 border-b border-slate-500/40">
                                         <tr>
-                                            <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Equipment</th>
-                                            <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Station</th>
-                                            <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Serial Number</th>
-                                            <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Due Date</th>
-                                            <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Days Left</th>
-                                            <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Status</th>
-                                            <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Actions</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Station</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Equipment</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Brand / Model</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">DT</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Due Date</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Days Left</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Status</th>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-600/20">
@@ -1213,19 +1233,21 @@ export default function Calibration() {
                                                 
                                                 return (
                                                     <tr key={item.ID} className="border-b border-slate-700/30 hover:bg-slate-700/20">
-                                                    <td className="p-3 text-slate-200">{item.Equipment}</td>
-                                                    <td className="p-3 text-slate-200">{item.Station}</td>
-                                                    <td className="p-3 text-slate-300 font-mono text-xs">{item.Seriesnumber}</td>
-                                                    <td className="p-3 text-slate-200 font-medium">
+                                                    <td className="p-3 text-slate-200 text-center">{item.Station}</td>
+                                                    <td className="p-3 text-slate-200 text-center">{item.Equipment}</td>
+                                                    <td className="p-3 text-center">
+                                                        <div className="text-slate-200 text-sm">{item.Brand}</div>
+                                                        <div className="text-slate-400 text-xs">{item.Model}</div>
+                                                    </td>
+                                                    <td className="p-3 text-slate-200 font-mono text-xs text-center">{item.DT}</td>
+                                                    <td className="p-3 text-slate-200 font-medium text-center">
                                                         {endDate.toLocaleDateString('th-TH', {
-                                                            year: 'numeric',
-                                                            month: '2-digit',
                                                             day: '2-digit',
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
+                                                            month: '2-digit',
+                                                            year: '2-digit'
                                                         })}
                                                     </td>
-                                                    <td className="p-3 text-slate-200">
+                                                    <td className="p-3 text-slate-200 text-center">
                                                         <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full border ${
                                                             isOverdue 
                                                                 ? 'bg-red-500/30 text-red-200 border border-red-500/50' 
@@ -1236,7 +1258,7 @@ export default function Calibration() {
                                                             {isOverdue ? `${Math.abs(daysLeft)} days overdue` : `${daysLeft} days left`}
                                                         </span>
                                                     </td>
-                                                    <td className="p-3 text-slate-200">
+                                                    <td className="p-3 text-slate-200 text-center">
                                                         <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full border ${
                                                             item.Status === 'Spare' ? 'bg-gray-500/30 text-gray-200 border-gray-500/50' :
                                                             item.Status === 'On-Station' ? 'bg-green-500/30 text-green-200 border-green-500/50' :
@@ -1249,8 +1271,8 @@ export default function Calibration() {
                                                             <span className="ml-1">{item.Status}</span>
                                                         </span>
                                                     </td>
-                                                    <td className="p-3 text-slate-200">
-                                                        <div className="flex items-center gap-1">
+                                                    <td className="p-3 text-slate-200 text-center">
+                                                        <div className="flex items-center justify-center gap-1">
                                                             <button
                                                                 onClick={() => {
                                                                     setEditingId(item.ID);
@@ -1372,7 +1394,7 @@ export default function Calibration() {
             </Modal>
 
             {/* Toast Container */}
-            <div className="fixed top-4 right-4 z-[60] space-y-2">
+            <div className="fixed top-4 right-4 z-50 space-y-2">
                 {toasts.map((toast) => (
                     <Toast
                         key={toast.id}
@@ -1383,6 +1405,20 @@ export default function Calibration() {
                     />
                 ))}
             </div>
+
+            {/* Scroll to Top Button */}
+            {showScrollTop && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    title="Scroll to Top"
+                    aria-label="Scroll to Top"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                </button>
+            )}
         </Layout>
     );
 }

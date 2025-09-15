@@ -65,13 +65,14 @@ export default function Calibration() {
         models: {},
         lines: [],
         responsible: [],
-        statuses: ['Spare', 'Missing', 'Damage', 'On-Station', 'On-Calibration', 'On-Test']
+        statuses: ['Spare', 'Missing', 'Damage', 'On-Station', 'On-Calibration']
     });
     const [dueSoonItems, setDueSoonItems] = useState<CalibrationRow[]>([]);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [historySerialNumber, setHistorySerialNumber] = useState("");
+    const [historyEquipmentName, setHistoryEquipmentName] = useState("");
     const [sortConfig, setSortConfig] = useState<{key: string | null, direction: 'asc' | 'desc'}>({
         key: 'EndDate',
         direction: 'asc'
@@ -416,7 +417,7 @@ export default function Calibration() {
         setIsDueSoonModalOpen(true);
     };
 
-    const viewHistory = async (serialNumber: string) => {
+    const viewHistory = async (serialNumber: string, equipmentName: string) => {
         try {
             const response = await fetch(`http://localhost:8000/calibration/history/${serialNumber}`);
             if (!response.ok) throw new Error('Failed to fetch history');
@@ -429,6 +430,7 @@ export default function Calibration() {
             
             setHistoryData(historyData);
             setHistorySerialNumber(serialNumber);
+            setHistoryEquipmentName(equipmentName);
             setIsHistoryModalOpen(true);
         } catch (error) {
             console.error('Error fetching history:', error);
@@ -522,7 +524,7 @@ export default function Calibration() {
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-right">
-                            <h2 className="text-xl font-bold text-slate-100">History for SN: {historySerialNumber}</h2>
+                            <h2 className="text-xl font-bold text-slate-100">History for {historyEquipmentName}</h2>
                             <div className="text-sm text-slate-400">Active Records</div>
                         </div>
                         <div className="w-px h-12 bg-slate-600"></div>
@@ -881,7 +883,7 @@ export default function Calibration() {
                                                 </svg>
                                             </button>
                                             <button 
-                                                onClick={() => viewHistory(row.Seriesnumber || '')}
+                                                onClick={() => viewHistory(row.Seriesnumber || '', row.Equipment || '')}
                                                 className="p-1 text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded transition-all duration-200" 
                                                 title="View History"
                                             >
@@ -1313,7 +1315,7 @@ export default function Calibration() {
             <Modal
                 isOpen={isHistoryModalOpen}
                 onClose={() => setIsHistoryModalOpen(false)}
-                title={`History for SN: ${historySerialNumber}`}
+                title={`History for ${historyEquipmentName}`}
                 size="xl"
             >
                 <div className="space-y-4">
@@ -1328,20 +1330,19 @@ export default function Calibration() {
                             <table className="w-full text-sm">
                                 <thead className="bg-slate-700/60 border-b border-slate-500/40">
                                     <tr>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Version</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Action</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">By</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Date</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Station</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Equipment</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">Brand / Model</th>
-                                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-100">DT / SN</th>
+                                        <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Action</th>
+                                        <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Line ID</th>
+                                        <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Station</th>
+                                        <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">DT</th>
+                                        <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Date</th>
+                                        <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Comment</th>
+                                        <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Responsible</th>
+                                        <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-600/20">
                                     {historyData.map((record, index) => (
                                         <tr key={index} className="hover:bg-slate-700/30 transition-colors">
-                                            <td className="px-3 py-2 text-slate-300 text-center">{record.Version || ''}</td>
                                             <td className="px-3 py-2 text-center">
                                                 <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${
                                                     record.ActionType === 'INSERT' ? 'bg-green-500/20 text-green-300' :
@@ -1355,7 +1356,9 @@ export default function Calibration() {
                                                     <span className="ml-1">{record.ActionType || ''}</span>
                                                 </span>
                                             </td>
-                                            <td className="px-3 py-2 text-slate-300 text-center">{record.ActionBy || ''}</td>
+                                            <td className="px-3 py-2 text-slate-300 text-center">{record.LineID || ''}</td>
+                                            <td className="px-3 py-2 text-slate-300 text-center">{record.Station || ''}</td>
+                                            <td className="px-3 py-2 text-slate-300 text-center">{record.DT || ''}</td>
                                             <td className="px-3 py-2 text-slate-300 text-center">
                                                 {record.ActionDate ? new Date(record.ActionDate).toLocaleDateString('th-TH', {
                                                     day: '2-digit',
@@ -1365,16 +1368,9 @@ export default function Calibration() {
                                                     minute: '2-digit'
                                                 }) : ''}
                                             </td>
-                                            <td className="px-3 py-2 text-slate-300 text-center">{record.Station || ''}</td>
-                                            <td className="px-3 py-2 text-slate-100">{record.Equipment || ''}</td>
-                                            <td className="px-3 py-2 text-slate-300">
-                                                <div className="font-medium">{record.Brand || ''}</div>
-                                                <div className="text-xs text-slate-400">{record.Model || ''}</div>
-                                            </td>
-                                            <td className="px-3 py-2 text-slate-300">
-                                                <div className="font-medium">{record.DT || ''}</div>
-                                                <div className="text-xs text-slate-400 font-mono">{record.Seriesnumber || ''}</div>
-                                            </td>
+                                            <td className="px-3 py-2 text-slate-300 text-center">{record.Comment || ''}</td>
+                                            <td className="px-3 py-2 text-slate-300 text-center">{record.Responsible || ''}</td>
+                                            <td className="px-3 py-2 text-slate-300 text-center">{record.Status || ''}</td>
                                         </tr>
                                     ))}
                                 </tbody>

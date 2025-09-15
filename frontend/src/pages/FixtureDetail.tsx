@@ -6,6 +6,8 @@ import Layout from "../components/Layout";
 import Card from "../components/Card";
 
 interface FailureRecord {
+    sn: string;
+    model: string;
     testerId: string;
     fixtureId: string;
     failItem: string;
@@ -392,6 +394,8 @@ export default function FixtureDetail() {
     const visibleData = (filtered || data)
         .filter(
             (r) =>
+                r.sn.toLowerCase().includes(search.toLowerCase()) ||
+                r.model.toLowerCase().includes(search.toLowerCase()) ||
                 r.testerId.toLowerCase().includes(search.toLowerCase()) ||
                 r.fixtureId.toLowerCase().includes(search.toLowerCase()) ||
                 r.failItem.toLowerCase().includes(search.toLowerCase()) ||
@@ -457,7 +461,7 @@ export default function FixtureDetail() {
                         <table className="w-full border-collapse text-sm text-center">
                             <thead>
                             <tr>
-                                {["testerId", "fixtureId", "failItem", "workDate"].map((col) => (
+                                {["sn", "model", "testerId", "fixtureId", "failItem", "workDate"].map((col) => (
                                     <th
                                         key={col}
                                         onClick={() =>
@@ -476,7 +480,7 @@ export default function FixtureDetail() {
                             <tbody>
                             {visibleData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="text-center py-4 text-slate-400">
+                                    <td colSpan={6} className="text-center py-4 text-slate-400">
                                         No data
                                     </td>
                                 </tr>
@@ -489,6 +493,8 @@ export default function FixtureDetail() {
                                             i % 2 === 0 ? "bg-slate-800/30" : "bg-slate-700/20"
                                         )}
                                     >
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.sn}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.model}</td>
                                         <td className="px-3 py-2 text-slate-200 text-center">{row.testerId}</td>
                                         <td className="px-3 py-2 text-slate-200 text-center">{row.fixtureId}</td>
                                         <td className="px-3 py-2 text-slate-200 text-center">{row.failItem}</td>

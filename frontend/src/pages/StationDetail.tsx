@@ -24,6 +24,7 @@ export default function StationDetail() {
     const lineId = searchParams.get("lineId") || "";
     const station = searchParams.get("station") || "";
     const workDate = searchParams.get("workDate") || "";
+    const chartColor = searchParams.get("color") || "#f7941d";
 
     const [data, setData] = useState<FailureRecord[]>([]);
     const [chartType, setChartType] = useState<"testerId" | "failItem">("testerId");
@@ -95,12 +96,13 @@ export default function StationDetail() {
                     {
                         label: chartType === "testerId" ? "Failures by Tester" : "Top 5 Failed Items",
                         data: sorted.map(([, v]) => v),
-                        backgroundColor: "#f7941d",
+                        backgroundColor: chartColor,
                     },
                 ],
             },
             options: {
                 responsive: true,
+                indexAxis: chartType === "failItem" ? 'y' : 'x',
                 onClick: (_, elements) => {
                     if (!elements.length) return;
                     const idx = elements[0].index;
@@ -113,7 +115,7 @@ export default function StationDetail() {
                         // This is a double click - show line chart for the selected category
                         const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
                         const filteredData = data.filter(row => (row[filterColumn] || '') === label);
-                        createLineChart(filteredData, label, station, "#f7941d");
+                        createLineChart(filteredData, label, station, chartColor);
                     } else {
                         // This is a single click - filter table
                         clickTimerRef.current = setTimeout(() => {
@@ -355,12 +357,13 @@ export default function StationDetail() {
                         {
                             label: chartType === "testerId" ? "Failures by Tester" : "Top 5 Failed Items",
                             data: sorted.map(([, v]) => v),
-                            backgroundColor: "#f7941d",
+                            backgroundColor: chartColor,
                         },
                     ],
                 },
                 options: {
                     responsive: true,
+                    indexAxis: chartType === "failItem" ? 'y' : 'x',
                     onClick: (_, elements) => {
                         if (!elements.length) return;
                         const idx = elements[0].index;
@@ -372,13 +375,13 @@ export default function StationDetail() {
 
                             // This is a double click - show line chart for the selected category
                             const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
-                            const filteredData = data.filter(row => (row[filterColumn] || '0') === label);
-                            createLineChart(filteredData, label, station, "#f7941d");
+                            const filteredData = data.filter(row => (row[filterColumn] || '') === label);
+                            createLineChart(filteredData, label, station, chartColor);
                         } else {
                             // This is a single click - filter table
                             clickTimerRef.current = setTimeout(() => {
                                 const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
-                                const filteredData = data.filter(row => (row[filterColumn] || '0') === label);
+                                const filteredData = data.filter(row => (row[filterColumn] || '') === label);
                                 setFiltered(filteredData);
                                 clickTimerRef.current = null;
                             }, 200);
@@ -405,7 +408,7 @@ export default function StationDetail() {
             // Remove back button
             backButton.remove();
         };
-    }, [data, chartType, station]);
+    }, [data, chartType, station, chartColor]);
 
 
 
@@ -476,7 +479,7 @@ export default function StationDetail() {
                         <table className="w-full border-collapse text-sm">
                             <thead>
                             <tr>
-                                {["sn", "model", "testerId", "fixtureId", "failItem", "workDate", "report"].map((col) => (
+                                {["sn", "model", "testerId", "fixtureId", "failItem", "workDate"].map((col) => (
                                     <th
                                         key={col}
                                         onClick={() =>
@@ -487,7 +490,7 @@ export default function StationDetail() {
                                         }
                                         className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200"
                                     >
-                                        {col === "report" ? "รายงาน" : col} {sort.column === col ? (sort.dir === "asc" ? "▲" : "▼") : ""}
+                                        {col} {sort.column === col ? (sort.dir === "asc" ? "▲" : "▼") : ""}
                                     </th>
                                 ))}
                             </tr>
@@ -495,7 +498,7 @@ export default function StationDetail() {
                             <tbody>
                             {visibleData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4 text-slate-400">
+                                    <td colSpan={6} className="text-center py-4 text-slate-400">
                                         No data
                                     </td>
                                 </tr>
@@ -514,50 +517,6 @@ export default function StationDetail() {
                                         <td className="px-3 py-2 text-slate-200">{row.fixtureId}</td>
                                         <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
                                         <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
-                                        <td className="px-3 py-2">
-                                            <button
-                                                onClick={async () => {
-                                                    try {
-                                                        const serialNumber = row.sn;
-                                                        // Use station name directly - let backend handle pattern mapping
-                                                        const stationPattern = station || "";
-                                                        
-                                                        // Search for report files
-                                                        const searchUrl = `http://localhost:8000/reports/search?serial_number=${serialNumber}&station=${stationPattern}`;
-                                                        const searchResponse = await fetch(searchUrl);
-                                                        const searchResult = await searchResponse.json();
-                                                        
-                                                        if (searchResult.found && searchResult.files.length > 0) {
-                                                            // Show search results
-                                                            const fileList = searchResult.files.map((file: any, index: number) => 
-                                                                `${index + 1}. ${file.filename} (${(file.size / 1024).toFixed(1)} KB)`
-                                                            ).join('\n');
-                                                            
-                                                            const message = `พบไฟล์รายงาน ${searchResult.count} ไฟล์:\n\n${fileList}\n\nคลิก OK เพื่อเปิดไฟล์แรก หรือ Cancel เพื่อยกเลิก`;
-                                                            
-                                                            if (confirm(message)) {
-                                                                const firstFile = searchResult.files[0];
-                                                                const openUrl = `http://localhost:8000/reports/open/${firstFile.filename}`;
-                                                                window.open(openUrl, '_blank');
-                                                            }
-                                                        } else {
-                                                            alert(`ไม่พบไฟล์รายงาน\nค้นหา: ${serialNumber} + ${stationPattern}\nใน: \\\\10.150.208.54\\holmes$\\TestData`);
-                                                        }
-                                                    } catch (error) {
-                                                        console.error('Error:', error);
-                                                        alert('เกิดข้อผิดพลาดในการค้นหาไฟล์รายงาน');
-                                                    }
-                                                }}
-                                                className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center gap-1"
-                                                title="เปิดรายงานการทดสอบ"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                                เปิดรายงาน
-                                            </button>
-                                        </td>
                                     </tr>
                                 ))
                             )}

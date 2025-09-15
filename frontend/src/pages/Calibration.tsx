@@ -71,7 +71,7 @@ export default function Calibration() {
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [historyData, setHistoryData] = useState<any[]>([]);
-    const [historySerialNumber, setHistorySerialNumber] = useState("");
+    // const [historySerialNumber, setHistorySerialNumber] = useState("");
     const [historyEquipmentName, setHistoryEquipmentName] = useState("");
     const [sortConfig, setSortConfig] = useState<{key: string | null, direction: 'asc' | 'desc'}>({
         key: 'EndDate',
@@ -429,7 +429,7 @@ export default function Calibration() {
             }
             
             setHistoryData(historyData);
-            setHistorySerialNumber(serialNumber);
+            // setHistorySerialNumber(serialNumber);
             setHistoryEquipmentName(equipmentName);
             setIsHistoryModalOpen(true);
         } catch (error) {

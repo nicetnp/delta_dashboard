@@ -135,10 +135,12 @@ export default function FailureChart({
                     const mapped = stationMap[station];
                     const workDate = data[index]?.workDate;
                     if (mapped && workDate) {
+                        const stationColor = stationColors[station];
                         const params = new URLSearchParams({
                             lineId,
                             station: mapped,
                             workDate,
+                            color: stationColor,
                             _ts: String(Date.now()),
                         });
                         navigate(`/station-detail?${params.toString()}`);

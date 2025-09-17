@@ -71,7 +71,7 @@ export default function Calibration() {
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [historyData, setHistoryData] = useState<any[]>([]);
-    const [historySerialNumber, setHistorySerialNumber] = useState("");
+    const [, setHistorySerialNumber] = useState("");
     const [historyEquipmentName, setHistoryEquipmentName] = useState("");
     const [sortConfig, setSortConfig] = useState<{key: string | null, direction: 'asc' | 'desc'}>({
         key: 'EndDate',
@@ -280,6 +280,27 @@ export default function Calibration() {
                 </div>
             </div>
         );
+    };
+
+    // Function to get row highlight class based on expiry and status
+    const getRowHighlight = (_startDate: string, endDate: string, status: string) => {
+        if (!endDate) return "hover:bg-slate-800/30";
+        
+        const today = new Date();
+        const end = new Date(endDate);
+        const isExpired = end.getTime() < today.getTime();
+        
+        if (isExpired) {
+            if (status === 'On-Calibration') {
+                // Yellow highlight for expired items that are On-Calibration
+                return "bg-yellow-500/20 border-l-4 border-yellow-500 hover:bg-yellow-500/30";
+            } else {
+                // Red highlight for expired items
+                return "bg-red-500/20 border-l-4 border-red-500 hover:bg-red-500/30";
+            }
+        }
+        
+        return "hover:bg-slate-800/30";
     };
 
     // Modal functions
@@ -820,7 +841,7 @@ export default function Calibration() {
                             </thead>
                             <tbody className="divide-y divide-slate-600/20">
                             {filteredRows.map((row) => (
-                                <tr key={row.ID} className="hover:bg-slate-800/30 transition-colors duration-200 group">
+                                <tr key={row.ID} className={`${getRowHighlight(row.StartDate || '', row.EndDate || '', row.Status || '')} transition-colors duration-200 group`}>
                                     <td className="px-3 py-2 text-slate-200 text-sm text-center">{row.LineID}</td>
                                     <td className="px-3 py-2 text-slate-200 text-sm text-center">{row.Station}</td>
                                     <td className="px-3 py-2 text-slate-200 text-sm text-center">{row.Equipment}</td>

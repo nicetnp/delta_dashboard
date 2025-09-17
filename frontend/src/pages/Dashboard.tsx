@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
@@ -17,6 +17,7 @@ export default function Dashboard() {
     const [lineId, setLineId] = useSessionState<string>("lineId", "BMA01");
     const [startDate, setStartDate] = useSessionState<string>("startDate", today);
     const [endDate, setEndDate] = useSessionState<string>("endDate", today);
+    const [showScrollTop, setShowScrollTop] = useState(false);
 
     const { data, connected } = useFailuresWS({ lineId, startDate, endDate });
     const triggerKey = useMemo(() => (data.length ? `${data[0].workDate}-${data.length}` : ""), [data]);
@@ -37,6 +38,24 @@ export default function Dashboard() {
         setEndDate(today);
     }, [setStartDate, setEndDate, today]);
 
+    // Handle scroll to show/hide scroll-to-top button
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 300);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Scroll to top function
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
+
     // Calculate summary statistics with useMemo for performance
     const summaryStats = useMemo(() => {
         const totalFailures = data.reduce((sum, row) => sum + (row.total || 0), 0);
@@ -53,7 +72,9 @@ export default function Dashboard() {
             <div className="mb-10">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-bold text-slate-100 mb-3 tracking-tight">Manufacturing Dashboard</h1>
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-3 tracking-tight">
+                            Failures Dashboard
+                        </h1>
                         <p className="text-slate-400 text-lg font-medium">Real-time failure analysis and monitoring</p>
                     </div>
                     <StatusBadge status={connected ? 'connected' : 'disconnected'} size="lg" />
@@ -159,6 +180,20 @@ export default function Dashboard() {
             <Card title="Summary Table" subtitle="Click on failure counts to view details" icon="📋" variant="elevated">
                 <DataTable rows={data as FailureRow[]} lineId={lineId} />
             </Card>
+
+            {/* Scroll to Top Button */}
+            {showScrollTop && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    title="Scroll to Top"
+                    aria-label="Scroll to Top"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                </button>
+            )}
         </Layout>
     );
 }

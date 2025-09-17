@@ -6,6 +6,8 @@ import Layout from "../components/Layout";
 import Card from "../components/Card";
 
 interface FailureRecord {
+    sn: string;
+    model: string;
     testerId: string;
     fixtureId: string;
     failItem: string;
@@ -27,6 +29,7 @@ export default function FixtureDetail() {
     const [filtered, setFiltered] = useState<FailureRecord[] | null>(null);
     const [chartType, setChartType] = useState<"fixtureId" | "failItem">("fixtureId");
     const [search, setSearch] = useState("");
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const [sort, setSort] = useState<{ column: keyof FailureRecord; dir: "asc" | "desc" }>({
         column: "workDate",
         dir: "desc",
@@ -58,13 +61,31 @@ export default function FixtureDetail() {
         return () => ws.close();
     }, [lineId, startDate, endDate]);
 
+    // Handle scroll to show/hide scroll-to-top button
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 300);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Scroll to top function
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
+
     // Draw Chart
     useEffect(() => {
         if (!canvasRef.current || isLineChart) return;
         if (chartRef.current) chartRef.current.destroy();
 
         // Filter out "onstation" data
-        const filteredData = data.filter(item => 
+        const filteredData = data.filter(item =>
             item.fixtureId && item.fixtureId.toLowerCase() !== "onstation"
         );
 
@@ -130,12 +151,12 @@ export default function FixtureDetail() {
                     if (clickTimerRef.current) {
                         clearTimeout(clickTimerRef.current);
                         clickTimerRef.current = null;
-                        
+
                         // This is a double click - show line chart for the selected category
                         let filteredData: FailureRecord[];
-                    if (chartType === "failItem") {
+                        if (chartType === "failItem") {
                             const [fixtureId, failItem] = label.split(" - ");
-                            filteredData = data.filter(r => 
+                            filteredData = data.filter(r =>
                                 r.fixtureId === fixtureId && r.failItem === failItem
                             );
                         } else {
@@ -148,7 +169,7 @@ export default function FixtureDetail() {
                             let filteredData: FailureRecord[];
                             if (chartType === "failItem") {
                                 const [fixtureId, failItem] = label.split(" - ");
-                                filteredData = data.filter(r => 
+                                filteredData = data.filter(r =>
                                     r.fixtureId === fixtureId && r.failItem === failItem
                                 );
                             } else {
@@ -187,12 +208,12 @@ export default function FixtureDetail() {
     // Function to create line chart for specific category (like in templates)
     const createLineChart = useCallback((data: FailureRecord[], label: string, color: string) => {
         if (data.length === 0) return;
-        
+
         setIsLineChart(true);
         setSelectedCategory(label);
         // Set filtered data to show in table (like single click)
         setFiltered(data);
-        
+
         // Generate date range from startDate to endDate
         const generateDateRange = (start: string, end: string) => {
             const dates = [];
@@ -220,7 +241,7 @@ export default function FixtureDetail() {
 
         // Create line chart
         if (chartRef.current) chartRef.current.destroy();
-        
+
         chartRef.current = new Chart(canvasRef.current!, {
             type: 'line',
             data: {
@@ -338,7 +359,7 @@ export default function FixtureDetail() {
         backButton.style.marginLeft = 'auto';
         backButton.style.marginRight = 'auto';
         backButton.style.marginTop = '20px';
-        
+
         // Set button text based on chart type
         const buttonText = chartType === "failItem" ? 'Back to Top 5 Failed Chart' : 'Back to Fixture Chart';
         backButton.textContent = buttonText;
@@ -356,7 +377,7 @@ export default function FixtureDetail() {
             setSelectedCategory("");
             // Clear filtered data to show all data in table
             setFiltered(null);
-            
+
             // Remove back button
             backButton.remove();
         };
@@ -373,6 +394,8 @@ export default function FixtureDetail() {
     const visibleData = (filtered || data)
         .filter(
             (r) =>
+                r.sn.toLowerCase().includes(search.toLowerCase()) ||
+                r.model.toLowerCase().includes(search.toLowerCase()) ||
                 r.testerId.toLowerCase().includes(search.toLowerCase()) ||
                 r.fixtureId.toLowerCase().includes(search.toLowerCase()) ||
                 r.failItem.toLowerCase().includes(search.toLowerCase()) ||
@@ -395,13 +418,13 @@ export default function FixtureDetail() {
                         {isLineChart ? `Time Range Analysis for ${selectedCategory}` : "Fixture Failures Dashboard"}
                     </h1>
                     <p className="text-slate-400 text-lg font-medium">Line {lineId}</p>
-                    <p className="text-slate-500 text-sm">Date range: {startDate} → {endDate}</p>
+                    <p className="text-slate-500 text-sm">Date range: {startDate}  {endDate}</p>
                 </div>
 
-                <Card 
-                    title={isLineChart ? "Time Range Analysis" : "Failure Analysis Chart"} 
-                    subtitle={isLineChart ? `Showing failures for ${selectedCategory}` : "Single click to filter table, Double click to view time range analysis"} 
-                    variant="elevated" 
+                <Card
+                    title={isLineChart ? "Time Range Analysis" : "Failure Analysis Chart"}
+                    subtitle={isLineChart ? `Showing failures for ${selectedCategory}` : "Single click to filter table, Double click to view time range analysis"}
+                    variant="elevated"
                     className="mb-8"
                 >
                     <div className="h-96 flex items-center justify-center">
@@ -409,11 +432,11 @@ export default function FixtureDetail() {
                     </div>
                 </Card>
 
-                <Card 
-                    title="Data Table" 
-                    subtitle={isLineChart ? `Showing filtered data for ${selectedCategory}` : "Click column headers to sort"} 
-                    variant="glass" 
-                    className="mb-6" 
+                <Card
+                    title="Data Table"
+                    subtitle={isLineChart ? `Showing filtered data for ${selectedCategory}` : "Click column headers to sort"}
+                    variant="glass"
+                    className="mb-6"
                     data-table-card
                 >
                     <div className="flex justify-between items-center mb-4">
@@ -438,7 +461,7 @@ export default function FixtureDetail() {
                         <table className="w-full border-collapse text-sm text-center">
                             <thead>
                             <tr>
-                                {["testerId", "fixtureId", "failItem", "workDate"].map((col) => (
+                                {["sn", "model", "testerId", "fixtureId", "failItem", "workDate"].map((col) => (
                                     <th
                                         key={col}
                                         onClick={() =>
@@ -449,7 +472,7 @@ export default function FixtureDetail() {
                                         }
                                         className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200 transition-colors duration-200 text-center"
                                     >
-                                        {col} {sort.column === col ? (sort.dir === "asc" ? "▲" : "▼") : ""}
+                                        {col} {sort.column === col ? (sort.dir === "asc" ? "" : "") : ""}
                                     </th>
                                 ))}
                             </tr>
@@ -457,7 +480,7 @@ export default function FixtureDetail() {
                             <tbody>
                             {visibleData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="text-center py-4 text-slate-400">
+                                    <td colSpan={6} className="text-center py-4 text-slate-400">
                                         No data
                                     </td>
                                 </tr>
@@ -470,6 +493,8 @@ export default function FixtureDetail() {
                                             i % 2 === 0 ? "bg-slate-800/30" : "bg-slate-700/20"
                                         )}
                                     >
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.sn}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.model}</td>
                                         <td className="px-3 py-2 text-slate-200 text-center">{row.testerId}</td>
                                         <td className="px-3 py-2 text-slate-200 text-center">{row.fixtureId}</td>
                                         <td className="px-3 py-2 text-slate-200 text-center">{row.failItem}</td>
@@ -491,6 +516,20 @@ export default function FixtureDetail() {
                     </button>
                 </div>
             </div>
+
+            {/* Scroll to Top Button */}
+            {showScrollTop && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    title="Scroll to Top"
+                    aria-label="Scroll to Top"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                </button>
+            )}
         </Layout>
     );
 }

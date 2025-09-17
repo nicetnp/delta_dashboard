@@ -24,16 +24,18 @@ export default function StationDetail() {
     const lineId = searchParams.get("lineId") || "";
     const station = searchParams.get("station") || "";
     const workDate = searchParams.get("workDate") || "";
+    const chartColor = searchParams.get("color") || "#f7941d";
 
     const [data, setData] = useState<FailureRecord[]>([]);
     const [chartType, setChartType] = useState<"testerId" | "failItem">("testerId");
     const [search, setSearch] = useState("");
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const [sort, setSort] = useState<{ column: keyof FailureRecord; dir: "asc" | "desc" }>({
         column: "workDate",
         dir: "desc",
     });
 
-    
+
     // Timer for click detection
     const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,6 +54,24 @@ export default function StationDetail() {
         };
         return () => ws.close();
     }, [lineId, station, workDate]);
+
+    // Handle scroll to show/hide scroll-to-top button
+    useEffect(() => {
+        const handleScroll = () => {
+            setShowScrollTop(window.scrollY > 300);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    // Scroll to top function
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
 
     // Draw chart
     useEffect(() => {
@@ -76,31 +96,13 @@ export default function StationDetail() {
                     {
                         label: chartType === "testerId" ? "Failures by Tester" : "Top 5 Failed Items",
                         data: sorted.map(([, v]) => v),
-                        backgroundColor: "#f7941d",
-                        borderColor: "#f7941d",
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false,
+                        backgroundColor: chartColor,
                     },
                 ],
             },
             options: {
                 responsive: true,
-                indexAxis: chartType === "failItem" ? "y" : "x",
-                animation: { duration: 300, easing: 'easeOutQuart' as any },
-                plugins: {
-                    legend: { labels: { color: '#e2e8f0' } },
-                    tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: '#ffffff',
-                        bodyColor: '#e2e8f0',
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                        borderWidth: 1,
-                        cornerRadius: 8 as any,
-                        titleFont: { size: 14, weight: 'bold' } as any,
-                        bodyFont: { size: 13 } as any,
-                    },
-                },
+                indexAxis: chartType === "failItem" ? 'y' : 'x',
                 onClick: (_, elements) => {
                     if (!elements.length) return;
                     const idx = elements[0].index;
@@ -109,11 +111,11 @@ export default function StationDetail() {
                     if (clickTimerRef.current) {
                         clearTimeout(clickTimerRef.current);
                         clickTimerRef.current = null;
-                        
+
                         // This is a double click - show line chart for the selected category
                         const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
                         const filteredData = data.filter(row => (row[filterColumn] || '') === label);
-                        createLineChart(filteredData, label, station, "#f7941d");
+                        createLineChart(filteredData, label, station, chartColor);
                     } else {
                         // This is a single click - filter table
                         clickTimerRef.current = setTimeout(() => {
@@ -133,41 +135,41 @@ export default function StationDetail() {
     // Function to create line chart for specific category (like in templates)
     const createLineChart = useCallback((data: any[], label: string, displayStationName: string, color: string) => {
         if (data.length === 0) return;
-        
+
         // Set filtered data to show in table (like single click)
         setFiltered(data);
-        
+
         // Get the workDate from the data to determine the time range
         const workDates = data.map(item => new Date(item.workDate)).filter(date => !isNaN(date.getTime()));
         if (workDates.length === 0) return;
-        
+
         const earliestDate = new Date(Math.min(...workDates.map(d => d.getTime())));
 
-        
+
         // Set time range from 7:00 of the earliest date to 7:00 of the next day
         const startTime = new Date(earliestDate);
         startTime.setHours(7, 0, 0, 0);
-        
+
         const endTime = new Date(earliestDate);
         endTime.setDate(endTime.getDate() + 1);
         endTime.setHours(7, 0, 0, 0);
-        
+
         // Generate time labels (every hour from 7:00 to 7:00)
         const timeLabels = [];
         const currentTime = new Date(startTime);
-        
+
         while (currentTime <= endTime) {
-            timeLabels.push(currentTime.toLocaleTimeString('th-TH', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+            timeLabels.push(currentTime.toLocaleTimeString('th-TH', {
+                hour: '2-digit',
+                minute: '2-digit'
             }));
             currentTime.setHours(currentTime.getHours() + 1);
         }
-        
+
         // Group data by hour based on workDate within the specified time range
         const totalHours = Math.ceil((endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
         const hourlyData = new Array(totalHours).fill(0);
-        
+
         data.forEach(item => {
             try {
                 const itemTime = new Date(item.workDate);
@@ -182,10 +184,10 @@ export default function StationDetail() {
                 console.warn('Invalid date format:', item.workDate);
             }
         });
-        
+
         // Create line chart
         if (chartRef.current) chartRef.current.destroy();
-        
+
         const newChart = new Chart(canvasRef.current!, {
             type: 'line',
             data: {
@@ -285,24 +287,24 @@ export default function StationDetail() {
                 },
             },
         });
-        
+
         chartRef.current = newChart;
-        
+
         // Update page title
         const pageTitle = document.querySelector('h1');
         if (pageTitle) {
             pageTitle.textContent = `${label}`;
         }
-        
+
         // Show table and controls (don't hide them)
         const tableCard = document.querySelector('[data-table-card]');
         if (tableCard) {
             (tableCard as HTMLElement).style.display = 'block';
         }
-        
+
         // Create back button
         createBackButton(label, displayStationName, color);
-        
+
     }, [data, chartType]);
 
     // Function to create back button (like in templates)
@@ -321,7 +323,7 @@ export default function StationDetail() {
         backButton.style.marginLeft = 'auto';
         backButton.style.marginRight = 'auto';
         backButton.style.marginTop = '20px';
-        
+
         // Set button text based on chart type
         const buttonText = chartType === "failItem" ? 'Back to Top 5 Failed Chart' : 'Back to Tester Chart';
         backButton.textContent = buttonText;
@@ -336,7 +338,7 @@ export default function StationDetail() {
         backButton.onclick = () => {
             // Restore original chart
             if (chartRef.current) chartRef.current.destroy();
-            
+
             // Recreate bar chart
             const counts: Record<string, number> = {};
             data.forEach((d) => {
@@ -355,31 +357,13 @@ export default function StationDetail() {
                         {
                             label: chartType === "testerId" ? "Failures by Tester" : "Top 5 Failed Items",
                             data: sorted.map(([, v]) => v),
-                            backgroundColor: "#f7941d",
-                            borderColor: "#f7941d",
-                            borderWidth: 2,
-                            borderRadius: 8,
-                            borderSkipped: false,
+                            backgroundColor: chartColor,
                         },
                     ],
                 },
                 options: {
                     responsive: true,
-                    indexAxis: chartType === "failItem" ? "y" : "x",
-                    animation: { duration: 300, easing: 'easeOutQuart' as any },
-                    plugins: {
-                        legend: { labels: { color: '#e2e8f0' } },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#ffffff',
-                            bodyColor: '#e2e8f0',
-                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                            borderWidth: 1,
-                            cornerRadius: 8 as any,
-                            titleFont: { size: 14, weight: 'bold' } as any,
-                            bodyFont: { size: 13 } as any,
-                        },
-                    },
+                    indexAxis: chartType === "failItem" ? 'y' : 'x',
                     onClick: (_, elements) => {
                         if (!elements.length) return;
                         const idx = elements[0].index;
@@ -388,16 +372,16 @@ export default function StationDetail() {
                         if (clickTimerRef.current) {
                             clearTimeout(clickTimerRef.current);
                             clickTimerRef.current = null;
-                            
+
                             // This is a double click - show line chart for the selected category
                             const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
-                            const filteredData = data.filter(row => (row[filterColumn] || '0') === label);
-                            createLineChart(filteredData, label, station, "#f7941d");
+                            const filteredData = data.filter(row => (row[filterColumn] || '') === label);
+                            createLineChart(filteredData, label, station, chartColor);
                         } else {
                             // This is a single click - filter table
                             clickTimerRef.current = setTimeout(() => {
                                 const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
-                                const filteredData = data.filter(row => (row[filterColumn] || '0') === label);
+                                const filteredData = data.filter(row => (row[filterColumn] || '') === label);
                                 setFiltered(filteredData);
                                 clickTimerRef.current = null;
                             }, 200);
@@ -424,7 +408,7 @@ export default function StationDetail() {
             // Remove back button
             backButton.remove();
         };
-    }, [data, chartType, station]);
+    }, [data, chartType, station, chartColor]);
 
 
 
@@ -466,11 +450,11 @@ export default function StationDetail() {
 
 
 
-                <Card 
-                    title="Data Table" 
-                    subtitle={filtered ? `Showing filtered data for selected category` : "Click column headers to sort"} 
-                    variant="glass" 
-                    className="mb-6" 
+                <Card
+                    title="Data Table"
+                    subtitle={filtered ? `Showing filtered data for selected category` : "Click column headers to sort"}
+                    variant="glass"
+                    className="mb-6"
                     data-table-card
                 >
                     <div className="flex justify-between items-center mb-4">
@@ -492,7 +476,7 @@ export default function StationDetail() {
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-sm text-center">
+                        <table className="w-full border-collapse text-sm">
                             <thead>
                             <tr>
                                 {["sn", "model", "testerId", "fixtureId", "failItem", "workDate"].map((col) => (
@@ -504,7 +488,7 @@ export default function StationDetail() {
                                                 dir: sort.dir === "asc" ? "desc" : "asc",
                                             })
                                         }
-                                        className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200 text-center"
+                                        className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200"
                                     >
                                         {col} {sort.column === col ? (sort.dir === "asc" ? "▲" : "▼") : ""}
                                     </th>
@@ -527,12 +511,12 @@ export default function StationDetail() {
                                             i % 2 === 0 ? "bg-slate-800/30" : "bg-slate-700/20"
                                         )}
                                     >
-                                        <td className="px-3 py-2 text-slate-200 text-center">{row.sn}</td>
-                                        <td className="px-3 py-2 text-slate-200 text-center">{row.model}</td>
-                                        <td className="px-3 py-2 text-slate-200 text-center">{row.testerId}</td>
-                                        <td className="px-3 py-2 text-slate-200 text-center">{row.fixtureId}</td>
-                                        <td className="px-3 py-2 text-slate-200 text-center">{row.failItem}</td>
-                                        <td className="px-3 py-2 text-slate-200 text-center">{row.workDate.replace("T", " ")}</td>
+                                        <td className="px-3 py-2 text-slate-200">{row.sn}</td>
+                                        <td className="px-3 py-2 text-slate-200">{row.model}</td>
+                                        <td className="px-3 py-2 text-slate-200">{row.testerId}</td>
+                                        <td className="px-3 py-2 text-slate-200">{row.fixtureId}</td>
+                                        <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
+                                        <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
                                     </tr>
                                 ))
                             )}
@@ -550,6 +534,20 @@ export default function StationDetail() {
                     </button>
                 </div>
             </div>
+
+            {/* Scroll to Top Button */}
+            {showScrollTop && (
+                <button
+                    onClick={scrollToTop}
+                    className="fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    title="Scroll to Top"
+                    aria-label="Scroll to Top"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                </button>
+            )}
         </Layout>
     );
 }

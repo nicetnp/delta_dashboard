@@ -52,8 +52,8 @@ def choices(db: Session = Depends(get_db)):
 
     return {
         "stations": stations, "lines": lines, "brands": brands,
-        "people": people, "equipments": equips, "statuses": statuses,
-        "modelsByBrand": models_by_brand
+        "responsible": people, "equipment": equips, "statuses": statuses,
+        "models": models_by_brand
     }
 
 # 👉 endpoint สำหรับ add choice
@@ -68,6 +68,12 @@ def add_choice(
         raise HTTPException(status_code=403, detail="Invalid passcode")
     # TODO: save to DB metadata table
     return {"message": f"{kind} '{value}' added"}
+
+@router.post("/verify_password")
+def verify_password(passcode: str = Body(..., embed=True)):
+    if passcode != SECRET_PASS:
+        raise HTTPException(status_code=403, detail="Invalid passcode")
+    return {"message": "Password verified"}
 
 @router.post("/", response_model=CalibrationResponse)
 def create(cal: CalibrationCreate, db: Session = Depends(get_db)):

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Chart } from "chart.js/auto";
 import clsx from "clsx";
-import Layout from "../components/Layout";
 import Card from "../components/Card";
+import { useRouteNavigation } from "../hooks/useRouteNavigation";
+import { API_CONFIG } from "../config/routes";
 
 interface FailureRecord {
     sn: string;
@@ -19,7 +20,7 @@ interface FailureRecord {
 
 export default function StationDetail() {
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
+    const { goBack } = useRouteNavigation();
 
     const lineId = searchParams.get("lineId") || "";
     const station = searchParams.get("station") || "";
@@ -44,7 +45,7 @@ export default function StationDetail() {
     // Connect WebSocket
     useEffect(() => {
         if (!lineId || !station) return;
-        const wsUrl = `ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}&workDate=${workDate}`;
+        const wsUrl = `${API_CONFIG.WS_BASE_URL}/failures/ws/station?lineId=${lineId}&station=${station}&workDate=${workDate}`;
         const ws = new WebSocket(wsUrl);
 
         ws.onmessage = (event) => {
@@ -432,7 +433,7 @@ export default function StationDetail() {
         });
 
     return (
-        <Layout>
+        <>
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-slate-100 mb-3 tracking-tight">{station} Failures Dashboard</h1>
@@ -524,7 +525,7 @@ export default function StationDetail() {
 
                 <div className="text-center">
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={goBack}
                         className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors duration-200"
                     >
                         Back to Summary
@@ -545,7 +546,7 @@ export default function StationDetail() {
                     </svg>
                 </button>
             )}
-        </Layout>
+        </>
     );
 }
 

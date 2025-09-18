@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Chart } from "chart.js/auto";
-import clsx from "clsx";
-import Card from "../components/Card";
-import { useRouteNavigation } from "../hooks/useRouteNavigation";
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import Chart from 'chart.js/auto';
+import clsx from 'clsx';
+import Card from '../components/Card';
+import { useRouteNavigation } from '../hooks/useRouteNavigation';
 import { API_CONFIG } from "../config/routes";
 
 interface FailureRecord {
@@ -65,6 +65,7 @@ export default function TesterDetail() {
     const [isLineChart, setIsLineChart] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string>("");
     const [selectedStation, setSelectedStation] = useState<string>("");
+    const [selectedModel, setSelectedModel] = useState<string>("");
 
     // Timer for click detection
     const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -109,41 +110,144 @@ export default function TesterDetail() {
         });
     };
 
+    // Get unique models from data
+    const uniqueModels = Array.from(new Set(data.map(d => d.model).filter(Boolean))).sort();
+
+    // Filter data by selected model with useMemo to prevent unnecessary re-renders
+    const modelFilteredData = useMemo(() => {
+        return selectedModel ? data.filter(d => d.model === selectedModel) : data;
+    }, [data, selectedModel]);
+
+    // Memoize chart data calculation to prevent unnecessary recalculations
+    const chartData = useMemo(() => {
+        const counts: Record<string, number> = {};
+        let entries: [string, number][];
+        let chartLabel = '';
+        let backgroundColors: string | string[] = '#37B019';
+        let borderColors: string | string[] = '#37B019';
+
+        const displayStationName = station ? stationMap[station] || station : 'All Stations';
+
+        if (!station && chartType === "testerId") {
+            // --- All Station Aggregation Logic ---
+            console.log('Sample testerId values from data:', modelFilteredData.slice(0, 20).map(d => d.testerId));
+            
+            modelFilteredData.forEach((d) => {
+                const testerId = d.testerId || "";
+                let stationName = "";
+
+                console.log(`Processing testerId: ${testerId}`);
+
+                // Check stationMap patterns first
+                for (const [key, value] of Object.entries(stationMap)) {
+                    const pattern = key.replace('%', '');
+                    if (testerId.includes(pattern)) {
+                        stationName = value;
+                        console.log(`Matched stationMap: ${key} (${pattern}) -> ${value}`);
+                        break;
+                    }
+                }
+
+                // If no match, try extracting base name
+                if (!stationName) {
+                    const baseName = testerId.split('_')[0];
+                    console.log(`Extracted baseName: ${baseName} from ${testerId}`);
+                    
+                    // Try direct mapping to known stations
+                    if (baseName.includes('VF') || baseName.includes('LASH')) {
+                        stationName = baseName.includes('2') ? 'VFLASH2' : 'VFLASH1';
+                    } else if (baseName.includes('HP') || baseName.includes('IPOT')) {
+                        stationName = baseName.includes('2') ? 'HIPOT2' : 'HIPOT1';
+                    } else if (baseName.includes('AT') || baseName.includes('TS')) {
+                        if (baseName.includes('3')) stationName = 'ATS3';
+                        else if (baseName.includes('2')) stationName = 'ATS2';
+                        else stationName = 'ATS1';
+                    } else if (baseName.includes('VBT') || baseName.includes('RATION')) {
+                        stationName = 'VIBRATION';
+                    } else if (baseName.includes('HUP') || baseName.includes('TUP')) {
+                        stationName = 'HEATUP';
+                    } else if (baseName.includes('BI') || baseName.includes('RN')) {
+                        stationName = 'BURNIN';
+                    } else {
+                        stationName = baseName; // Keep original if no pattern matches
+                    }
+                    
+                    console.log(`Final mapping: ${testerId} -> ${stationName}`);
+                }
+
+                if (stationName) {
+                    counts[stationName] = (counts[stationName] || 0) + 1;
+                }
+            });
+            
+            console.log('Final station counts:', counts);
+
+            const stationOrder = ['VFLASH1', 'HIPOT1', 'ATS1', 'VIBRATION', 'HEATUP', 'BURNIN', 'HIPOT2', 'ATS2', 'VFLASH2', 'ATS3'];
+            
+            entries = Object.entries(counts)
+                .filter(([, count]) => count > 0) // Filter out stations with no failures
+                .sort((a, b) => {
+                    const indexA = stationOrder.indexOf(a[0]);
+                    const indexB = stationOrder.indexOf(b[0]);
+                    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                    if (indexA !== -1) return -1;
+                    if (indexB !== -1) return 1;
+                    return a[0].localeCompare(b[0]);
+                });
+
+            chartLabel = `Failures by Station (${displayStationName})`;
+            backgroundColors = entries.map(([stationName]) => stationColors[stationName] || '#37B019');
+            borderColors = entries.map(([stationName]) => stationColors[stationName] || '#37B019');
+
+        } else {
+            // --- Default Logic for Specific Station or Fail Item ---
+            const dataset =
+                chartType === "testerId"
+                    ? modelFilteredData.map((d) => d.testerId || "N/A")
+                    : modelFilteredData.map((d) => d.failItem || "N/A");
+
+            dataset.forEach((key) => {
+                counts[key] = (counts[key] || 0) + 1;
+            });
+
+            entries = Object.entries(counts);
+            if (chartType === "failItem") {
+                entries = entries.sort((a, b) => b[1] - a[1]).slice(0, 5);
+            } else {
+                entries = entries.sort((a, b) => a[0].localeCompare(b[0]));
+            }
+            
+            chartLabel = chartType === "testerId" ? `Failures by Tester (${displayStationName})` : `Top 5 Failed Items (${displayStationName})`;
+            const stationColor = stationColors[displayStationName.toUpperCase()] || '#37B019';
+            backgroundColors = stationColor;
+            borderColors = stationColor;
+        }
+
+        return {
+            entries,
+            chartLabel,
+            backgroundColors,
+            borderColors
+        };
+    }, [modelFilteredData, chartType, station, selectedModel]);
+
     // Draw Chart
     useEffect(() => {
         if (!canvasRef.current || isLineChart) return;
         if (chartRef.current) chartRef.current.destroy();
 
-        const counts: Record<string, number> = {};
-        const dataset =
-            chartType === "testerId"
-                ? data.map((d) => d.testerId || "N/A")
-                : data.map((d) => d.failItem || "N/A");
+        const { entries, chartLabel, backgroundColors, borderColors } = chartData;
 
-        dataset.forEach((key) => {
-            counts[key] = (counts[key] || 0) + 1;
-        });
-
-        let entries = Object.entries(counts);
-        if (chartType === "failItem") {
-            entries = entries.sort((a, b) => b[1] - a[1]).slice(0, 5);
-        } else {
-            entries = entries.sort((a, b) => a[0].localeCompare(b[0]));
-        }
-
-        const displayStationName = station ? stationMap[station] || station : 'All Stations';
-        const stationColor = stationColors[displayStationName.toUpperCase()] || '#37B019';
-
-        chartRef.current = new Chart(canvasRef.current, {
+        chartRef.current = new Chart(canvasRef.current!, {
             type: "bar",
             data: {
                 labels: entries.map(([k]) => k),
                 datasets: [
                     {
-                        label: chartType === "testerId" ? `Failures by Tester (${displayStationName})` : `Top 5 Failed Items (${displayStationName})`,
+                        label: chartLabel,
                         data: entries.map(([, v]) => v),
-                        backgroundColor: stationColor,
-                        borderColor: stationColor,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
                         borderWidth: 2,
                         borderRadius: 8,
                         borderSkipped: false,
@@ -154,7 +258,25 @@ export default function TesterDetail() {
                 responsive: true,
                 maintainAspectRatio: false,
                 indexAxis: chartType === "failItem" ? "y" : "x",
-                animation: { duration: 300, easing: 'easeOutQuart' as any },
+                animation: { 
+                    duration: 800, 
+                    easing: 'easeInOutCubic' as any,
+                    delay: (context) => context.dataIndex * 50,
+                },
+                transitions: {
+                    active: {
+                        animation: {
+                            duration: 400,
+                            easing: 'easeOutQuart' as any,
+                        }
+                    },
+                    resize: {
+                        animation: {
+                            duration: 600,
+                            easing: 'easeInOutQuart' as any,
+                        }
+                    }
+                },
                 plugins: {
                     legend: { labels: { color: '#e2e8f0' } },
                     tooltip: {
@@ -178,14 +300,95 @@ export default function TesterDetail() {
                         clickTimerRef.current = null;
 
                         // This is a double click - show line chart for the selected category
-                        const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
-                        const filteredData = data.filter(row => (row[filterColumn] || '') === label);
-                        createLineChart(filteredData, label, displayStationName, stationColor);
+                        let filteredData: FailureRecord[];
+                        let colorForChart: string;
+
+                        if (!station && chartType === "testerId") {
+                            // All station view - filter by station
+                            filteredData = modelFilteredData.filter(row => {
+                                const testerId = row.testerId || "";
+                                // Use same mapping logic as aggregation
+                                for (const [key, value] of Object.entries(stationMap)) {
+                                    const pattern = key.replace('%', '');
+                                    if (testerId.includes(pattern) && value === label) {
+                                        return true;
+                                    }
+                                }
+                                // Check baseName patterns
+                                const baseName = testerId.split('_')[0];
+                                let stationName = "";
+                                if (baseName.includes('VF') || baseName.includes('LASH')) {
+                                    stationName = baseName.includes('2') ? 'VFLASH2' : 'VFLASH1';
+                                } else if (baseName.includes('HP') || baseName.includes('IPOT')) {
+                                    stationName = baseName.includes('2') ? 'HIPOT2' : 'HIPOT1';
+                                } else if (baseName.includes('AT') || baseName.includes('TS')) {
+                                    if (baseName.includes('3')) stationName = 'ATS3';
+                                    else if (baseName.includes('2')) stationName = 'ATS2';
+                                    else stationName = 'ATS1';
+                                } else if (baseName.includes('VBT') || baseName.includes('RATION')) {
+                                    stationName = 'VIBRATION';
+                                } else if (baseName.includes('HUP') || baseName.includes('TUP')) {
+                                    stationName = 'HEATUP';
+                                } else if (baseName.includes('BI') || baseName.includes('RN')) {
+                                    stationName = 'BURNIN';
+                                } else {
+                                    stationName = baseName;
+                                }
+                                return stationName === label;
+                            });
+                            colorForChart = stationColors[label] || '#37B019';
+                        } else {
+                            // Normal view
+                            const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
+                            filteredData = modelFilteredData.filter(row => (row[filterColumn] || '') === label);
+                            colorForChart = Array.isArray(backgroundColors) ? backgroundColors[idx] : backgroundColors as string;
+                        }
+                        
+                        createLineChart(filteredData, label, displayStationName, colorForChart);
                     } else {
                         // This is a single click - filter table
                         clickTimerRef.current = setTimeout(() => {
-                            const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
-                            const filteredData = data.filter(row => (row[filterColumn] || '') === label);
+                            let filteredData: FailureRecord[];
+
+                            if (!station && chartType === "testerId") {
+                                // All station view - filter by station
+                                filteredData = modelFilteredData.filter(row => {
+                                    const testerId = row.testerId || "";
+                                    // Use same mapping logic as aggregation
+                                    for (const [key, value] of Object.entries(stationMap)) {
+                                        const pattern = key.replace('%', '');
+                                        if (testerId.includes(pattern) && value === label) {
+                                            return true;
+                                        }
+                                    }
+                                    // Check baseName patterns
+                                    const baseName = testerId.split('_')[0];
+                                    let stationName = "";
+                                    if (baseName.includes('VF') || baseName.includes('LASH')) {
+                                        stationName = baseName.includes('2') ? 'VFLASH2' : 'VFLASH1';
+                                    } else if (baseName.includes('HP') || baseName.includes('IPOT')) {
+                                        stationName = baseName.includes('2') ? 'HIPOT2' : 'HIPOT1';
+                                    } else if (baseName.includes('AT') || baseName.includes('TS')) {
+                                        if (baseName.includes('3')) stationName = 'ATS3';
+                                        else if (baseName.includes('2')) stationName = 'ATS2';
+                                        else stationName = 'ATS1';
+                                    } else if (baseName.includes('VBT') || baseName.includes('RATION')) {
+                                        stationName = 'VIBRATION';
+                                    } else if (baseName.includes('HUP') || baseName.includes('TUP')) {
+                                        stationName = 'HEATUP';
+                                    } else if (baseName.includes('BI') || baseName.includes('RN')) {
+                                        stationName = 'BURNIN';
+                                    } else {
+                                        stationName = baseName;
+                                    }
+                                    return stationName === label;
+                                });
+                            } else {
+                                // Normal view
+                                const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
+                                filteredData = modelFilteredData.filter(row => (row[filterColumn] || '') === label);
+                            }
+                            
                             setFiltered(filteredData);
                             clickTimerRef.current = null;
                         }, 200); // 200ms delay for double click detection
@@ -214,7 +417,7 @@ export default function TesterDetail() {
                 }
             },
         });
-    }, [data, chartType, station, isLineChart]);
+    }, [chartData, isLineChart]);
 
     // Function to create line chart for specific category (like in templates)
     const createLineChart = useCallback((data: FailureRecord[], label: string, displayStationName: string, color: string) => {
@@ -277,8 +480,17 @@ export default function TesterDetail() {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: {
-                    duration: 0,
-                    easing: 'linear'
+                    duration: 1200,
+                    easing: 'easeInOutCubic',
+                    delay: (context) => context.dataIndex * 30,
+                },
+                transitions: {
+                    active: {
+                        animation: {
+                            duration: 300,
+                            easing: 'easeOutQuart',
+                        }
+                    }
                 },
                 interaction: {
                     intersect: false,
@@ -434,40 +646,129 @@ export default function TesterDetail() {
                     </h1>
                     <p className="text-slate-400 text-lg font-medium">
                         Line {lineId} | Station {displayStationName} | Date {startDate} to {endDate}
+                        {selectedModel && ` | Model: ${selectedModel}`}
                     </p>
                 </div>
 
-                {/* Station Controls */}
-                <Card title="Station Selection" subtitle="Select specific station to filter data" variant="glass" className="mb-6">
-                    <div className="flex justify-center items-center gap-4">
-                        <label htmlFor="stationSelect" className="text-slate-200 font-medium">Select Station:</label>
-                        <select
-                            id="stationSelect"
-                            value={station}
-                            onChange={(e) => {
-                                const newStation = e.target.value;
-                                const params = new URLSearchParams(searchParams);
-                                if (newStation) {
-                                    params.set('station', newStation);
-                                } else {
-                                    params.delete('station');
-                                }
-                                window.location.search = params.toString();
-                            }}
-                            className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
-                        >
-                            <option value="">All Stations</option>
-                            <option value="%LASH">VFlash1</option>
-                            <option value="%IPOT_1">Hipot1</option>
-                            <option value="%TS1">ATS1</option>
-                            <option value="%TUP">Heatup</option>
-                            <option value="%RATION">Vibration</option>
-                            <option value="%RN_IN">BurnIn</option>
-                            <option value="%IPOT_2">Hipot2</option>
-                            <option value="%TS2">ATS2</option>
-                            <option value="%LASH2">VFlash2</option>
-                            <option value="%TS3">ATS3</option>
-                        </select>
+                {/* Data Overview Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Total Records</p>
+                                <p className="text-2xl font-bold text-white mt-1">{data.length.toLocaleString()}</p>
+                            </div>
+                            <div className="p-3 bg-blue-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Filtered Records</p>
+                                <p className="text-2xl font-bold text-orange-400 mt-1">{(filtered || []).length.toLocaleString()}</p>
+                            </div>
+                            <div className="p-3 bg-orange-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Duplicate Testers</p>
+                                <p className="text-2xl font-bold text-green-400 mt-1">{(() => {
+                                    const counts = data.reduce((acc, item) => { 
+                                        acc[item.testerId] = (acc[item.testerId] || 0) + 1; 
+                                        return acc; 
+                                    }, {} as Record<string, number>);
+                                    return Object.keys(counts).filter(key => counts[key] > 1).length;
+                                })()}</p>
+                            </div>
+                            <div className="p-3 bg-green-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Duplicate Models</p>
+                                <p className="text-2xl font-bold text-purple-400 mt-1">{(() => {
+                                    const counts = data.filter(item => item.model).reduce((acc, item) => { 
+                                        acc[item.model] = (acc[item.model] || 0) + 1; 
+                                        return acc; 
+                                    }, {} as Record<string, number>);
+                                    return Object.keys(counts).filter(key => counts[key] > 1).length;
+                                })()}</p>
+                            </div>
+                            <div className="p-3 bg-purple-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+
+                {/* Station and Model Controls */}
+                <Card title="Filter Controls" subtitle="Select station and model to filter data" variant="glass" className="mb-6">
+                    <div className="flex justify-center items-center gap-6 flex-wrap">
+                        <div className="flex items-center gap-3">
+                            <label htmlFor="stationSelect" className="text-slate-200 font-medium">Station:</label>
+                            <select
+                                id="stationSelect"
+                                value={station}
+                                onChange={(e) => {
+                                    const newStation = e.target.value;
+                                    const params = new URLSearchParams(searchParams);
+                                    if (newStation) {
+                                        params.set('station', newStation);
+                                    } else {
+                                        params.delete('station');
+                                    }
+                                    window.location.search = params.toString();
+                                }}
+                                className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                            >
+                                <option value="">All Stations</option>
+                                <option value="%LASH">VFlash1</option>
+                                <option value="%IPOT_1">Hipot1</option>
+                                <option value="%TS1">ATS1</option>
+                                <option value="%TUP">Heatup</option>
+                                <option value="%RATION">Vibration</option>
+                                <option value="%RN_IN">BurnIn</option>
+                                <option value="%IPOT_2">Hipot2</option>
+                                <option value="%TS2">ATS2</option>
+                                <option value="%LASH2">VFlash2</option>
+                                <option value="%TS3">ATS3</option>
+                            </select>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                            <label htmlFor="modelSelect" className="text-slate-200 font-medium">Model:</label>
+                            <select
+                                id="modelSelect"
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value)}
+                                className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                            >
+                                <option value="">All Models</option>
+                                {uniqueModels.map(model => (
+                                    <option key={model} value={model}>{model}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </Card>
 
@@ -522,7 +823,7 @@ export default function TesterDetail() {
                                         }
                                         className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200 transition-colors duration-200 text-center"
                                     >
-                                        {col} {sort.column === col ? (sort.dir === "asc" ? "" : "") : ""}
+                                        {col} {sort.column === col ? (sort.dir === "asc" ? "↑" : "↓") : ""}
                                     </th>
                                 ))}
                             </tr>

@@ -7,6 +7,8 @@ import { useRouteNavigation } from "../hooks/useRouteNavigation";
 import { API_CONFIG } from "../config/routes";
 
 interface FailureRecord {
+    sn: string;
+    model: string;
     testerId: string;
     fixtureId: string;
     failItem: string;
@@ -415,7 +417,66 @@ export default function FixtureDetail() {
                         {isLineChart ? `Time Range Analysis for ${selectedCategory}` : "Fixture Failures Dashboard"}
                     </h1>
                     <p className="text-slate-400 text-lg font-medium">Line {lineId}</p>
-                    <p className="text-slate-500 text-sm">Date range: {startDate}  {endDate}</p>
+                    <p className="text-slate-500 text-sm">Date range: {startDate}  {endDate}</p>
+                </div>
+
+                {/* Data Overview Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Total Records</p>
+                                <p className="text-2xl font-bold text-white mt-1">{data.length.toLocaleString()}</p>
+                            </div>
+                            <div className="p-3 bg-blue-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Filtered Records</p>
+                                <p className="text-2xl font-bold text-orange-400 mt-1">{(filtered || []).length.toLocaleString()}</p>
+                            </div>
+                            <div className="p-3 bg-orange-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Duplicate Fixtures</p>
+                                <p className="text-2xl font-bold text-green-400 mt-1">{Object.values(data.reduce((acc, item) => { acc[item.fixtureId] = (acc[item.fixtureId] || 0) + 1; return acc; }, {} as Record<string, number>)).filter(count => count > 1).length}</p>
+                            </div>
+                            <div className="p-3 bg-green-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Duplicate Fail Items</p>
+                                <p className="text-2xl font-bold text-purple-400 mt-1">{Object.values(data.reduce((acc, item) => { acc[item.failItem] = (acc[item.failItem] || 0) + 1; return acc; }, {} as Record<string, number>)).filter(count => count > 1).length}</p>
+                            </div>
+                            <div className="p-3 bg-purple-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
                 </div>
 
                 <Card
@@ -458,7 +519,7 @@ export default function FixtureDetail() {
                         <table className="w-full border-collapse text-sm text-center">
                             <thead>
                             <tr>
-                                {["testerId", "fixtureId", "failItem", "workDate"].map((col) => (
+                                {["sn", "model", "testerId", "fixtureId", "failItem", "workDate"].map((col) => (
                                     <th
                                         key={col}
                                         onClick={() =>
@@ -477,7 +538,7 @@ export default function FixtureDetail() {
                             <tbody>
                             {visibleData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="text-center py-4 text-slate-400">
+                                    <td colSpan={6} className="text-center py-4 text-slate-400">
                                         No data
                                     </td>
                                 </tr>
@@ -490,9 +551,11 @@ export default function FixtureDetail() {
                                             i % 2 === 0 ? "bg-slate-800/30" : "bg-slate-700/20"
                                         )}
                                     >
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.sn || '-'}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.model}</td>
                                         <td className="px-3 py-2 text-slate-200 text-center">{row.testerId}</td>
-                                        <td className="px-3 py-2 text-slate-200 text-center">{row.fixtureId}</td>
-                                        <td className="px-3 py-2 text-slate-200 text-center">{row.failItem}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.fixtureId || '-'}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.failItem || '-'}</td>
                                         <td className="px-3 py-2 text-slate-200 text-center">{row.workDate.replace("T", " ")}</td>
                                     </tr>
                                 ))

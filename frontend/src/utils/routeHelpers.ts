@@ -48,7 +48,7 @@ export class WebSocketManager {
   }
   
   disconnectAll(): void {
-    this.connections.forEach((ws, key) => {
+    this.connections.forEach((ws) => {
       ws.close();
     });
     this.connections.clear();

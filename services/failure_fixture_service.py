@@ -5,7 +5,9 @@ from schemas.failure_schema import FailureFixture
 
 def fetch_failure_fixture(data:FailureFixture,db: Session):
     query = text("""
-        SELECT TesterID AS testerId,
+        SELECT Trackingnumber AS sn,
+               FGpartnumber AS model,
+               TesterID AS testerId,
                FixtureID AS fixtureId,
                CASE WHEN CHARINDEX(')', FailItem) > 0 AND CHARINDEX('}', FailItem) > 0
                     THEN SUBSTRING(FailItem,CHARINDEX(')', FailItem) + 1,
@@ -13,7 +15,7 @@ def fetch_failure_fixture(data:FailureFixture,db: Session):
                     CONVERT(VARCHAR, DateTime, 120) AS workDate
         FROM APBM_FailuresPareto
         WHERE LineID = :lineId AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) BETWEEN :startDate AND :endDate
-        GROUP BY TesterID,FixtureID, FailItem, DateTime
+        GROUP BY Trackingnumber, FGpartnumber, TesterID,FixtureID, FailItem, DateTime
         HAVING COUNT(DISTINCT TrackingNumber) > 0
         ORDER BY workDate ASC;
         """)

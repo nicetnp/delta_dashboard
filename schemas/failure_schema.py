@@ -45,6 +45,8 @@ class FailureFixture(BaseModel):
     endDate: date
 
 class FailureByFixture(BaseModel):
+    sn: str
+    model: str
     testerId: str
     fixtureId: str
     failItem: Optional[str] = None

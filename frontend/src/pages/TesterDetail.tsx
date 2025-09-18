@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Chart } from "chart.js/auto";
 import clsx from "clsx";
-import Layout from "../components/Layout";
 import Card from "../components/Card";
+import { useRouteNavigation } from "../hooks/useRouteNavigation";
+import { API_CONFIG } from "../config/routes";
 
 interface FailureRecord {
     sn: string;
@@ -45,7 +46,7 @@ const stationColors: Record<string, string> = {
 
 export default function TesterDetail() {
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
+    const { goToDashboard } = useRouteNavigation();
 
     const lineId = searchParams.get("lineId") || "";
     const station = searchParams.get("station") || "";
@@ -74,7 +75,7 @@ export default function TesterDetail() {
     // Connect WebSocket
     useEffect(() => {
         if (!lineId) return;
-        let wsUrl = `ws://localhost:8000/failures/ws/tester?lineId=${lineId}`;
+        let wsUrl = `${API_CONFIG.WS_BASE_URL}/failures/ws/tester?lineId=${lineId}`;
         if (station) wsUrl += `&station=${station}`;
         if (startDate) wsUrl += `&startDate=${startDate}`;
         if (endDate) wsUrl += `&endDate=${endDate}`;
@@ -425,7 +426,7 @@ export default function TesterDetail() {
     const displayStationName = station ? stationMap[station] || station : 'All Stations';
 
     return (
-        <Layout>
+        <>
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-slate-100 mb-3 tracking-tight">
@@ -451,7 +452,7 @@ export default function TesterDetail() {
                                 } else {
                                     params.delete('station');
                                 }
-                                navigate(`?${params.toString()}`);
+                                window.location.search = params.toString();
                             }}
                             className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
                         >
@@ -558,7 +559,7 @@ export default function TesterDetail() {
 
                 <div className="text-center">
                     <button
-                        onClick={() => navigate('/')}
+                        onClick={() => goToDashboard()}
                         className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors duration-200"
                     >
                         Back to Summary
@@ -579,6 +580,6 @@ export default function TesterDetail() {
                     </svg>
                 </button>
             )}
-        </Layout>
+        </>
     );
 }

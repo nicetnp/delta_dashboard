@@ -1,5 +1,4 @@
 import { useMemo, useCallback, useState, useEffect } from "react";
-import Layout from "../components/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -10,6 +9,7 @@ import DataTable from "../components/DataTable";
 import Notification from "../components/Notification";
 import { useFailuresWS } from "../hooks/useFailuresWS";
 import { useSessionState } from "../hooks/useSessionState";
+import { useRouteNavigation } from "../hooks/useRouteNavigation";
 import type { FailureRow } from "../types/failure";
 
 export default function Dashboard() {
@@ -22,16 +22,16 @@ export default function Dashboard() {
     const { data, connected } = useFailuresWS({ lineId, startDate, endDate });
     const triggerKey = useMemo(() => (data.length ? `${data[0].workDate}-${data.length}` : ""), [data]);
 
+    const { goToFixtureDetail, goToTesterDetail } = useRouteNavigation();
+
     const goFixture = useCallback(() => {
-        const params = new URLSearchParams({ lineId, startDate, endDate });
-        window.location.href = `/fixture-detail?${params.toString()}`;
-    }, [lineId, startDate, endDate]);
+        goToFixtureDetail(lineId, { startDate, endDate });
+    }, [goToFixtureDetail, lineId, startDate, endDate]);
 
     const goTester = useCallback(() => {
         const workDate = startDate || new Date().toISOString().split("T")[0];
-        const params = new URLSearchParams({ lineId, workDate, startDate, endDate });
-        window.location.href = `/tester-detail?${params.toString()}`;
-    }, [lineId, startDate, endDate]);
+        goToTesterDetail(lineId, { workDate, startDate, endDate });
+    }, [goToTesterDetail, lineId, startDate, endDate]);
 
     const resetFilters = useCallback(() => {
         setStartDate(today);
@@ -65,7 +65,7 @@ export default function Dashboard() {
     }, [data]);
 
     return (
-        <Layout>
+        <>
             <Notification triggerKey={triggerKey} />
             
             {/* Header Section */}
@@ -192,6 +192,6 @@ export default function Dashboard() {
                     </svg>
                 </button>
             )}
-        </Layout>
+        </>
     );
 }

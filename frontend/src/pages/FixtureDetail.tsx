@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Chart } from "chart.js/auto";
 import clsx from "clsx";
-import Layout from "../components/Layout";
 import Card from "../components/Card";
+import { useRouteNavigation } from "../hooks/useRouteNavigation";
+import { API_CONFIG } from "../config/routes";
 
 interface FailureRecord {
     testerId: string;
@@ -17,7 +18,7 @@ interface FailureRecord {
 
 export default function FixtureDetail() {
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
+    const { goBack } = useRouteNavigation();
 
     const lineId = searchParams.get("lineId") || "";
     const startDate = searchParams.get("startDate") || "";
@@ -44,7 +45,7 @@ export default function FixtureDetail() {
     // Connect WebSocket
     useEffect(() => {
         if (!lineId) return;
-        let wsUrl = `ws://localhost:8000/failures/ws/fixture?lineId=${lineId}`;
+        let wsUrl = `${API_CONFIG.WS_BASE_URL}/failures/ws/fixture?lineId=${lineId}`;
         if (startDate) wsUrl += `&startDate=${startDate}`;
         if (endDate) wsUrl += `&endDate=${endDate}`;
 
@@ -407,7 +408,7 @@ export default function FixtureDetail() {
         });
 
     return (
-        <Layout>
+        <>
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-slate-100 mb-3 tracking-tight">
@@ -503,7 +504,7 @@ export default function FixtureDetail() {
 
                 <div className="text-center">
                     <button
-                        onClick={() => navigate('/')}
+                        onClick={goBack}
                         className="px-6 py-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium transition-colors duration-200"
                     >
                         Back to Summary
@@ -524,6 +525,6 @@ export default function FixtureDetail() {
                     </svg>
                 </button>
             )}
-        </Layout>
+        </>
     );
 }

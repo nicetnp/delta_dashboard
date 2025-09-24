@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Chart } from "chart.js/auto";
 import clsx from "clsx";
-import Layout from "../components/Layout";
 import Card from "../components/Card";
+import { useRouteNavigation } from "../hooks/useRouteNavigation";
+import { API_CONFIG } from "../config/routes";
 
 interface FailureRecord {
     sn: string;
@@ -19,7 +20,7 @@ interface FailureRecord {
 
 export default function StationDetail() {
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
+    const { goBack } = useRouteNavigation();
 
     const lineId = searchParams.get("lineId") || "";
     const station = searchParams.get("station") || "";
@@ -34,7 +35,8 @@ export default function StationDetail() {
         column: "workDate",
         dir: "desc",
     });
-
+    const [isLineChart, setIsLineChart] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
 
     // Timer for click detection
     const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -45,7 +47,7 @@ export default function StationDetail() {
     // Connect WebSocket
     useEffect(() => {
         if (!lineId || !station) return;
-        const wsUrl = `ws://localhost:8000/failures/ws/station?lineId=${lineId}&station=${station}&workDate=${workDate}`;
+        const wsUrl = `${API_CONFIG.WS_BASE_URL}/failures/ws/station?lineId=${lineId}&station=${station}&workDate=${workDate}`;
         const ws = new WebSocket(wsUrl);
 
         ws.onmessage = (event) => {
@@ -75,7 +77,7 @@ export default function StationDetail() {
 
     // Draw chart
     useEffect(() => {
-        if (!canvasRef.current) return;
+        if (!canvasRef.current || isLineChart) return;
         if (chartRef.current) chartRef.current.destroy();
 
         const counts: Record<string, number> = {};
@@ -96,13 +98,50 @@ export default function StationDetail() {
                     {
                         label: chartType === "testerId" ? "Failures by Tester" : "Top 5 Failed Items",
                         data: sorted.map(([, v]) => v),
-                        backgroundColor: chartColor,
+                        backgroundColor: "#f7941d",
+                        borderColor: "#f7941d",
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
                     },
                 ],
             },
             options: {
                 responsive: true,
-                indexAxis: chartType === "failItem" ? 'y' : 'x',
+                maintainAspectRatio: false,
+                indexAxis: chartType === "failItem" ? "y" : "x",
+                animation: { 
+                    duration: 800, 
+                    easing: 'easeInOutCubic',
+                    delay: (context) => context.dataIndex * 50,
+                },
+                transitions: {
+                    active: {
+                        animation: {
+                            duration: 400,
+                            easing: 'easeOutQuart',
+                        }
+                    },
+                    resize: {
+                        animation: {
+                            duration: 600,
+                            easing: 'easeInOutQuart',
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#e2e8f0' } },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#e2e8f0',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 },
+                    }
+                },
                 onClick: (_, elements) => {
                     if (!elements.length) return;
                     const idx = elements[0].index;
@@ -115,7 +154,10 @@ export default function StationDetail() {
                         // This is a double click - show line chart for the selected category
                         const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
                         const filteredData = data.filter(row => (row[filterColumn] || '') === label);
-                        createLineChart(filteredData, label, station, chartColor);
+
+                        setIsLineChart(true);
+                        setSelectedCategory(label);
+                        createLineChart(filteredData, label, station, "#f7941d");
                     } else {
                         // This is a single click - filter table
                         clickTimerRef.current = setTimeout(() => {
@@ -126,11 +168,32 @@ export default function StationDetail() {
                         }, 200); // 200ms delay for double click detection
                     }
                 },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Failures',
+                            color: '#dbe4eb'
+                        },
+                        ticks: { stepSize: 1, color: '#dbe4eb' },
+                        grid: { color: '#5a7081' }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: chartType === "testerId" ? 'Tester ID' : 'Fail Item',
+                            color: '#dbe4eb'
+                        },
+                        ticks: { color: '#dbe4eb' },
+                        grid: { color: '#5a7081' }
+                    }
+                }
             },
         });
 
 
-    }, [data, chartType]);
+    }, [data, chartType, isLineChart]);
 
     // Function to create line chart for specific category (like in templates)
     const createLineChart = useCallback((data: any[], label: string, displayStationName: string, color: string) => {
@@ -393,7 +456,7 @@ export default function StationDetail() {
             // Restore page title
             const pageTitle = document.querySelector('h1');
             if (pageTitle) {
-                pageTitle.textContent = `${station} Failures Dashboard`;
+                pageTitle.textContent = `${station}`;
             }
 
             // Show table and controls
@@ -435,14 +498,78 @@ export default function StationDetail() {
         });
 
     return (
-        <Layout>
+        <>
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-slate-100 mb-3 tracking-tight">{station} Failures Dashboard</h1>
                     <p className="text-slate-400 text-lg font-medium">Line {lineId} - {workDate}</p>
                 </div>
 
-                <Card title="Failure Analysis Chart" subtitle="Double click to view time range analysis" variant="elevated" className="mb-8">
+                {/* Data Overview Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Total Records</p>
+                                <p className="text-2xl font-bold text-white mt-1">{data.length.toLocaleString()}</p>
+                            </div>
+                            <div className="p-3 bg-blue-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Filtered Records</p>
+                                <p className="text-2xl font-bold text-orange-400 mt-1">{(filtered || []).length.toLocaleString()}</p>
+                            </div>
+                            <div className="p-3 bg-orange-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Duplicate Testers</p>
+                                <p className="text-2xl font-bold text-green-400 mt-1">{Object.values(data.reduce((acc, item) => { acc[item.testerId] = (acc[item.testerId] || 0) + 1; return acc; }, {} as Record<string, number>)).filter(count => count > 1).length}</p>
+                            </div>
+                            <div className="p-3 bg-green-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card variant="glass" className="p-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Duplicate Fail Items</p>
+                                <p className="text-2xl font-bold text-purple-400 mt-1">{Object.values(data.reduce((acc, item) => { acc[item.failItem] = (acc[item.failItem] || 0) + 1; return acc; }, {} as Record<string, number>)).filter(count => count > 1).length}</p>
+                            </div>
+                            <div className="p-3 bg-purple-500/20 rounded-full">
+                                <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+
+                <Card
+                    title={isLineChart ? "Time Range Analysis" : "Failure Analysis Chart"}
+                    subtitle={isLineChart ? `Showing failures for ${selectedCategory}` : "Single click to filter table, Double click to view time range analysis"}
+                    variant="elevated"
+                    className="mb-8"
+                >
                     <div className="h-96 flex items-center justify-center">
                         <canvas ref={canvasRef} className="max-w-full max-h-full"></canvas>
                     </div>
@@ -527,7 +654,7 @@ export default function StationDetail() {
 
                 <div className="text-center">
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={goBack}
                         className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors duration-200"
                     >
                         Back to Summary
@@ -548,7 +675,7 @@ export default function StationDetail() {
                     </svg>
                 </button>
             )}
-        </Layout>
+        </>
     );
 }
 

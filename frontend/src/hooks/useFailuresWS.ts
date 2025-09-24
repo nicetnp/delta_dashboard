@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { FailureRow } from "../types/failure";
-
+import { buildWebSocketUrl, getRouteByPath } from "../config/routes";
 
 export function useFailuresWS({
                                   lineId,
                                   startDate,
                                   endDate,
-                                  base = "ws://localhost:8000/failures/ws/filter",
+                                  base,
                               }: {
     lineId: string;
     startDate?: string;
@@ -20,8 +20,14 @@ export function useFailuresWS({
 
 
     useEffect(() => {
+        // Use centralized WebSocket URL if base is not provided
+        const wsUrl = base || (() => {
+            const route = getRouteByPath('/');
+            return route ? buildWebSocketUrl(route, { lineId, startDate: startDate || '', endDate: endDate || '' }) : 'ws://localhost:8000/failures/ws/filter';
+        })();
+        
         const ts = Date.now();
-        const url = new URL(base);
+        const url = new URL(wsUrl);
         url.searchParams.set("lineId", lineId);
         url.searchParams.set("_ts", String(ts));
         if (startDate) url.searchParams.set("startDate", startDate);

@@ -15,8 +15,8 @@ def fetch_failure_fixture(data:FailureFixture,db: Session):
                     CONVERT(VARCHAR, DateTime, 120) AS workDate
         FROM APBM_FailuresPareto
         WHERE LineID = :lineId AND CAST(DATEADD(MINUTE, -460, DateTime) AS DATE) BETWEEN :startDate AND :endDate
-        GROUP BY TesterID,FixtureID, FailItem, DateTime, Trackingnumber,FGpartnumber
-        HAVING COUNT(DISTINCT Trackingnumber) > 0
+        GROUP BY Trackingnumber, FGpartnumber, TesterID,FixtureID, FailItem, DateTime
+        HAVING COUNT(DISTINCT TrackingNumber) > 0
         ORDER BY workDate ASC;
         """)
 

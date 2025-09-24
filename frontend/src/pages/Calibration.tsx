@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import Layout from "../components/Layout";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import Input from "../components/Input";
 import Select from "../components/Select";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
+import { API_CONFIG } from "../config/routes";
 
 interface CalibrationRow {
     ID: number;
@@ -42,7 +42,6 @@ interface ToastType {
     message: string;
 }
 
-const API_BASE_URL = "http://localhost:8000";
 const CAL_API = "/calibration";
 
 export default function Calibration() {
@@ -71,7 +70,7 @@ export default function Calibration() {
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [historyData, setHistoryData] = useState<any[]>([]);
-    // const [historySerialNumber, setHistorySerialNumber] = useState("");
+    const [, setHistorySerialNumber] = useState("");
     const [historyEquipmentName, setHistoryEquipmentName] = useState("");
     const [sortConfig, setSortConfig] = useState<{key: string | null, direction: 'asc' | 'desc'}>({
         key: 'EndDate',
@@ -81,7 +80,7 @@ export default function Calibration() {
     // Load dropdown options from API
     async function loadDropdownOptions() {
         try {
-            const res = await fetch(`${API_BASE_URL}${CAL_API}/choices`);
+            const res = await fetch(`${API_CONFIG.BASE_URL}${CAL_API}/choices`);
             if (res.ok) {
                 const choices = await res.json();
                 setDropdownOptions(prev => ({
@@ -134,7 +133,7 @@ export default function Calibration() {
         if (!password) return false;
         
         try {
-            const res = await fetch(`${API_BASE_URL}${CAL_API}/add_choice`, {
+            const res = await fetch(`${API_CONFIG.BASE_URL}${CAL_API}/add_choice`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ kind, value, passcode: password })
@@ -158,13 +157,13 @@ export default function Calibration() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch(`${API_BASE_URL}${CAL_API}`);
+            const response = await fetch(`${API_CONFIG.BASE_URL}${CAL_API}`);
             
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
-            const data = await res.json();
+            const data = await response.json();
             console.log('Received data:', data);
             
             // First, find latest timestamp for each Serial Number (including Missing/Damage)
@@ -282,6 +281,27 @@ export default function Calibration() {
         );
     };
 
+    // Function to get row highlight class based on expiry and status
+    const getRowHighlight = (_startDate: string, endDate: string, status: string) => {
+        if (!endDate) return "hover:bg-slate-800/30";
+        
+        const today = new Date();
+        const end = new Date(endDate);
+        const isExpired = end.getTime() < today.getTime();
+        
+        if (isExpired) {
+            if (status === 'On-Calibration') {
+                // Yellow highlight for expired items that are On-Calibration
+                return "bg-yellow-500/20 border-l-4 border-yellow-500 hover:bg-yellow-500/30";
+            } else {
+                // Red highlight for expired items
+                return "bg-red-500/20 border-l-4 border-red-500 hover:bg-red-500/30";
+            }
+        }
+        
+        return "hover:bg-slate-800/30";
+    };
+
     // Modal functions
     const openModal = (id?: number) => {
         setEditingId(id || null);
@@ -325,7 +345,7 @@ export default function Calibration() {
                 
                 // Verify password with backend
                 try {
-                    const verifyRes = await fetch(`${API_BASE_URL}${CAL_API}/verify_password`, {
+                    const verifyRes = await fetch(`${API_CONFIG.BASE_URL}${CAL_API}/verify_password`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ passcode: password })
@@ -342,8 +362,8 @@ export default function Calibration() {
             }
             
             const url = editingId 
-                ? `${API_BASE_URL}${CAL_API}/${editingId}`
-                : `${API_BASE_URL}${CAL_API}/`;
+                ? `${API_CONFIG.BASE_URL}${CAL_API}/${editingId}`
+                : `${API_CONFIG.BASE_URL}${CAL_API}/`;
             
             const method = editingId ? 'PUT' : 'POST';
             
@@ -374,7 +394,7 @@ export default function Calibration() {
         
         try {
             // Verify password with backend
-            const verifyRes = await fetch(`${API_BASE_URL}${CAL_API}/verify_password`, {
+            const verifyRes = await fetch(`${API_CONFIG.BASE_URL}${CAL_API}/verify_password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ passcode: password })
@@ -385,7 +405,7 @@ export default function Calibration() {
                 return;
             }
             
-            const res = await fetch(`${API_BASE_URL}${CAL_API}/${id}?deleted_by=Web User`, {
+            const res = await fetch(`${API_CONFIG.BASE_URL}${CAL_API}/${id}?deleted_by=Web User`, {
                 method: 'DELETE'
             });
             
@@ -419,7 +439,7 @@ export default function Calibration() {
 
     const viewHistory = async (serialNumber: string, equipmentName: string) => {
         try {
-            const response = await fetch(`http://localhost:8000/calibration/history/${serialNumber}`);
+            const response = await fetch(`${API_CONFIG.BASE_URL}/calibration/history/${serialNumber}`);
             if (!response.ok) throw new Error('Failed to fetch history');
             const historyData = await response.json();
             
@@ -512,7 +532,7 @@ export default function Calibration() {
     const filteredRows = filteredAndSortedRows;
 
     return (
-        <Layout>
+        <>
             {/* Header */}
             <div className="mb-8">
                 <div className="flex items-center justify-between">
@@ -820,7 +840,7 @@ export default function Calibration() {
                             </thead>
                             <tbody className="divide-y divide-slate-600/20">
                             {filteredRows.map((row) => (
-                                <tr key={row.ID} className="hover:bg-slate-800/30 transition-colors duration-200 group">
+                                <tr key={row.ID} className={`${getRowHighlight(row.StartDate || '', row.EndDate || '', row.Status || '')} transition-colors duration-200 group`}>
                                     <td className="px-3 py-2 text-slate-200 text-sm text-center">{row.LineID}</td>
                                     <td className="px-3 py-2 text-slate-200 text-sm text-center">{row.Station}</td>
                                     <td className="px-3 py-2 text-slate-200 text-sm text-center">{row.Equipment}</td>
@@ -1415,6 +1435,6 @@ export default function Calibration() {
                     </svg>
                 </button>
             )}
-        </Layout>
+        </>
     );
 }

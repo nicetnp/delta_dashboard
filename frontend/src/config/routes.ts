@@ -3,8 +3,8 @@ import type { ComponentType } from 'react';
 
 // API Configuration - Centralized base URLs
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8000',
-  WS_BASE_URL: 'ws://localhost:8000'
+  BASE_URL: 'http://10.216.128.133:8080',
+  WS_BASE_URL: 'ws://10.216.128.133:8080'
 } as const;
 
 // Lazy load components
@@ -13,6 +13,8 @@ const Calibration = lazy(() => import('../pages/Calibration'));
 const StationDetail = lazy(() => import('../pages/StationDetail'));
 const TesterDetail = lazy(() => import('../pages/TesterDetail'));
 const FixtureDetail = lazy(() => import('../pages/FixtureDetail'));
+const OneDaySearch = lazy(() => import('../pages/OneDaySearch'));
+const DetailPage = lazy(() => import('../pages/DetailPage'));
 
 // Route configuration interface
 export interface RouteConfig {
@@ -50,6 +52,23 @@ export const routes: RouteConfig[] = [
     description: 'Professional equipment calibration tracking system',
     icon: '🔬',
     showInNav: true
+  },
+  {
+    path: '/one-day-search',
+    component: OneDaySearch,
+    title: 'CPK',
+    description: 'Process Capability Index analysis and daily search',
+    icon: '📈',
+    showInNav: true
+  },
+  {
+    path: '/detail',
+    component: DetailPage,
+    title: 'Detail Page',
+    description: 'Detailed CPK analysis',
+    icon: '📊',
+    showInNav: false,
+    requiresParams: ['day', 'model', 'tester', 'step', 'test_item', 'test_desc', 'order_idx']
   },
   {
     path: '/station-detail',
@@ -182,6 +201,9 @@ export const getPageMetadata = (path: string, params?: Record<string, string>) =
 export const ROUTE_PATHS = {
   DASHBOARD: '/',
   CALIBRATION: '/calibration',
+  CPK: '/cpk',
+  ONE_DAY_SEARCH: '/one-day-search',
+  DETAIL: '/detail',
   STATION_DETAIL: '/station-detail',
   TESTER_DETAIL: '/tester-detail',
   FIXTURE_DETAIL: '/fixture-detail'

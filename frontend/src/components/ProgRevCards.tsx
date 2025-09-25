@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-
+import { API_CONFIG } from "../config/routes";
 /**
  * ProgRevCards.tsx
  * Card view (3 modes):
@@ -41,7 +41,7 @@ export type ChangeRow = {
 };
 
 // ---------------- Config ----------------
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = API_CONFIG.BASE_URL;
 
 // ---------------- Helpers ----------------
 function clsx(...xs: Array<string | false | null | undefined>) {

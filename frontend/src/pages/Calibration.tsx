@@ -187,12 +187,12 @@ export default function Calibration() {
             // Filter out Serial Numbers where latest timestamp has Missing or Damage status
             const validSerialNumbers = Object.keys(latestBySerial).filter(sn => {
                 const latestRecord = latestBySerial[sn];
-                return latestRecord.Status !== "Missing" && latestRecord.Status !== "Damage";
+                return latestRecord.Status !== "Missing";
             });
             
             // Filter data to only include valid Serial Numbers and exclude Missing/Damage
             const filteredData = data.filter((r: CalibrationRow) => {
-                if (r.Status === "Missing" || r.Status === "Damage") return false;
+                if (r.Status === "Missing") return false;
                 if (!r.Seriesnumber) return true; // Keep records without SN
                 return validSerialNumbers.includes(r.Seriesnumber);
             });
@@ -242,7 +242,7 @@ export default function Calibration() {
         const statusMap: Record<string, string> = {
             'Spare': 'bg-gray-100 text-gray-800',
             'Missing': 'bg-gray-100 text-gray-800',
-            'Damage': 'bg-red-100 text-red-800',
+            'Damage': 'bg-gray-100 text-gray-800',
             'On-Station': 'bg-green-100 text-green-800',
             'On-Calibration': 'bg-yellow-100 text-yellow-800'
         };
@@ -283,6 +283,11 @@ export default function Calibration() {
 
     // Function to get row highlight class based on expiry and status
     const getRowHighlight = (_startDate: string, endDate: string, status: string) => {
+        // Gray highlight for damaged equipment
+        if (status === 'Damage') {
+            return "bg-gray-500/20 border-l-4 border-gray-500 hover:bg-gray-500/30";
+        }
+        
         if (!endDate) return "hover:bg-slate-800/30";
         
         const today = new Date();
@@ -493,6 +498,11 @@ export default function Calibration() {
     const filteredAndSortedRows = (() => {
         // First filter
         const filtered = rows.filter(row => {
+
+            if (row.Status === 'Missing') {
+                return false;
+            }
+            
             const matchesSearch = !searchQuery || 
                 [row.Station, row.Equipment, row.Brand, row.Model, row.Seriesnumber, row.DT, row.LineID, row.Responsible, row.Comment]
                     .some(field => field?.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -542,20 +552,66 @@ export default function Calibration() {
                         </h1>
                         <p className="text-slate-400 text-lg font-medium">Professional equipment calibration tracking system</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="text-right">
-                            <h2 className="text-xl font-bold text-slate-100">History for {historyEquipmentName}</h2>
-                            <div className="text-sm text-slate-400">Active Records</div>
-                        </div>
-                        <div className="w-px h-12 bg-slate-600"></div>
-                        <div className="text-right">
-                            <div className="text-2xl font-bold text-green-400">
+                </div>
+            </div>
+
+            {/* Equipment Status Overview */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <Card variant="glass" className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-slate-400 text-sm font-medium">On Station</p>
+                            <p className="text-2xl font-bold text-green-400 mt-1">
                                 {filteredRows.filter(r => r.Status === 'On-Station').length}
-                            </div>
-                            <div className="text-sm text-slate-400">On Station</div>
+                            </p>
+                        </div>
+                        <div className="p-3 bg-green-500/20 rounded-full">
+                            <span className="text-2xl">🟢</span>
                         </div>
                     </div>
-                </div>
+                </Card>
+
+                <Card variant="glass" className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-slate-400 text-sm font-medium">Spare</p>
+                            <p className="text-2xl font-bold text-blue-400 mt-1">
+                                {filteredRows.filter(r => r.Status === 'Spare').length}
+                            </p>
+                        </div>
+                        <div className="p-3 bg-blue-500/20 rounded-full">
+                            <span className="text-2xl">🔵</span>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card variant="glass" className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-slate-400 text-sm font-medium">On Calibration</p>
+                            <p className="text-2xl font-bold text-yellow-400 mt-1">
+                                {filteredRows.filter(r => r.Status === 'On-Calibration').length}
+                            </p>
+                        </div>
+                        <div className="p-3 bg-yellow-500/20 rounded-full">
+                            <span className="text-2xl">🟡</span>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card variant="glass" className="p-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-slate-400 text-sm font-medium">Damage</p>
+                            <p className="text-2xl font-bold text-gray-400 mt-1">
+                                {filteredRows.filter(r => r.Status === 'Damage').length}
+                            </p>
+                        </div>
+                        <div className="p-3 bg-gray-500/20 rounded-full">
+                            <span className="text-2xl">⚫</span>
+                        </div>
+                    </div>
+                </Card>
             </div>
 
             {/* Quick Actions - Moved to top */}
@@ -643,9 +699,10 @@ export default function Calibration() {
                         icon="📊"
                     >
                         <option value="">All Status</option>
-                        <option value="Spare">🟢 Spare</option>
-                        <option value="On-Station">🔵 On-Station</option>
+                        <option value="Spare">🔵 Spare</option>
+                        <option value="On-Station">🟢 On-Station</option>
                         <option value="On-Calibration">🟡 On-Calibration</option>
+                        <option value="Damage">⚫ Damage</option>
                     </Select>
                 </div>
                 <div className="mt-4 pt-4 border-t border-slate-600/30">
@@ -876,9 +933,11 @@ export default function Calibration() {
                                     </td>
                                     <td className="px-3 py-2 text-center">
                                         <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${getStatusBadge(row.Status || '')}`}>
-                                            {row.Status === 'Spare' && '🟢'}
-                                            {row.Status === 'On-Station' && '🔵'}
+                                            {row.Status === 'Spare' && '🔵'}
+                                            {row.Status === 'On-Station' && '🟢'}
                                             {row.Status === 'On-Calibration' && '🟡'}
+                                            {row.Status === 'Damage' && '⚫'}
+                                            {row.Status === 'Missing' && '⚪'}
                                             <span className="ml-1 text-xs">{row.Status}</span>
                                         </span>
                                     </td>
@@ -1287,8 +1346,9 @@ export default function Calibration() {
                                                             item.Status === 'On-Calibration' ? 'bg-yellow-500/30 text-yellow-200 border-yellow-500/50' :
                                                             'bg-slate-500/30 text-slate-200 border-slate-500/50'
                                                         }`}>
-                                                            {item.Status === 'Spare' && '🟢'}
-                                                            {item.Status === 'On-Station' && '🔵'}
+                                                            {item.Status === 'Damage' && '⚫'}
+                                                            {item.Status === 'Spare' && '🔵'}
+                                                            {item.Status === 'On-Station' && '🟢'}
                                                             {item.Status === 'On-Calibration' && '🟡'}
                                                             <span className="ml-1">{item.Status}</span>
                                                         </span>

@@ -16,6 +16,7 @@ const Layout = memo(function Layout({ children }: LayoutProps) {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
     { path: '/calibration', label: 'Calibration', icon: '🔬' },
+    { path: '/one-day-search', label: 'CPK', icon: '🔍' },
   ];
 
   return (

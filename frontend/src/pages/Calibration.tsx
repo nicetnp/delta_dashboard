@@ -287,7 +287,10 @@ export default function Calibration() {
         if (status === 'Damage') {
             return "bg-gray-500/20 border-l-4 border-gray-500 hover:bg-gray-500/30";
         }
-        
+        if (status === 'On-Calibration') {
+            return "bg-yellow-500/20 border-l-4 border-yellow-500 hover:bg-yellow-500/30";
+        }
+
         if (!endDate) return "hover:bg-slate-800/30";
         
         const today = new Date();

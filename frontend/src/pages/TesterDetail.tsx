@@ -179,10 +179,19 @@ export default function TesterDetail() {
                     console.log(`Extracted baseName: ${baseName} from ${testerId}`);
                     
                     // Try direct mapping to known stations
-                    if (baseName.includes('VF') || baseName.includes('LASH')) {
-                        stationName = baseName.includes('2') ? 'VFLASH2' : 'VFLASH1';
-                    } else if (baseName.includes('HP') || baseName.includes('IPOT')) {
-                        stationName = baseName.includes('2') ? 'HIPOT2' : 'HIPOT1';
+                    // if (baseName.includes('VF') || baseName.includes('LASH')) {
+                    //     stationName = baseName.includes('2') ? 'VFLASH2' : 'VFLASH1';
+                    // }
+                    if (baseName.includes('VF-') || baseName.includes('LASH1')) {
+                            stationName = 'VFLASH1';
+                    } else if (baseName.includes('VF2-') || baseName.includes('LASH2')) {
+                            stationName = 'VFLASH2';
+                    // } else if (baseName.includes('HP') || baseName.includes('IPOT')) {
+                    //     stationName = baseName.includes('2') ? 'HIPOT2' : 'HIPOT1';
+                    } else if (baseName.includes('HP1') || baseName.includes('IPOT1')) {
+                        stationName = 'HIPOT1';
+                    } else if (baseName.includes('HP2') || baseName.includes('IPOT2')) {
+                        stationName = 'HIPOT2';
                     } else if (baseName.includes('AT') || baseName.includes('TS')) {
                         if (baseName.includes('3')) stationName = 'ATS3';
                         else if (baseName.includes('2')) stationName = 'ATS2';

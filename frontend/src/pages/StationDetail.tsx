@@ -615,7 +615,7 @@ export default function StationDetail() {
                                                 dir: sort.dir === "asc" ? "desc" : "asc",
                                             })
                                         }
-                                        className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200"
+                                        className="border border-slate-600 px-3 py-2 cursor-pointer hover:bg-slate-700/60 text-slate-200 text-center"
                                     >
                                         {col} {sort.column === col ? (sort.dir === "asc" ? "▲" : "▼") : ""}
                                     </th>
@@ -638,12 +638,12 @@ export default function StationDetail() {
                                             i % 2 === 0 ? "bg-slate-800/30" : "bg-slate-700/20"
                                         )}
                                     >
-                                        <td className="px-3 py-2 text-slate-200">{row.sn}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.model}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.testerId}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.fixtureId}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.failItem}</td>
-                                        <td className="px-3 py-2 text-slate-200">{row.workDate.replace("T", " ")}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.sn}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.model}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.testerId}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.fixtureId}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.failItem}</td>
+                                        <td className="px-3 py-2 text-slate-200 text-center">{row.workDate.replace("T", " ")}</td>
                                     </tr>
                                 ))
                             )}

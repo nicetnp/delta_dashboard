@@ -66,6 +66,7 @@ export default function TesterDetail() {
     const [selectedCategory, setSelectedCategory] = useState<string>("");
     const [selectedStation, setSelectedStation] = useState<string>("");
     const [selectedModel, setSelectedModel] = useState<string>("");
+    const [selectedFailItem, setSelectedFailItem] = useState<string>("");
 
     // Timer for click detection
     const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,10 +114,34 @@ export default function TesterDetail() {
     // Get unique models from data
     const uniqueModels = Array.from(new Set(data.map(d => d.model).filter(Boolean))).sort();
 
-    // Filter data by selected model with useMemo to prevent unnecessary re-renders
+    // Get unique failItems sorted by frequency (descending)
+    const uniqueFailItems = useMemo(() => {
+        const failItemCounts: Record<string, number> = {};
+        data.forEach(d => {
+            if (d.failItem) {
+                failItemCounts[d.failItem] = (failItemCounts[d.failItem] || 0) + 1;
+            }
+        });
+        
+        return Object.entries(failItemCounts)
+            .sort((a, b) => b[1] - a[1]) // Sort by count descending
+            .map(([failItem]) => failItem);
+    }, [data]);
+
+    // Filter data by selected model and failitem with useMemo to prevent unnecessary re-renders
     const modelFilteredData = useMemo(() => {
-        return selectedModel ? data.filter(d => d.model === selectedModel) : data;
-    }, [data, selectedModel]);
+        let filteredData = data;
+        
+        if (selectedModel) {
+            filteredData = filteredData.filter(d => d.model === selectedModel);
+        }
+        
+        if (selectedFailItem) {
+            filteredData = filteredData.filter(d => d.failItem === selectedFailItem);
+        }
+        
+        return filteredData;
+    }, [data, selectedModel, selectedFailItem]);
 
     // Memoize chart data calculation to prevent unnecessary recalculations
     const chartData = useMemo(() => {
@@ -703,10 +728,10 @@ export default function TesterDetail() {
                     <Card variant="glass" className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-slate-400 text-sm font-medium">Duplicate Models</p>
+                                <p className="text-slate-400 text-sm font-medium">Duplicate Fail Items</p>
                                 <p className="text-2xl font-bold text-purple-400 mt-1">{(() => {
-                                    const counts = data.filter(item => item.model).reduce((acc, item) => { 
-                                        acc[item.model] = (acc[item.model] || 0) + 1; 
+                                    const counts = data.filter(item => item.failItem).reduce((acc, item) => { 
+                                        acc[item.failItem] = (acc[item.failItem] || 0) + 1; 
                                         return acc; 
                                     }, {} as Record<string, number>);
                                     return Object.keys(counts).filter(key => counts[key] > 1).length;
@@ -766,6 +791,21 @@ export default function TesterDetail() {
                                 <option value="">All Models</option>
                                 {uniqueModels.map(model => (
                                     <option key={model} value={model}>{model}</option>
+                                ))}
+                            </select>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                            <label htmlFor="failItemSelect" className="text-slate-200 font-medium">Fail Item:</label>
+                            <select
+                                id="failItemSelect"
+                                value={selectedFailItem}
+                                onChange={(e) => setSelectedFailItem(e.target.value)}
+                                className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                            >
+                                <option value="">All Fail Items</option>
+                                {uniqueFailItems.map(failItem => (
+                                    <option key={failItem} value={failItem}>{failItem}</option>
                                 ))}
                             </select>
                         </div>

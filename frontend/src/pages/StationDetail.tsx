@@ -142,6 +142,11 @@ export default function StationDetail() {
                         bodyFont: { size: 13 },
                     }
                 },
+                onHover: (_, elements) => {
+                    if (canvasRef.current) {
+                        canvasRef.current.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                    }
+                },
                 onClick: (_, elements) => {
                     if (!elements.length) return;
                     const idx = elements[0].index;
@@ -426,7 +431,11 @@ export default function StationDetail() {
                 },
                 options: {
                     responsive: true,
-                    indexAxis: chartType === "failItem" ? 'y' : 'x',
+                    onHover: (_, elements) => {
+                        if (canvasRef.current) {
+                            canvasRef.current.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                        }
+                    },
                     onClick: (_, elements) => {
                         if (!elements.length) return;
                         const idx = elements[0].index;

@@ -6,10 +6,11 @@ from schemas.calibration_schema import CalibrationCreate, CalibrationUpdate, Cal
 from crud.calibration_crud import create_calibration, get_calibration, update_calibration, delete_calibration, \
     list_calibrations, get_calibration_history
 from models.calibration_model import APEBMCalibration
+import os
 
 router = APIRouter(prefix="/calibration", tags=["Calibration"])
 
-SECRET_PASS = "admin123"  # 👉 เก็บจริงควรใช้ .env
+SECRET_PASS = os.getenv('PW_CALIBRATION')
 
 @router.get("/", response_model=List[CalibrationResponse])
 def list_all(db: Session = Depends(get_db), q: str | None = None,

@@ -144,6 +144,11 @@ export default function FixtureDetail() {
                         bodyFont: { size: 13 } as any,
                     }
                 },
+                onHover: (_, elements) => {
+                    if (canvasRef.current) {
+                        canvasRef.current.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                    }
+                },
                 onClick: (_, elements) => {
                     if (!elements.length) return;
                     const idx = elements[0].index;
@@ -511,7 +516,7 @@ export default function FixtureDetail() {
                             onClick={() =>
                                 setChartType((prev) => (prev === "fixtureId" ? "failItem" : "fixtureId"))
                             }
-                            className="px-4 py-2 rounded bg-sky-600 hover:bg-sky-700 text-white transition-colors duration-200 font-medium"
+                            className="px-4 py-2 rounded bg-sky-600 hover:bg-sky-700 text-white transition-colors duration-200 font-medium cursor-pointer"
                         >
                             {chartType === "fixtureId" ? "Top 5 Failed" : "By Fixture"}
                         </button>
@@ -570,7 +575,7 @@ export default function FixtureDetail() {
                 <div className="text-center">
                     <button
                         onClick={goBack}
-                        className="px-6 py-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium transition-colors duration-200"
+                        className="px-6 py-3 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-medium transition-colors duration-200 cursor-pointer"
                     >
                         Back to Summary
                     </button>

@@ -625,7 +625,7 @@ export default function Calibration() {
                         variant="secondary"
                         size="lg"
                         icon="🔄"
-                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform"
+                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform cursor-pointer"
                     >
                         Refresh Data
                     </Button>
@@ -634,7 +634,7 @@ export default function Calibration() {
                         variant="primary"
                         size="lg"
                         icon="➕"
-                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform shadow-lg"
+                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform shadow-lg cursor-pointer"
                     >
                         Add New Equipment
                     </Button>
@@ -643,7 +643,7 @@ export default function Calibration() {
                         variant="danger"
                         size="lg"
                         icon="⚠️"
-                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform"
+                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform cursor-pointer"
                     >
                         Due Soon ({filteredRows.filter(r => {
                             if (!r.EndDate) return false;
@@ -673,6 +673,7 @@ export default function Calibration() {
                         value={lineFilter}
                         onChange={(e) => setLineFilter(e.target.value)}
                         icon="🏭"
+                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform cursor-pointer"
                     >
                         <option value="">All Lines</option>
                         {[...new Set(rows.map(r => r.LineID))].filter(Boolean).sort().map(line => (
@@ -684,6 +685,7 @@ export default function Calibration() {
                         value={stationFilter}
                         onChange={(e) => setStationFilter(e.target.value)}
                         icon="⚙️"
+                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform cursor-pointer"
                     >
                         <option value="">All Stations</option>
                         {[...new Set(rows.map(r => r.Station))].filter(Boolean).sort().map(station => (
@@ -700,6 +702,7 @@ export default function Calibration() {
                             }
                         }}
                         icon="📊"
+                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform cursor-pointer"
                     >
                         <option value="">All Status</option>
                         <option value="Spare">🔵 Spare</option>
@@ -713,13 +716,14 @@ export default function Calibration() {
                         <div className="text-sm text-slate-400">
                             {rows.length > 0 ? `Showing ${filteredRows.length} of ${rows.length} records` : 'No data loaded'}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2" >
                             {rows.length === 0 && (
                                 <Button
                                     onClick={() => fetchCalibrations()}
                                     variant="primary"
                                     size="sm"
                                     icon="📊"
+                                    className="flex-1 min-w-[180px] hover:scale-105 transition-transform cursor-pointer"
                                 >
                                     Load Data
                                 </Button>
@@ -769,6 +773,7 @@ export default function Calibration() {
                             onClick={() => fetchCalibrations()}
                             variant="primary"
                             icon="📊"
+                            className="flex-1 min-w-[180px] hover:scale-105 transition-transform cursor-pointer"
                         >
                             Load All Records
                         </Button>
@@ -948,7 +953,7 @@ export default function Calibration() {
                                         <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                             <button 
                                                 onClick={() => openModal(row.ID)}
-                                                className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-all duration-200" 
+                                                className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-all duration-200 cursor-pointer" 
                                                 title="Edit Equipment"
                                             >
                                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -957,7 +962,7 @@ export default function Calibration() {
                                             </button>
                                             <button 
                                                 onClick={() => handleDelete(row.ID)}
-                                                className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-all duration-200" 
+                                                className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-all duration-200 cursor-pointer" 
                                                 title="Delete Equipment"
                                             >
                                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -966,7 +971,7 @@ export default function Calibration() {
                                             </button>
                                             <button 
                                                 onClick={() => viewHistory(row.Seriesnumber || '', row.Equipment || '')}
-                                                className="p-1 text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded transition-all duration-200" 
+                                                className="p-1 text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded transition-all duration-200 cursor-pointer" 
                                                 title="View History"
                                             >
                                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -998,6 +1003,36 @@ export default function Calibration() {
             >
                 <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-200 tracking-tight mb-2">Line ID *</label>
+                            {editingId ? (
+                                <Select
+                                    value={formData.LineID || ''}
+                                    onChange={(e) => setFormData({...formData, LineID: e.target.value})}
+                                >
+                                    <option value="">Select Line</option>
+                                    {dropdownOptions.lines.map(line => (
+                                        <option key={line} value={line}>{line}</option>
+                                    ))}
+                                </Select>
+                            ) : (
+                                <>
+                                    <input
+                                        list="lineList"
+                                        value={formData.LineID || ''}
+                                        onChange={(e) => setFormData({...formData, LineID: e.target.value})}
+                                        className="w-full px-4 py-3.5 bg-slate-800/60 border border-slate-600/50 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 backdrop-blur-sm hover:border-slate-500/70"
+                                        placeholder="Type or choose line"
+                                        required
+                                    />
+                                    <datalist id="lineList">
+                                        {dropdownOptions.lines.map(line => (
+                                            <option key={line} value={line} />
+                                        ))}
+                                    </datalist>
+                                </>
+                            )}
+                        </div>
                         <div>
                             <label className="block text-sm font-semibold text-slate-200 tracking-tight mb-2">Station *</label>
                             {editingId ? (
@@ -1113,12 +1148,6 @@ export default function Calibration() {
                                 </>
                             )}
                         </div>
-                        <Input
-                            label="DT *"
-                            value={formData.DT || ''}
-                            onChange={(e) => setFormData({...formData, DT: e.target.value})}
-                            placeholder="e.g. CERT-2025-001"
-                        />
                         <div>
                             <label className="block text-sm font-semibold text-slate-200 tracking-tight mb-2">Serial Number *</label>
                             {editingId ? (
@@ -1133,10 +1162,37 @@ export default function Calibration() {
                                     value={formData.Seriesnumber || ''}
                                     onChange={(e) => setFormData({...formData, Seriesnumber: e.target.value})}
                                     className="w-full px-4 py-3.5 bg-slate-800/60 border border-slate-600/50 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 backdrop-blur-sm hover:border-slate-500/70"
+                                    placeholder="Type serial number"
                                     required
                                 />
                             )}
                         </div>
+                        <Input
+                            label="DT *"
+                            value={formData.DT || ''}
+                            onChange={(e) => setFormData({...formData, DT: e.target.value})}
+                            placeholder="Type dt"
+                        />
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-200 tracking-tight mb-2">Asset Number *</label>
+                            {editingId ? (
+                                <input
+                                    value={formData.AssetNumber || ''}
+                                    className="w-full px-4 py-3.5 bg-slate-700/40 border border-slate-500/30 rounded-xl text-slate-300 cursor-not-allowed transition-all duration-300"
+                                    readOnly
+                                    disabled
+                                />
+                            ) : (
+                                <input
+                                    value={formData.AssetNumber || ''}
+                                    onChange={(e) => setFormData({...formData, AssetNumber: e.target.value})}
+                                    className="w-full px-4 py-3.5 bg-slate-800/60 border border-slate-600/50 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 backdrop-blur-sm hover:border-slate-500/70"
+                                    placeholder="Type asset number"
+                                    required
+                                />
+                            )}
+                        </div>
+
                         <Input
                             label="Start Date *"
                             type="datetime-local"
@@ -1149,36 +1205,7 @@ export default function Calibration() {
                             value={formData.EndDate ? new Date(formData.EndDate).toISOString().slice(0,16) : ''}
                             onChange={(e) => setFormData({...formData, EndDate: e.target.value})}
                         />
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-200 tracking-tight mb-2">Line ID *</label>
-                            {editingId ? (
-                                <Select
-                                    value={formData.LineID || ''}
-                                    onChange={(e) => setFormData({...formData, LineID: e.target.value})}
-                                >
-                                    <option value="">Select Line</option>
-                                    {dropdownOptions.lines.map(line => (
-                                        <option key={line} value={line}>{line}</option>
-                                    ))}
-                                </Select>
-                            ) : (
-                                <>
-                                    <input
-                                        list="lineList"
-                                        value={formData.LineID || ''}
-                                        onChange={(e) => setFormData({...formData, LineID: e.target.value})}
-                                        className="w-full px-4 py-3.5 bg-slate-800/60 border border-slate-600/50 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 backdrop-blur-sm hover:border-slate-500/70"
-                                        placeholder="Type or choose line"
-                                        required
-                                    />
-                                    <datalist id="lineList">
-                                        {dropdownOptions.lines.map(line => (
-                                            <option key={line} value={line} />
-                                        ))}
-                                    </datalist>
-                                </>
-                            )}
-                        </div>
+
                         <Select
                             label="Status *"
                             value={formData.Status || ''}
@@ -1219,24 +1246,7 @@ export default function Calibration() {
                                 </>
                             )}
                         </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-200 tracking-tight mb-2">Asset Number *</label>
-                            {editingId ? (
-                                <input
-                                    value={formData.AssetNumber || ''}
-                                    className="w-full px-4 py-3.5 bg-slate-700/40 border border-slate-500/30 rounded-xl text-slate-300 cursor-not-allowed transition-all duration-300"
-                                    readOnly
-                                    disabled
-                                />
-                            ) : (
-                                <input
-                                    value={formData.AssetNumber || ''}
-                                    onChange={(e) => setFormData({...formData, AssetNumber: e.target.value})}
-                                    className="w-full px-4 py-3.5 bg-slate-800/60 border border-slate-600/50 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 backdrop-blur-sm hover:border-slate-500/70"
-                                    required
-                                />
-                            )}
-                        </div>
+
                     </div>
                     <div>
                         <label className="block text-sm font-semibold text-slate-200 tracking-tight mb-2">Comment</label>
@@ -1254,7 +1264,7 @@ export default function Calibration() {
                         </Button>
                         <button 
                             type="submit" 
-                            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-lg hover:shadow-xl"
+                            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer"
                         >
                             {editingId ? 'Update Equipment' : 'Add Equipment'}
                         </button>
@@ -1269,7 +1279,7 @@ export default function Calibration() {
                 title="Equipment Due Soon (Within 30 Days)"
                 size="xl"
             >
-                <div className="space-y-4">
+                <div className="space-y-4 " >
                     {dueSoonItems.length === 0 ? (
                         <div className="text-center py-8">
                             <div className="text-6xl mb-4">✅</div>
@@ -1365,7 +1375,7 @@ export default function Calibration() {
                                                                     setIsModalOpen(true);
                                                                     setIsDueSoonModalOpen(false);
                                                                 }}
-                                                                className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded-lg transition-all duration-200 group"
+                                                                className="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded-lg transition-all duration-200 group cursor-pointer"
                                                                 title="Edit Calibration"
                                                             >
                                                                 <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1387,6 +1397,7 @@ export default function Calibration() {
                         <Button 
                             variant="secondary" 
                             onClick={() => setIsDueSoonModalOpen(false)}
+                            className="cursor-pointer"
                         >
                             Close
                         </Button>

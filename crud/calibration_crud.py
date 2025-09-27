@@ -52,13 +52,17 @@ def update_calibration(db: Session, cal_id: int, cal_update: CalibrationUpdate, 
     cal = db.query(APEBMCalibration).filter(APEBMCalibration.ID == cal_id).first()
     if not cal:
         return None
-    log_history(db, cal, "UPDATE", user)
+    
+    # Update the record first
     for key, value in cal_update.dict(exclude_unset=True).items():
         setattr(cal, key, value)
     cal.Version += 1
     cal.Timestamp = datetime.now()
     db.commit()
     db.refresh(cal)
+    
+    # Log history AFTER updating the record to capture the new values
+    log_history(db, cal, "UPDATE", user)
     return cal
 
 def delete_calibration(db: Session, cal_id: int, user="Web User"):

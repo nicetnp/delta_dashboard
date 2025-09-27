@@ -3,8 +3,8 @@ import type { ComponentType } from 'react';
 
 // API Configuration - Centralized base URLs
 export const API_CONFIG = {
-  BASE_URL: 'http://10.216.128.133:8080',
-  WS_BASE_URL: 'ws://10.216.128.133:8080'
+  BASE_URL: 'http://localhost:8000',
+  WS_BASE_URL: 'ws://localhost:8000'
 } as const;
 
 // Lazy load components

@@ -25,6 +25,7 @@ export default function StationDetail() {
     const lineId = searchParams.get("lineId") || "";
     const station = searchParams.get("station") || "";
     const workDate = searchParams.get("workDate") || "";
+    const chartColor = searchParams.get("color") || "#f7941d";
 
     const [data, setData] = useState<FailureRecord[]>([]);
     const [chartType, setChartType] = useState<"testerId" | "failItem">("testerId");
@@ -158,6 +159,7 @@ export default function StationDetail() {
                         // This is a double click - show line chart for the selected category
                         const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
                         const filteredData = data.filter(row => (row[filterColumn] || '') === label);
+
                         setIsLineChart(true);
                         setSelectedCategory(label);
                         createLineChart(filteredData, label, station, "#f7941d");
@@ -423,7 +425,7 @@ export default function StationDetail() {
                         {
                             label: chartType === "testerId" ? "Failures by Tester" : "Top 5 Failed Items",
                             data: sorted.map(([, v]) => v),
-                            backgroundColor: "#f7941d",
+                            backgroundColor: chartColor,
                         },
                     ],
                 },
@@ -445,13 +447,13 @@ export default function StationDetail() {
 
                             // This is a double click - show line chart for the selected category
                             const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
-                            const filteredData = data.filter(row => (row[filterColumn] || '0') === label);
-                            createLineChart(filteredData, label, station, "#f7941d");
+                            const filteredData = data.filter(row => (row[filterColumn] || '') === label);
+                            createLineChart(filteredData, label, station, chartColor);
                         } else {
                             // This is a single click - filter table
                             clickTimerRef.current = setTimeout(() => {
                                 const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
-                                const filteredData = data.filter(row => (row[filterColumn] || '0') === label);
+                                const filteredData = data.filter(row => (row[filterColumn] || '') === label);
                                 setFiltered(filteredData);
                                 clickTimerRef.current = null;
                             }, 200);
@@ -478,7 +480,7 @@ export default function StationDetail() {
             // Remove back button
             backButton.remove();
         };
-    }, [data, chartType, station]);
+    }, [data, chartType, station, chartColor]);
 
 
 

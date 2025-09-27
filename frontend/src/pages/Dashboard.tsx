@@ -72,7 +72,9 @@ export default function Dashboard() {
             <div className="mb-10">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-bold text-slate-100 mb-3 tracking-tight">Manufacturing Dashboard</h1>
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-3 tracking-tight">
+                            Failures Dashboard
+                        </h1>
                         <p className="text-slate-400 text-lg font-medium">Real-time failure analysis and monitoring</p>
                     </div>
                     <StatusBadge status={connected ? 'connected' : 'disconnected'} size="lg" />

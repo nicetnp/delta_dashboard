@@ -457,7 +457,7 @@ export default function Calibration() {
             }
             
             setHistoryData(historyData);
-            setHistorySerialNumber(serialNumber);
+            // setHistorySerialNumber(serialNumber);
             setHistoryEquipmentName(equipmentName);
             setIsHistoryModalOpen(true);
         } catch (error) {

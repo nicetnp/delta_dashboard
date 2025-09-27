@@ -400,6 +400,8 @@ export default function FixtureDetail() {
     const visibleData = (filtered || data)
         .filter(
             (r) =>
+                r.sn.toLowerCase().includes(search.toLowerCase()) ||
+                r.model.toLowerCase().includes(search.toLowerCase()) ||
                 r.testerId.toLowerCase().includes(search.toLowerCase()) ||
                 r.fixtureId.toLowerCase().includes(search.toLowerCase()) ||
                 r.failItem.toLowerCase().includes(search.toLowerCase()) ||

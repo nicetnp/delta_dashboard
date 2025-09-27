@@ -110,6 +110,7 @@ export default function Dashboard() {
                         value={lineId}
                         onChange={(e) => setLineId(e.target.value)}
                         icon="🏭"
+                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform"
                     >
                         <option value="BMA01">BMA01</option>
                         <option value="B3">B3</option>
@@ -121,6 +122,7 @@ export default function Dashboard() {
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
                         icon="📅"
+                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform"
                     />
 
                     <Input
@@ -129,6 +131,7 @@ export default function Dashboard() {
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
                         icon="📅"
+                        className="flex-1 min-w-[180px] hover:scale-105 transition-transform"
                     />
 
                     <div className="flex items-end">
@@ -136,8 +139,8 @@ export default function Dashboard() {
                             onClick={resetFilters}
                             variant="secondary"
                             size="md"
-                            className="w-full"
                             icon="🔄"
+                            className="flex-1 min-w-[180px] hover:scale-105 transition-transform cursor-pointer"
                         >
                             Reset
                         </Button>
@@ -153,7 +156,7 @@ export default function Dashboard() {
                         variant="primary"
                         size="lg"
                         icon="🔧"
-                        className="flex-1 min-w-[200px]"
+                        className="flex-1 min-w-[200px] cursor-pointer"
                     >
                         Fixture Failure Analysis
                     </Button>
@@ -162,7 +165,7 @@ export default function Dashboard() {
                         variant="primary"
                         size="lg"
                         icon="⚙️"
-                        className="flex-1 min-w-[200px]"
+                        className="flex-1 min-w-[200px] cursor-pointer"
                     >
                         Tester Failure Analysis
                     </Button>

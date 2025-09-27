@@ -122,7 +122,7 @@ export default function TesterDetail() {
                 failItemCounts[d.failItem] = (failItemCounts[d.failItem] || 0) + 1;
             }
         });
-        
+
         return Object.entries(failItemCounts)
             .sort((a, b) => b[1] - a[1]) // Sort by count descending
             .map(([failItem]) => failItem);
@@ -131,15 +131,15 @@ export default function TesterDetail() {
     // Filter data by selected model and failitem with useMemo to prevent unnecessary re-renders
     const modelFilteredData = useMemo(() => {
         let filteredData = data;
-        
+
         if (selectedModel) {
             filteredData = filteredData.filter(d => d.model === selectedModel);
         }
-        
+
         if (selectedFailItem) {
             filteredData = filteredData.filter(d => d.failItem === selectedFailItem);
         }
-        
+
         return filteredData;
     }, [data, selectedModel, selectedFailItem]);
 
@@ -156,7 +156,7 @@ export default function TesterDetail() {
         if (!station && chartType === "testerId") {
             // --- All Station Aggregation Logic ---
             console.log('Sample testerId values from data:', modelFilteredData.slice(0, 20).map(d => d.testerId));
-            
+
             modelFilteredData.forEach((d) => {
                 const testerId = d.testerId || "";
                 let stationName = "";
@@ -177,7 +177,7 @@ export default function TesterDetail() {
                 if (!stationName) {
                     const baseName = testerId.split('_')[0];
                     console.log(`Extracted baseName: ${baseName} from ${testerId}`);
-                    
+
                     // Try direct mapping to known stations
                     // if (baseName.includes('VF') || baseName.includes('LASH')) {
                     //     stationName = baseName.includes('2') ? 'VFLASH2' : 'VFLASH1';
@@ -205,7 +205,7 @@ export default function TesterDetail() {
                     } else {
                         stationName = baseName; // Keep original if no pattern matches
                     }
-                    
+
                     console.log(`Final mapping: ${testerId} -> ${stationName}`);
                 }
 
@@ -213,11 +213,11 @@ export default function TesterDetail() {
                     counts[stationName] = (counts[stationName] || 0) + 1;
                 }
             });
-            
+
             console.log('Final station counts:', counts);
 
             const stationOrder = ['VFLASH1', 'HIPOT1', 'ATS1', 'VIBRATION', 'HEATUP', 'BURNIN', 'HIPOT2', 'ATS2', 'VFLASH2', 'ATS3'];
-            
+
             entries = Object.entries(counts)
                 .filter(([, count]) => count > 0) // Filter out stations with no failures
                 .sort((a, b) => {
@@ -250,7 +250,7 @@ export default function TesterDetail() {
             } else {
                 entries = entries.sort((a, b) => a[0].localeCompare(b[0]));
             }
-            
+
             chartLabel = chartType === "testerId" ? `Failures by Tester (${displayStationName})` : `Top 5 Failed Items (${displayStationName})`;
             const stationColor = stationColors[displayStationName.toUpperCase()] || '#37B019';
             backgroundColors = stationColor;
@@ -292,8 +292,8 @@ export default function TesterDetail() {
                 responsive: true,
                 maintainAspectRatio: false,
                 indexAxis: chartType === "failItem" ? "y" : "x",
-                animation: { 
-                    duration: 800, 
+                animation: {
+                    duration: 800,
                     easing: 'easeInOutCubic' as any,
                     delay: (context) => context.dataIndex * 50,
                 },
@@ -322,6 +322,11 @@ export default function TesterDetail() {
                         cornerRadius: 8 as any,
                         titleFont: { size: 14, weight: 'bold' } as any,
                         bodyFont: { size: 13 } as any,
+                    }
+                },
+                onHover: (_, elements) => {
+                    if (canvasRef.current) {
+                        canvasRef.current.style.cursor = elements.length > 0 ? 'pointer' : 'default';
                     }
                 },
                 onClick: (_, elements) => {
@@ -377,7 +382,7 @@ export default function TesterDetail() {
                             filteredData = modelFilteredData.filter(row => (row[filterColumn] || '') === label);
                             colorForChart = Array.isArray(backgroundColors) ? backgroundColors[idx] : backgroundColors as string;
                         }
-                        
+
                         createLineChart(filteredData, label, displayStationName, colorForChart);
                     } else {
                         // This is a single click - filter table
@@ -422,7 +427,7 @@ export default function TesterDetail() {
                                 const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
                                 filteredData = modelFilteredData.filter(row => (row[filterColumn] || '') === label);
                             }
-                            
+
                             setFiltered(filteredData);
                             clickTimerRef.current = null;
                         }, 200); // 200ms delay for double click detection
@@ -719,9 +724,9 @@ export default function TesterDetail() {
                             <div>
                                 <p className="text-slate-400 text-sm font-medium">Duplicate Testers</p>
                                 <p className="text-2xl font-bold text-green-400 mt-1">{(() => {
-                                    const counts = data.reduce((acc, item) => { 
-                                        acc[item.testerId] = (acc[item.testerId] || 0) + 1; 
-                                        return acc; 
+                                    const counts = data.reduce((acc, item) => {
+                                        acc[item.testerId] = (acc[item.testerId] || 0) + 1;
+                                        return acc;
                                     }, {} as Record<string, number>);
                                     return Object.keys(counts).filter(key => counts[key] > 1).length;
                                 })()}</p>
@@ -739,9 +744,9 @@ export default function TesterDetail() {
                             <div>
                                 <p className="text-slate-400 text-sm font-medium">Duplicate Fail Items</p>
                                 <p className="text-2xl font-bold text-purple-400 mt-1">{(() => {
-                                    const counts = data.filter(item => item.failItem).reduce((acc, item) => { 
-                                        acc[item.failItem] = (acc[item.failItem] || 0) + 1; 
-                                        return acc; 
+                                    const counts = data.filter(item => item.failItem).reduce((acc, item) => {
+                                        acc[item.failItem] = (acc[item.failItem] || 0) + 1;
+                                        return acc;
                                     }, {} as Record<string, number>);
                                     return Object.keys(counts).filter(key => counts[key] > 1).length;
                                 })()}</p>
@@ -773,7 +778,7 @@ export default function TesterDetail() {
                                     }
                                     window.location.search = params.toString();
                                 }}
-                                className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                                className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200 cursor-pointer"
                             >
                                 <option value="">All Stations</option>
                                 <option value="%LASH">VFlash1</option>
@@ -788,14 +793,14 @@ export default function TesterDetail() {
                                 <option value="%TS3">ATS3</option>
                             </select>
                         </div>
-                        
+
                         <div className="flex items-center gap-3">
                             <label htmlFor="modelSelect" className="text-slate-200 font-medium">Model:</label>
                             <select
                                 id="modelSelect"
                                 value={selectedModel}
                                 onChange={(e) => setSelectedModel(e.target.value)}
-                                className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                                className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200 cursor-pointer"
                             >
                                 <option value="">All Models</option>
                                 {uniqueModels.map(model => (
@@ -803,14 +808,14 @@ export default function TesterDetail() {
                                 ))}
                             </select>
                         </div>
-                        
+
                         <div className="flex items-center gap-3">
                             <label htmlFor="failItemSelect" className="text-slate-200 font-medium">Fail Item:</label>
                             <select
                                 id="failItemSelect"
                                 value={selectedFailItem}
                                 onChange={(e) => setSelectedFailItem(e.target.value)}
-                                className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200"
+                                className="px-4 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all duration-200 cursor-pointer"
                             >
                                 <option value="">All Fail Items</option>
                                 {uniqueFailItems.map(failItem => (
@@ -851,7 +856,7 @@ export default function TesterDetail() {
                             onClick={() =>
                                 setChartType((prev) => (prev === "testerId" ? "failItem" : "testerId"))
                             }
-                            className="px-4 py-2 rounded bg-orange-500 hover:bg-orange-600 text-white transition-colors duration-200 font-medium"
+                            className="px-4 py-2 rounded bg-orange-500 hover:bg-orange-600 text-white transition-colors duration-200 font-medium cursor-pointer"
                         >
                             {chartType === "testerId" ? "Top 5 Failed" : "By Tester"}
                         </button>
@@ -910,7 +915,7 @@ export default function TesterDetail() {
                 <div className="text-center">
                     <button
                         onClick={() => goToDashboard()}
-                        className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors duration-200"
+                        className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors duration-200 cursor-pointer"
                     >
                         Back to Summary
                     </button>

@@ -295,15 +295,15 @@ const risk = useMemo(() => {
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-semibold">Detail</h1>
-        <button onClick={handleBack} className="px-4 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800">
+        <h1 className="text-4xl font-bold bg-gradient-to-tr from-blue-400 to-purple-400 bg-clip-text text-transparent mb-3 tracking-tight">Detail</h1>
+        <button onClick={handleBack} className="px-4 py-2 rounded-xl bg-slate-700 text-white hover:bg-slate-800 cursor-pointer">
           Back to One Day Search
         </button>
       </div>
 
       {/* Key cards */}
       <div className="grid md:grid-cols-3 gap-3 mb-5">
-        <div className="bg-white rounded-2xl shadow p-4 text-sm">
+        <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4 text-sm">
           <div><b>Model:</b> {params.model}</div>
           <div><b>Tester:</b> {params.tester}</div>
           <div><b>Day:</b> {params.day}</div>
@@ -311,20 +311,20 @@ const risk = useMemo(() => {
           <div><b>Occ idx:</b> {occ_idx}</div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow p-4 text-sm">
+        <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4 text-sm">
           <div><b>Step:</b> {params.step}</div>
           <div><b>Test item:</b> {params.test_item}</div>
           <div><b>Description:</b> {params.test_desc}</div>
         </div>
 
         {/* Program card */}
-        <div className="bg-white rounded-2xl shadow p-4">
-          <div className="text-sm text-slate-500">Program</div>
+        <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
+          <div className="text-sm text-slate-400">Program</div>
           <div className="text-lg font-semibold truncate" title={selectedProg ?? "-"}>
             {selectedProg ?? "-"}
           </div>
 
-          <div className="mt-2 text-sm text-slate-500">Revision</div>
+          <div className="mt-2 text-sm text-slate-400">Revision</div>
           <div className="text-lg font-semibold">{selectedRev ?? progRevDisplay}</div>
 
           {note && (
@@ -335,8 +335,8 @@ const risk = useMemo(() => {
         </div>
 
                 {/* AI Risk (rule-based) */}
-        <div className="bg-white rounded-2xl shadow p-4">
-          <div className="text-sm text-slate-500">AI Risk (rule-based)</div>
+        <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
+          <div className="text-sm text-slate-200">AI Risk (rule-based)</div>
           <div
             className={
               "text-lg font-semibold " +
@@ -346,7 +346,7 @@ const risk = useMemo(() => {
           >
             {risk.level.toUpperCase()} • {risk.score}
           </div>
-          <ul className="mt-2 text-xs text-slate-600 list-disc pl-5 space-y-1">
+          <ul className="mt-2 text-xs text-slate-300 list-disc pl-5 space-y-1">
             {risk.reasons.slice(0, 3).map((r: string, i: number) => (
               <li key={i}>{r}</li>
             ))}
@@ -356,10 +356,10 @@ const risk = useMemo(() => {
       </div>
 
       {/* 1) Distribution of samples */}
-      <div className="bg-white rounded-2xl shadow p-4 mb-5">
+      <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4 mb-5">
         <h2 className="text-lg font-semibold mb-2">Sample distribution (selected day)</h2>
         <EnhancedHistogram values={samples} mean={mean} median={median} lsl={lsl as any} usl={usl as any} />
-        <div className="mt-2 text-sm text-slate-600">
+        <div className="mt-2 text-sm text-slate-300">
           Count: {samples.length} • Mean: {fmtNum(mean)} • Median: {fmtNum(median)}
           {(lsl != null || usl != null) && <> • Spec (LSL–USL): {fmtNum(lsl)} – {fmtNum(usl)}</>}
           {errSamples && <span className="text-rose-600"> • {errSamples}</span>}
@@ -378,7 +378,7 @@ const risk = useMemo(() => {
       </div>
 
       {/* 2) Daily Mean */}
-     <div className="bg-white rounded-2xl shadow p-4 mb-5">
+     <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4 mb-5">
         <h3 className="text-base font-semibold mb-2">Daily Mean (selected month)</h3>
         <Line
           from={dailyMean.map(d => ({ x: d.day, y: d.mean_val }))}
@@ -405,11 +405,11 @@ const risk = useMemo(() => {
       </div>
 
       {/* 3) Daily CPK */}
-      <div className="bg-white rounded-2xl shadow p-4 mb-5">
+      <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4 mb-5">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-base font-semibold">Daily CPK (selected month)</h3>
           <label className="flex items-center gap-2 text-sm">
-            <span className="text-slate-600">Min CPK</span>
+            <span className="text-slate-300">Min CPK</span>
             <input
               className="w-24 rounded-lg border border-slate-300 px-2 py-1"
               placeholder="e.g. 1.33"
@@ -427,11 +427,11 @@ const risk = useMemo(() => {
       </div>
 
   {/* 4a) Daily Sigma — Time series */}
-<div className="bg-white rounded-2xl shadow p-4 mb-5">
+<div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4 mb-5">
   <div className="flex items-center justify-between mb-2">
     <h3 className="text-base font-semibold">Daily Sigma — Time series (selected month)</h3>
     <label className="flex items-center gap-2 text-sm">
-      <span className="text-slate-600">Max ?</span>
+      <span className="text-slate-300">Max</span>
       <input
         className="w-24 rounded-lg border border-slate-300 px-2 py-1"
         placeholder="e.g. 2.0"
@@ -452,11 +452,11 @@ const risk = useMemo(() => {
 </div>
 
   {/* 4b) Sigma ?–? Scatter (X=Mean, Y=Sigma) */}
-  <div className="bg-white rounded-2xl shadow p-4">
+  <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
     <div className="flex items-center justify-between mb-2">
       <h3 className="text-base font-semibold">Sigma-Scatter (selected month)</h3>
       <label className="flex items-center gap-2 text-sm">
-        <span className="text-slate-600">Max ?</span>
+        <span className="text-slate-300">Max</span>
         <input
           className="w-24 rounded-lg border border-slate-300 px-2 py-1"
           placeholder="e.g. 2.0"
@@ -585,7 +585,7 @@ function Line({
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
-      <rect x={0} y={0} width={width} height={height} className="fill-slate-50" />
+      <rect x={0} y={0} width={width} height={height} className="fill-slate-900" />
       {[0, 0.25, 0.5, 0.75, 1].map((g, i) => (
         <line key={i} x1={pad} x2={width - pad}
           y1={pad + (height - 2 * pad) * g}
@@ -598,7 +598,7 @@ function Line({
           <line x1={pad} x2={width - pad} y1={Y(r.value)} y2={Y(r.value)}
             className={`${toneCls[r.tone ?? "rose"]}`} strokeWidth={1.5} strokeDasharray="5 4" />
           <text x={width - pad - 2} y={Y(r.value) - 3} textAnchor="end"
-            className="text-[10px] fill-slate-600">
+            className="text-[10px] fill-slate-200">
             {(r.label ?? r.value.toFixed(3)) + (unit || "")}
           </text>
         </g>
@@ -626,16 +626,16 @@ function Line({
       })}
 
       {/* labels á¡¹ */}
-      <text x={pad} y={height - 6} className="text-[10px] fill-slate-500">
+      <text x={pad} y={height - 6} className="text-[10px] fill-slate-200">
         {new Date(minX).toISOString().slice(0, 10)}
       </text>
-      <text x={width - pad - 60} y={height - 6} className="text-[10px] fill-slate-500">
+      <text x={width - pad - 60} y={height - 6} className="text-[10px] fill-slate-200">
         {new Date(maxX).toISOString().slice(0, 10)}
       </text>
-      <text x={4} y={height - pad} className="text-[10px] fill-slate-500">
+      <text x={4} y={height - pad} className="text-[10px] fill-slate-200">
         {minY.toFixed(3)}{unit}
       </text>
-      <text x={4} y={pad + 8} className="text-[10px] fill-slate-500">
+      <text x={4} y={pad + 8} className="text-[10px] fill-slate-200">
         {maxY.toFixed(3)}{unit}
       </text>
     </svg>
@@ -743,7 +743,7 @@ function Scatter({
         <g key={i}>
           <line x1={pad} x2={width - pad} y1={Y(r.value)} y2={Y(r.value)}
             className={`${toneCls[r.tone ?? "rose"]}`} strokeWidth={1.5} strokeDasharray="5 4" />
-          <text x={width - pad - 2} y={Y(r.value) - 4} textAnchor="end" className="text-[10px] fill-slate-600">
+          <text x={width - pad - 2} y={Y(r.value) - 4} textAnchor="end" className="text-[10px] fill-slate-200">
             {r.label ?? r.value.toFixed(3)}
           </text>
         </g>
@@ -772,15 +772,15 @@ function Scatter({
 
       {/* axis labels + min/max ticks */}
       {/* X ticks («éÒÂ/¢ÇÒ) */}
-      <text x={pad} y={height - 6} className="text-[10px] fill-slate-500">{minX.toFixed(2)}{xUnit}</text>
-      <text x={width - pad - 40} y={height - 6} className="text-[10px] fill-slate-500">{maxX.toFixed(2)}{xUnit}</text>
+      <text x={pad} y={height - 6} className="text-[10px] 200">{minX.toFixed(2)}{xUnit}</text>
+      <text x={width - pad - 40} y={height - 6} className="text-[10px] fill-slate-200">{maxX.toFixed(2)}{xUnit}</text>
       {/* Y ticks (ÅèÒ§=¤èÒµèÓÊØ´, º¹=¤èÒÊÙ§ÊØ´) */}
-      <text x={6} y={height - pad} className="text-[10px] fill-slate-500">{minY.toFixed(2)}{yUnit}</text>
-      <text x={6} y={pad + 10} className="text-[10px] fill-slate-500">{maxY.toFixed(2)}{yUnit}</text>
+      <text x={6} y={height - pad} className="text-[10px] fill-slate-200">{minY.toFixed(2)}{yUnit}</text>
+      <text x={6} y={pad + 10} className="text-[10px] fill-slate-200">{maxY.toFixed(2)}{yUnit}</text>
 
       {/* ª×èÍá¡¹ (option) */}
-      {xLabel && <text x={width/2} y={height - 4} textAnchor="middle" className="text-[10px] fill-slate-600">{xLabel}</text>}
-      {yLabel && <text x={10} y={height/2} textAnchor="start" className="text-[10px] fill-slate-600 -rotate-90 origin-left">{yLabel}</text>}
+      {xLabel && <text x={width/2} y={height - 4} textAnchor="middle" className="text-[10px] fill-slate-200">{xLabel}</text>}
+      {yLabel && <text x={10} y={height/2} textAnchor="start" className="text-[10px] fill-slate-200 -rotate-90 origin-left">{yLabel}</text>}
     </svg>
   );
 }

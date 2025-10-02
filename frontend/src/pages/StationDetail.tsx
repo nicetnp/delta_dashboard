@@ -5,6 +5,7 @@ import clsx from "clsx";
 import Card from "../components/Card";
 import { useRouteNavigation } from "../hooks/useRouteNavigation";
 import { API_CONFIG } from "../config/routes";
+import { stationMap } from "../types/failure";
 
 interface FailureRecord {
     sn: string;
@@ -26,6 +27,8 @@ export default function StationDetail() {
     const station = searchParams.get("station") || "";
     const workDate = searchParams.get("workDate") || "";
     const chartColor = searchParams.get("color") || "#f7941d";
+
+    const displayStation = Object.entries(stationMap).find(([_, value]) => value === station)?.[0] || station;
 
     const [data, setData] = useState<FailureRecord[]>([]);
     const [chartType, setChartType] = useState<"testerId" | "failItem">("testerId");
@@ -358,11 +361,7 @@ export default function StationDetail() {
 
         chartRef.current = newChart;
 
-        // Update page title
-        const pageTitle = document.querySelector('h1');
-        if (pageTitle) {
-            pageTitle.textContent = `${label}`;
-        }
+
 
         // Show table and controls (don't hide them)
         const tableCard = document.querySelector('[data-table-card]');
@@ -404,7 +403,6 @@ export default function StationDetail() {
 
         // Add click handler
         backButton.onclick = () => {
-            // Restore original chart
             if (chartRef.current) chartRef.current.destroy();
 
             // Recreate bar chart
@@ -445,12 +443,12 @@ export default function StationDetail() {
                             clearTimeout(clickTimerRef.current);
                             clickTimerRef.current = null;
 
-                            // This is a double click - show line chart for the selected category
+                            // Double click → line chart
                             const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
                             const filteredData = data.filter(row => (row[filterColumn] || '') === label);
                             createLineChart(filteredData, label, station, chartColor);
                         } else {
-                            // This is a single click - filter table
+                            // Single click → filter table
                             clickTimerRef.current = setTimeout(() => {
                                 const filterColumn = chartType === "failItem" ? 'failItem' : 'testerId';
                                 const filteredData = data.filter(row => (row[filterColumn] || '') === label);
@@ -462,24 +460,22 @@ export default function StationDetail() {
                 },
             });
 
-            // Restore page title
-            const pageTitle = document.querySelector('h1');
-            if (pageTitle) {
-                pageTitle.textContent = `${station}`;
-            }
-
             // Show table and controls
             const tableCard = document.querySelector('[data-table-card]');
             if (tableCard) {
                 (tableCard as HTMLElement).style.display = 'block';
             }
 
-            // Clear filtered data to show all data in table
+            // Clear filtered data
             setFiltered(null);
+
+            // ✅ Reset line chart state
+            setIsLineChart(false);
 
             // Remove back button
             backButton.remove();
         };
+
     }, [data, chartType, station, chartColor]);
 
 
@@ -510,7 +506,7 @@ export default function StationDetail() {
         <>
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-slate-100 mb-3 tracking-tight">{station} Failures Dashboard</h1>
+                    <h1 className="text-4xl font-bold text-slate-100 mb-3 tracking-tight"   >{displayStation} Failures Dashboard</h1>
                     <p className="text-slate-400 text-lg font-medium">Line {lineId} - {workDate}</p>
                 </div>
 
@@ -602,9 +598,10 @@ export default function StationDetail() {
                             className="px-3 py-2 rounded bg-slate-700/60 border border-slate-600/50 text-slate-100 placeholder-slate-400"
                         />
                         <button
-                            onClick={() =>
+                            onClick={() =>{
+                                setIsLineChart(false);
                                 setChartType((prev) => (prev === "testerId" ? "failItem" : "testerId"))
-                            }
+                            }}
                             className="px-4 py-2 rounded bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
                         >
                             {chartType === "testerId" ? "Top 5 Failed" : "By Tester"}

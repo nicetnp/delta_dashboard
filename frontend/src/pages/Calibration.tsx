@@ -44,6 +44,17 @@ interface ToastType {
 
 const CAL_API = "/calibration";
 
+function toLocalInputValue(date: Date) {
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return (
+        date.getFullYear() +
+        "-" + pad(date.getMonth() + 1) +
+        "-" + pad(date.getDate()) +
+        "T" + pad(date.getHours()) +
+        ":" + pad(date.getMinutes())
+    );
+}
+
 export default function Calibration() {
     const [rows, setRows] = useState<CalibrationRow[]>([]);
     const [loading, setLoading] = useState(false);
@@ -1196,16 +1207,15 @@ export default function Calibration() {
                         <Input
                             label="Start Date *"
                             type="datetime-local"
-                            value={formData.StartDate ? new Date(formData.StartDate).toISOString().slice(0,16) : ''}
+                            value={formData.StartDate ? toLocalInputValue(new Date(formData.StartDate)) : ''}
                             onChange={(e) => setFormData({...formData, StartDate: e.target.value})}
                         />
                         <Input
                             label="End Date *"
                             type="datetime-local"
-                            value={formData.EndDate ? new Date(formData.EndDate).toISOString().slice(0,16) : ''}
+                            value={formData.EndDate ? toLocalInputValue(new Date(formData.EndDate)) : ''}
                             onChange={(e) => setFormData({...formData, EndDate: e.target.value})}
                         />
-
                         <Select
                             label="Status *"
                             value={formData.Status || ''}
@@ -1326,7 +1336,8 @@ export default function Calibration() {
                                                 const isOverdue = daysLeft < 0;
                                                 
                                                 return (
-                                                    <tr key={item.ID} className="border-b border-slate-700/30 hover:bg-slate-700/20">
+                                                    <tr key={item.ID} className={`${getRowHighlight(item.StartDate || '', item.EndDate || '', item.Status || '')}
+                                                     border-b border-slate-700/30 transition-colors duration-200`}>
                                                     <td className="p-3 text-slate-200 text-center">{item.Station}</td>
                                                     <td className="p-3 text-slate-200 text-center">{item.Equipment}</td>
                                                     <td className="p-3 text-center">

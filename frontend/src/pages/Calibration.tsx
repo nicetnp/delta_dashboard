@@ -44,6 +44,17 @@ interface ToastType {
 
 const CAL_API = "/calibration";
 
+function toLocalInputValue(date: Date) {
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return (
+        date.getFullYear() +
+        "-" + pad(date.getMonth() + 1) +
+        "-" + pad(date.getDate()) +
+        "T" + pad(date.getHours()) +
+        ":" + pad(date.getMinutes())
+    );
+}
+
 export default function Calibration() {
     const [rows, setRows] = useState<CalibrationRow[]>([]);
     const [loading, setLoading] = useState(false);
@@ -950,10 +961,10 @@ export default function Calibration() {
                                         </span>
                                     </td>
                                     <td className="px-3 py-2 text-center">
-                                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                            <button 
+                                        <div className="flex items-center justify-center gap-1 opacity-30 group-hover:opacity-100 transition-opacity duration-200">
+                                            <button
                                                 onClick={() => openModal(row.ID)}
-                                                className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-all duration-200 cursor-pointer" 
+                                                className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-all duration-200 cursor-pointer"
                                                 title="Edit Equipment"
                                             >
                                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1194,17 +1205,19 @@ export default function Calibration() {
                         </div>
 
                         <Input
-                            label="Start Date *"
-                            type="datetime-local"
-                            value={formData.StartDate ? new Date(formData.StartDate).toISOString().slice(0,16) : ''}
-                            onChange={(e) => setFormData({...formData, StartDate: e.target.value})}
-                        />
-                        <Input
-                            label="End Date *"
-                            type="datetime-local"
-                            value={formData.EndDate ? new Date(formData.EndDate).toISOString().slice(0,16) : ''}
-                            onChange={(e) => setFormData({...formData, EndDate: e.target.value})}
-                        />
+                                label="Start Date *"
+                                type="datetime-local"
+                                value={formData.StartDate ? toLocalInputValue(new Date(formData.StartDate)) : ''}
+                                onChange={(e) => setFormData({...formData, StartDate: e.target.value})}
+                            />
+
+                            <Input
+                                label="End Date *"
+                                type="datetime-local"
+                                value={formData.EndDate ? toLocalInputValue(new Date(formData.EndDate)) : ''}
+                                onChange={(e) => setFormData({...formData, EndDate: e.target.value})}
+                            />
+
 
                         <Select
                             label="Status *"
@@ -1299,8 +1312,9 @@ export default function Calibration() {
                             
                             <div className="overflow-x-auto max-h-96">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-700/60 border-b border-slate-500/40">
+                                    <thead className="bg-slate-800/60 border-b border-slate-500/40">
                                         <tr>
+                                            <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Line</th>
                                             <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Station</th>
                                             <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Equipment</th>
                                             <th className="px-3 py-2 text-center text-xs font-semibold text-slate-100">Brand / Model</th>
@@ -1326,7 +1340,10 @@ export default function Calibration() {
                                                 const isOverdue = daysLeft < 0;
                                                 
                                                 return (
-                                                    <tr key={item.ID} className="border-b border-slate-700/30 hover:bg-slate-700/20">
+                                                    <tr
+                                                      key={item.ID}
+                                                      className={`${getRowHighlight(item.StartDate || '', item.EndDate || '', item.Status || '')} border-b border-slate-700/30 transition-colors duration-200`}
+                                                    >
                                                     <td className="p-3 text-slate-200 text-center">{item.Station}</td>
                                                     <td className="p-3 text-slate-200 text-center">{item.Equipment}</td>
                                                     <td className="p-3 text-center">

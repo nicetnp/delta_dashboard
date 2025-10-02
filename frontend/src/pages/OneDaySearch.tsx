@@ -468,26 +468,26 @@ export default function OneDaySearch() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="mb-8">
       <div className="max-w-7xl mx-auto p-4 md:p-6">
-        <h1 className="text-2xl md:text-3xl font-semibold mb-4">CPK Dashboard</h1>
+        <h1 className="text-4xl font-bold bg-gradient-to-tr from-blue-400 to-purple-400 bg-clip-text text-transparent mb-3 tracking-tight">CPK Dashboard</h1>
 
         {/* Filters */}
-        <div className="bg-white rounded-2xl shadow p-4 grid md:grid-cols-6 gap-4 mb-5">
+        <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4 grid md:grid-cols-6 gap-4 mb-5">
           <div>
-            <label className="block text-sm text-slate-500 mb-1">Day</label>
+            <label className="block text-sm rounded-2xlxl text-shadow-slate-400 mb-1">Day</label>
             <input
               type="date"
-              className="w-full rounded-xl border-slate-300"
+              className="max-w-full dr rounded-xl border border-slate-600/30"
               value={day}
               onChange={(e) => { setDay(e.target.value); }}
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm text-slate-500 mb-1">Model</label>
+            <label className="block text-sm text-shadow-slate-400 mb-1">Model</label>
             <select
-              className="w-full rounded-xl border-slate-300"
+              className="w-full  bg-slate-900 rounded-xl border border-slate-600/30 cursor-pointer"
               value={model}
               onChange={(e) => setModel(e.target.value)}
             >
@@ -500,9 +500,9 @@ export default function OneDaySearch() {
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm text-slate-500 mb-1">Tester</label>
+            <label className="block text-sm text-shadow-slate-400 mb-1">Tester</label>
             <select
-              className="w-full rounded-xl border-slate-300"
+                className="w-full  bg-slate-900 rounded-xl border border-slate-600/30 cursor-pointer"
               value={tester}
               onChange={(e) => setTester(e.target.value)}
             >
@@ -518,7 +518,7 @@ export default function OneDaySearch() {
             <button
               onClick={() => { resetPaging(); load(); }}
               disabled={loading}
-              className="w-full px-4 py-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow disabled:opacity-50"
+              className="w-full px-4 py-3 rounded-xl bg-slate-800 text-white hover:bg-slate-700 shadow disabled:opacity-50 cursor-pointer"
               aria-label="Search"
             >
               {loading ? "Loading..." : "Search"}
@@ -527,9 +527,9 @@ export default function OneDaySearch() {
 
           <div className="md:col-span-6 grid md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm text-slate-500 mb-1">Min CPK</label>
+              <label className="block text-sm text-shadow-slate-400 mb-1">Min CPK</label>
               <input
-                className="w-full rounded-xl border-slate-300"
+                className="w-full rounded-xl border border-slate-600/30"
                 placeholder="e.g. 1.33"
                 value={minCpk}
                 onChange={(e) => { setMinCpk(e.target.value); resetPaging(); }}
@@ -540,7 +540,7 @@ export default function OneDaySearch() {
               <button
                 onClick={downloadCsv}
                 disabled={!filtered.length}
-                className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-white shadow-sm disabled:opacity-50"
+                className="px-4 py-3 rounded-xl bg-slate-800 text-white hover:bg-slate-700 shadow disabled:opacity-50 cursor-pointer"
               >
                 Export CSV
               </button>
@@ -550,7 +550,7 @@ export default function OneDaySearch() {
 
         {/* KPI cards */}
         <div className="grid md:grid-cols-5 gap-4 mb-5">
-          <div className="bg-white rounded-2xl shadow p-4">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
             <div className="text-sm text-slate-500">
               Rows <span className="text-slate-400">(filtered)</span>
             </div>
@@ -559,17 +559,17 @@ export default function OneDaySearch() {
               Stats rows: {statsRows.length} (with LSL/USL & numeric CPK)
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow p-4">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
             <div className="text-sm text-slate-500">Min CPK</div>
             <div className="text-2xl font-semibold">{fmtNum(statsRows.length ? Math.min(...statsRows.map(r => r.cpk as number)) : null)}</div>
           </div>
-          <div className="bg-white rounded-2xl shadow p-4">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
             <div className="text-sm text-slate-500">Avg CPK</div>
             <div className="text-2xl font-semibold">
               {fmtNum(statsRows.length ? statsRows.reduce((s, r) => s + (r.cpk as number), 0) / statsRows.length : null)}
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow p-4">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
             <div className="text-sm text-slate-500">Median CPK</div>
             <div className="text-2xl font-semibold">
               {(() => {
@@ -579,7 +579,7 @@ export default function OneDaySearch() {
               })()}
             </div>
           </div>
-          <div className="bg-white rounded-2xl shadow p-4">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
             <div className="text-sm text-slate-500">P5 / P95</div>
             <div className="text-2xl font-semibold text-sm">
               {(() => {
@@ -595,7 +595,7 @@ export default function OneDaySearch() {
 
         {/* Analysis */}
         <div className="grid lg:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-2xl shadow p-4">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
             <h2 className="text-lg font-semibold mb-2">CPK distribution</h2>
             <EnhancedHistogram
               values={statsRows.map(r => r.cpk as number)}
@@ -618,52 +618,74 @@ export default function OneDaySearch() {
             />
           </div>
 
-          <div className="bg-white rounded-2xl shadow p-4">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
             <h2 className="text-lg font-semibold mb-2">Pareto by model (worst first)</h2>
             {!analysis.byModel.length ? (
               <div className="text-sm text-slate-500">No data</div>
             ) : (
-              <ul className="space-y-1 text-sm">
-                {analysis.byModel.map((g) => (
-                  <li key={g.key} className="flex items-center justify-between">
-                    <span className="truncate">{g.key}</span>
-                    <span className="flex items-center gap-2">
-                      <CpkBadge cpk={g.worst} />
-                      <span className="text-slate-500">avg {fmtNum(g.avg)} • n={g.count}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                <table className="w-full text-sm text-center">
+                    <thead>
+                    <tr>
+                        <th className="py-2">Model</th>
+                        <th className="py-2">Worst CPK</th>
+                        <th className="py-2">Average</th>
+                        <th className="py-2">Count</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {analysis.byModel.map((g) => (
+                        <tr key={g.key} className="border-t">
+                            <td className="py-2">{g.key}</td>
+                            <td className="py-2"><CpkBadge cpk={g.worst} /></td>
+                            <td className="py-2">{fmtNum(g.avg)}</td>
+                            <td className="py-2">{g.count}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+
             )}
           </div>
 
-          <div className="bg-white rounded-2xl shadow p-4">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
             <h2 className="text-lg font-semibold mb-2">Pareto by tester (worst first)</h2>
             {!analysis.byTester.length ? (
               <div className="text-sm text-slate-500">No data</div>
             ) : (
-              <ul className="space-y-1 text-sm">
-                {analysis.byTester.map((g) => (
-                  <li key={g.key} className="flex items-center justify-between">
-                    <span className="truncate">{g.key}</span>
-                    <span className="flex items-center gap-2">
-                      <CpkBadge cpk={g.worst} />
-                      <span className="text-slate-500">avg {fmtNum(g.avg)} • n={g.count}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                <table className="w-full text-sm text-center">
+                    <thead>
+                    <tr>
+                        <th className="py-2 px-3">Tester</th>
+                        <th className="py-2 px-3">Worst CPK</th>
+                        <th className="py-2 px-3">Average</th>
+                        <th className="py-2 px-3">Count</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {analysis.byTester.map((g) => (
+                        <tr key={g.key} className="border-t">
+                            <td className="py-2 px-3">{g.key}</td>
+                            <td className="py-2 px-3">
+                                <CpkBadge cpk={g.worst} />
+                            </td>
+                            <td className="py-2 px-3">{fmtNum(g.avg)}</td>
+                            <td className="py-2 px-3">{g.count}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+
             )}
           </div>
 
-          <div className="bg-white rounded-2xl shadow p-4 lg:col-span-3">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4 lg:col-span-3">
             <h2 className="text-lg font-semibold mb-2">Worst test items (top 10)</h2>
             {!analysis.byItem.length ? (
               <div className="text-sm text-slate-500">No data</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-max min-w-[600px] text-sm">
-                  <thead className="text-left border-b">
+                <table className="w-max min-w-[600px] text-center text-sm">
+                  <thead className="text-center border-b">
                     <tr>
                       <th className="py-2 pr-3">Test item</th>
                       <th className="py-2 pr-3">Worst CPK</th>
@@ -684,8 +706,8 @@ export default function OneDaySearch() {
                 </table>
               </div>
             )}
-            <div className="mt-8 bg-white rounded-2xl shadow p-4">
-              <h2 className="text-lg font-semibold mb-2">Program / Revision Cards</h2>
+            <div className="mt-8 bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
+              <h2 className="text-lg font-semibold mb-2">Program/Revision</h2>
               <ProgRevCards />
             </div>
 
@@ -693,13 +715,13 @@ export default function OneDaySearch() {
         </div>
 
         {/* Results table */}
-        <div className="bg-white rounded-2xl shadow p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">Results</h2>
+        <div className="bg-slate-900 backdrop-blur-2xl border border-slate-600/30 rounded-2xl shadow p-4">
+          <div className="flex items-center text-center mb-3">
+            <h2 className="text-center font-semibold">Result</h2>
 
             <div className="flex items-center gap-3">
               <input
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm w-60"
+                className="rounded-lg border border-slate-800 px-3 py-2 text-sm w-60"
                 placeholder="Search in table… (model/tester/item/step)"
                 value={queryLive}
                 onChange={(e) => { setQueryLive(e.target.value); setPage(1); }}
@@ -720,7 +742,7 @@ export default function OneDaySearch() {
             <div className="flex items-center gap-3">
               <div className="text-sm text-slate-500">Rows: {filtered.length}</div>
               <select
-                className="text-sm rounded-lg border-slate-300"
+                className="bg-slate-900  rounded-lg border-slate-300"
                 value={pageSize}
                 onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
                 aria-label="Rows per page"
@@ -733,7 +755,7 @@ export default function OneDaySearch() {
               <button
                 onClick={downloadCsv}
                 disabled={!filtered.length}
-                className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-white shadow-sm disabled:opacity-50"
+                className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-white shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 Export CSV
               </button>
@@ -741,16 +763,16 @@ export default function OneDaySearch() {
           </div>
 
           {error && (
-            <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-3 py-2 flex items-center justify-between">
+            <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-3 py-2 flex items-center text-center">
               <span>{error}</span>
               <button className="underline" onClick={load}>Retry</button>
             </div>
           )}
 
           <div className="overflow-x-auto">
-            <table className="w-max min-w-[1200px] text-sm">
-              <thead className="sticky top-0 bg-white z-10">
-                <tr className="text-left border-b whitespace-nowrap">
+            <table className="w-max min-w-[1200px] text-sm text-center">
+              <thead className="sticky top-0 bg-slate-800">
+                <tr className="text-center border-b whitespace-nowrap">
                   {sortedHeader("day", "Day")}
                   {sortedHeader("model", "Model")}
                   {sortedHeader("tester", "Tester")}
@@ -811,7 +833,7 @@ export default function OneDaySearch() {
                     return (
                       <tr
                         key={`${r.day}|${r.model}|${r.tester}|${r.order_idx}|${r.test_item}`}
-                        className="border-b hover:bg-slate-50 cursor-pointer"
+                        className="border-b hover:bg-slate-900 cursor-pointer"
                         onDoubleClick={() => onOpenDetail(qs)}
                       >
                         <td className="py-2 pr-3 font-medium">{r.day}</td>
@@ -840,20 +862,20 @@ export default function OneDaySearch() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center text-cen mt-3">
             <div className="text-sm text-slate-500">
               Page {page} of {Math.max(1, Math.ceil(filtered.length / pageSize))}
             </div>
             <div className="flex gap-2">
               <button
-                className="px-3 py-2 rounded-lg border border-slate-300 disabled:opacity-50"
+                className="px-3 py-2 rounded-lg border border-slate-300 disabled: cursor-pointer"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
               >
                 Previous
               </button>
               <button
-                className="px-3 py-2 rounded-lg border border-slate-300 disabled:opacity-50"
+                className="px-3 py-2 rounded-lg border border-slate-300 disabled:opacity-50 cursor-pointer"
                 onClick={() => setPage((p) => (p * pageSize < filtered.length ? p + 1 : p))}
                 disabled={page * pageSize >= filtered.length}
               >

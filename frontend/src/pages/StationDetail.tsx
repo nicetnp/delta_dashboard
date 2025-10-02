@@ -605,7 +605,7 @@ export default function StationDetail() {
                             onClick={() =>
                                 setChartType((prev) => (prev === "testerId" ? "failItem" : "testerId"))
                             }
-                            className="px-4 py-2 rounded bg-orange-500 hover:bg-orange-600 text-white"
+                            className="px-4 py-2 rounded bg-orange-500 hover:bg-orange-600 text-white cursor-pointer"
                         >
                             {chartType === "testerId" ? "Top 5 Failed" : "By Tester"}
                         </button>
@@ -664,13 +664,13 @@ export default function StationDetail() {
                 <div className="text-center">
                     <button
                         onClick={goBack}
-                        className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors duration-200"
+                        className="px-6 py-3 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors duration-200 cursor-pointer"
                     >
                         Back to Summary
                     </button>
                 </div>
             </div>
-
+.
             {/* Scroll to Top Button */}
             {showScrollTop && (
                 <button

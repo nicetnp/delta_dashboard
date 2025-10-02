@@ -507,7 +507,7 @@ export default function Calibration() {
             }
             
             const matchesSearch = !searchQuery || 
-                [row.Station, row.Equipment, row.Brand, row.Model, row.Seriesnumber, row.DT, row.LineID, row.Responsible, row.Comment]
+                [row.Station, row.Equipment, row.Brand, row.Model,row.AssetNumber, row.Seriesnumber, row.DT, row.LineID, row.Responsible, row.Comment]
                     .some(field => field?.toLowerCase().includes(searchQuery.toLowerCase()));
             
             const matchesStation = !stationFilter || row.Station === stationFilter;

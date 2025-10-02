@@ -206,7 +206,7 @@ export default function ProgRevCards() {
         <button
           onClick={doSearch}
           disabled={loading}
-          className="px-3 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
+          className="px-3 py-2 rounded-xl bg-slate-900 text-white border border-slate-600 hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
           title="Search"
         >
           {loading ? "Loading..." : "Search"}
